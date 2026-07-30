@@ -15,14 +15,31 @@ rodar integralmente com o inventário acima.
 
 | ID | Papel | Onde |
 |---|---|---|
-| `HTC-01` | Nó de desenvolvimento | Bancada, USB do MacBook |
-| `HTC-02` | Nó par para teste de alcance | Campo, bateria |
+| `HTC-01` | Nó de desenvolvimento — PINGER | Bancada, USB do MacBook |
+| `HTC-02` | Nó par para teste de alcance — PONGER | Campo, bateria |
 | `HTC-03` | Bridge / concentrador | USB do Raspberry Pi 4 |
 | `HTC-04` | Nó de sensores | Bancada, protoboard |
 | `HTC-05` | Reserva / futuro repetidor | — |
 
-`HTC-01` é a placa atualmente conectada: MAC `3c:71:bf:8c:2c:d0`,
-porta `/dev/cu.usbserial-0001`.
+### Identificação individual
+
+Os CP2102 destas placas **têm todos o mesmo número de série USB (`0001`)**, então
+a porta não distingue uma da outra: com só uma conectada, ela sempre aparece
+como `/dev/cu.usbserial-0001`. O que identifica cada placa é o **MAC do ESP32**.
+
+| ID | MAC | Flash |
+|---|---|---|
+| `HTC-01` | `3c:71:bf:8c:2c:d0` | 4 MB |
+| `HTC-02` | `3c:71:bf:8c:2f:9c` | 4 MB |
+
+Antes de gravar, conferir qual placa está na porta:
+
+```bash
+esptool.py --port /dev/cu.usbserial-0001 flash_id
+```
+
+O comando mostra MAC e tamanho de flash de uma vez — resolve a identificação e a
+verificação exigida pelo E-005 na mesma chamada.
 
 ## Identificação do SoC
 

@@ -245,8 +245,19 @@ void loop() {
 
 void loop() {
   static uint32_t proximoDesenho = 0;
+  static uint32_t proximoHeartbeat = 0;
 
   pollButton();
+
+  // Silêncio no receptor é ambíguo: pode ser transmissor desligado, pode ser
+  // rádio que não entrou em recepção. O piso de ruído do canal desfaz a
+  // ambiguidade — se ele varia, o receptor está de fato escutando.
+  if ((int32_t)(millis() - proximoHeartbeat) >= 0) {
+    Serial.printf("# rx ativo | ruido %.0f dBm | recebidos %lu\n",
+                  (double)radio.getRSSI(false, false),
+                  (unsigned long)ui.received);
+    proximoHeartbeat = millis() + 5000;
+  }
 
   if (!packetReady) {
     if ((int32_t)(millis() - proximoDesenho) >= 0) {

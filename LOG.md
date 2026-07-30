@@ -21,6 +21,45 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (4) — Primeiras gravações e enlace estabelecido
+
+**Fase:** 0 · **Duração:** ~1 sessão
+
+### Feito
+
+- **`HTC-01` gravada como PINGER** e `HTC-02` como PONGER. Ambas verificadas
+  por hash na gravação e por saída serial no arranque.
+- **Enlace LoRa estabelecido**: ensaio 01 registrado em `docs/CAMPO.md`.
+  8 pacotes, **0% de perda**, RSSI de −77 a −94 dBm, SNR de +8 a +12 dB,
+  margem de 35 a 52 dB sobre a sensibilidade de SF9.
+- **Diagnóstico de piso de ruído** adicionado ao PONGER: a cada 5 s reporta o
+  RSSI do canal. Sem isso, silêncio no receptor é ambíguo — pode ser
+  transmissor desligado ou rádio que não entrou em recepção.
+- Identificação individual das placas documentada por **MAC do ESP32**.
+
+### Aprendido
+
+- **Os CP2102 destas placas têm todos o mesmo número de série USB (`0001`)** —
+  a porta não distingue uma placa da outra. Só o MAC do ESP32 identifica.
+  `esptool.py flash_id` resolve identificação e verificação de flash de uma vez.
+- A definição de board do PlatformIO não corresponde ao hardware real destas
+  placas (E-005) — assumir o board pronto custou uma gravação inútil.
+- **Atenuação medida está 45 a 60 dB acima do esperado em espaço livre** para
+  ~10 m. Compatível com paredes e lajes do ambiente do ensaio, mas precisa ser
+  confirmado com linha de visada limpa antes de virar linha de base. Se
+  persistir sem obstrução, a suspeita passa a ser antena ou conector.
+- Variação de até 17 dB entre amostras com os nós parados: multipercurso
+  típico de ambiente fechado.
+
+### Próximo
+
+1. Ensaio 02 — linha de visada ao ar livre, para separar obstrução de perda
+   de antena.
+2. Ensaio 03 — varredura de SF7 a SF12, comparando margem e tempo no ar.
+3. Medição de consumo.
+
+---
+
 ## 2026-07-30 (3) — Conformidade, contexto de mercado e display de campo
 
 **Fase:** 0 · **Duração:** ~1 sessão

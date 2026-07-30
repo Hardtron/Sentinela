@@ -12,7 +12,7 @@ Nenhuma compra é necessária antes da fase 4.
 
 - [x] Firmware de bring-up: SX1276 em 916,8 MHz, OLED, serial
 - [x] Display de diagnóstico com 4 páginas navegáveis pelo botão PRG
-- [ ] Ping-pong entre `HTC-01` e `HTC-02` com RSSI/SNR
+- [x] Ping-pong entre `HTC-01` e `HTC-02` com RSSI/SNR — ensaio 01, 0% de perda
 - [ ] Medição de consumo em operação e em deep sleep
 - [ ] **Teste de alcance em campo** com relevo e vegetação reais
 - [ ] Levantamento de alcance por spreading factor (SF7 a SF12)
