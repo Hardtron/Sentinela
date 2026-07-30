@@ -101,6 +101,98 @@ A página **PONTO** é a que se fotografa antes de sair de cada local.
 
 ---
 
+## 4.1 Validador na tela — o veredito automático
+
+O firmware avalia o ponto contra os critérios de §7 e mostra o resultado
+pronto. **O operador não precisa interpretar número em campo.**
+
+Na página **PONTO**, uma faixa em vídeo invertido ocupa o rodapé:
+
+| Faixa | Significado | O que fazer |
+|---|---|---|
+| `COLETANDO 12/20` | Ainda não há amostras suficientes | Continuar parado, aguardar |
+| `APROVADO margem 24` | Atende a todos os critérios | Registrar e seguir |
+| `LIMITE margem 14` | Funciona, mas sem folga | Registrar e **procurar posição melhor** |
+| `REPROVA perda 8%` | Não serve como ponto de instalação | Registrar como reprovado e mudar de local |
+
+O veredito **REPROVA** ganha moldura dupla, para não ser confundido com aprovado
+num olhar rápido, sob sol.
+
+Na página **ENLACE** — a que fica aberta enquanto se caminha — o mesmo veredito
+aparece compacto no canto: `OK`, `LIM`, `REP` ou `...`. Isso permite caminhar
+observando o momento em que o enlace muda de categoria, sem trocar de página.
+
+### Regra de decisão aplicada
+
+Avaliada nesta ordem; a primeira que falhar determina o veredito:
+
+1. **Amostras** — abaixo de 20 pacotes, não emite veredito
+2. **Perda > 5%** → REPROVA
+3. **Margem < 10 dB** → REPROVA
+4. **Margem < 20 dB** → LIMITE
+5. **Assimetria > 10 dB** → LIMITE
+6. Caso contrário → **APROVADO**
+
+Os limiares estão em `firmware/src/ui_dev.h`, agrupados e comentados. Mudá-los
+muda o que o campo considera aprovado — por isso ficam num lugar só, e não
+espalhados pelo código.
+
+> O veredito avalia **qualidade de rádio**, não adequação geotécnica. Um ponto
+> aprovado pelo rádio ainda precisa fazer sentido como local de instrumentação,
+> o que é decisão de engenheiro geotécnico (CONFORMIDADE.md §3).
+
+---
+
+## 4.2 Para que serve marcar pontos
+
+A placa **não sabe onde está** — não há GPS nela. O número do ponto exibido na
+tela (`P3` no cabeçalho) é uma **chave de ligação**: ele amarra o que o rádio
+mediu ao que você registrou por fora — a coordenada do celular, a foto, a
+anotação de obstruções.
+
+Sem essa chave, você volta do campo com um monte de valores de RSSI e nenhuma
+forma confiável de dizer a qual lugar cada um pertence.
+
+### O caminho do dado
+
+```
+ponto marcado na placa  →  nº do ponto + coordenada GPS + obstruções
+                        →  planilha CSV
+                        →  camada geoespacial (QGIS / PostGIS)
+                        →  mapa de cobertura
+                        →  decisão de onde instalar os gateways
+```
+
+O produto final não é uma lista de RSSI: é um **mapa de cobertura** com os
+pontos coloridos por margem de enlace, sobreposto ao relevo e à mancha urbana.
+É isso que responde à pergunta que dimensiona o projeto — *quantos gateways, e
+onde* — e é isso que entra numa proposta.
+
+Google Maps ou Google Earth servem para a visualização rápida em campo, via KML.
+Mas o destino é a base geoespacial do projeto: os pontos viram feição com RSSI,
+margem, SF e veredito como atributos, no mesmo PostGIS do resto do sistema
+(ADR-005).
+
+### O que isso destrava depois
+
+Medir cada ponto de cada cidade é inviável. Mas com pontos medidos e
+georreferenciados suficientes, mais um **modelo digital de elevação**, é possível
+**calibrar um modelo de propagação** contra as medições reais e então **prever a
+cobertura para áreas não medidas**.
+
+Isso muda a escala do que se consegue fazer: em vez de percorrer cada município,
+percorre-se um, calibra-se o modelo com o terreno real, e a predição orienta
+onde medir nos demais — indo a campo apenas para confirmar os pontos críticos.
+
+É exatamente o tipo de análise que se apoia em competência de geoprocessamento —
+e é um argumento forte na proposta, porque transforma trabalho de campo, que não
+escala, em modelo, que escala.
+
+Por isso a coordenada de cada ponto **não é registro burocrático**: é a entrada
+do modelo. Ponto medido sem coordenada é dado perdido.
+
+---
+
 ## 5. Procedimento em cada ponto
 
 1. Chegue ao ponto e **pare de caminhar**. Medir andando mistura
@@ -110,17 +202,19 @@ A página **PONTO** é a que se fotografa antes de sair de cada local.
    O corpo humano absorve bem em 915 MHz — encostar a placa no peito derruba
    vários dB e inventa uma atenuação que não existe no cenário real.
 4. **Aguarde no mínimo 20 pacotes.** A 3 s por ping, é 1 minuto parado. Menos
-   que isso não distingue sinal ruim de desvanecimento momentâneo.
-5. Abra a página **PONTO** e fotografe. Registre também a coordenada GPS e a
-   distância.
+   que isso não distingue sinal ruim de desvanecimento momentâneo — e o
+   validador nem emite veredito antes disso.
+5. Abra a página **PONTO**, confira o veredito na faixa e **fotografe**.
+   Registre a coordenada GPS e a distância.
 6. Caminhe até o próximo ponto.
 
 ### O que anotar em cada ponto
 
 | Campo | Onde obtém |
 |---|---|
-| Nº do ponto | Tela (cabeçalho `P<n>`) |
-| Coordenada GPS | Celular |
+| Nº do ponto | Tela (cabeçalho `P<n>`) — **é a chave que liga tudo** |
+| Coordenada GPS | Celular — **obrigatória**, é a entrada do modelo de cobertura |
+| Veredito | Tela (faixa na página PONTO) |
 | Distância ao PONGER | Aplicativo de mapa ou trena |
 | Pacotes recebidos / enviados | Página PONTO |
 | Perda % | Página PONTO |

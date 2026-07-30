@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 /// Instantâneo do estado do nó, montado pelo laço principal a cada desenho.
@@ -63,3 +64,39 @@ void uiFatal(const char *titulo, const char *detalhe);
 /// Sensibilidade teórica do SX1276 para o spreading factor em uso (dBm).
 /// Usada para calcular a margem de enlace — o número que importa em campo.
 float uiSensitivityDbm(uint8_t sf);
+
+// --- Critérios de aprovação de um ponto de instalação ---------------------
+// Ficam aqui, e não espalhados pelo código de desenho, porque são a regra do
+// ensaio: mudá-los muda o que o campo considera aprovado. Justificativa em
+// docs/ROTEIRO_CAMPO.md §7.
+
+/// Amostras mínimas antes de emitir veredito. Abaixo disso não se distingue
+/// sinal ruim de desvanecimento momentâneo.
+#define PONTO_MIN_AMOSTRAS 20
+
+/// Margem confortável: suporta chuva, vegetação úmida e variação sazonal.
+#define PONTO_MARGEM_BOA_DB 20
+
+/// Abaixo disto o enlace cai na primeira chuva forte — justamente o evento que
+/// o sistema existe para monitorar.
+#define PONTO_MARGEM_MIN_DB 10
+
+/// Perda acima disto desqualifica o local mesmo com RSSI aparentemente bom:
+/// indica interferência ou desvanecimento profundo.
+#define PONTO_PERDA_MAX_PCT 5.0f
+
+/// Diferença entre o que cada lado ouve. Acima disto há antena, obstrução
+/// próxima ou ruído local em um dos nós.
+#define PONTO_ASSIMETRIA_MAX_DB 10
+
+enum VereditoPonto : uint8_t {
+  PONTO_COLETANDO = 0,
+  PONTO_APROVADO,
+  PONTO_LIMITE,
+  PONTO_REPROVADO
+};
+
+/// Avalia o ponto corrente contra os critérios acima e devolve o veredito,
+/// preenchendo `motivo` com o fator dominante. Permite ao operador decidir em
+/// campo, sem interpretar números.
+VereditoPonto uiAvaliarPonto(const UiState &s, char *motivo, size_t tam);

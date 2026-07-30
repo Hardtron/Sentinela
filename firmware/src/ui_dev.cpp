@@ -73,6 +73,43 @@ bool uiHistStats(int16_t &menor, int16_t &media, int16_t &maior, uint8_t &n) {
   return true;
 }
 
+VereditoPonto uiAvaliarPonto(const UiState &s, char *motivo, size_t tam) {
+  int16_t menor, media, maior;
+  uint8_t n;
+
+  if (!uiHistStats(menor, media, maior, n) || s.received < PONTO_MIN_AMOSTRAS) {
+    snprintf(motivo, tam, "COLETANDO %lu/%d", (unsigned long)s.received,
+             PONTO_MIN_AMOSTRAS);
+    return PONTO_COLETANDO;
+  }
+
+  int margem = (int)(media - uiSensitivityDbm(LORA_SF));
+  float perda =
+      s.sent > 0 ? 100.0f * (float)(s.sent - s.received) / (float)s.sent : 0.0f;
+  int assimetria = abs((int)media - (int)s.rssiRemote);
+
+  // Reprovações primeiro: basta uma para condenar o ponto.
+  if (perda > PONTO_PERDA_MAX_PCT) {
+    snprintf(motivo, tam, "REPROVA perda %.0f%%", (double)perda);
+    return PONTO_REPROVADO;
+  }
+  if (margem < PONTO_MARGEM_MIN_DB) {
+    snprintf(motivo, tam, "REPROVA margem %d", margem);
+    return PONTO_REPROVADO;
+  }
+  if (margem < PONTO_MARGEM_BOA_DB) {
+    snprintf(motivo, tam, "LIMITE margem %d", margem);
+    return PONTO_LIMITE;
+  }
+  if (assimetria > PONTO_ASSIMETRIA_MAX_DB) {
+    snprintf(motivo, tam, "LIMITE assim %d", assimetria);
+    return PONTO_LIMITE;
+  }
+
+  snprintf(motivo, tam, "APROVADO margem %d", margem);
+  return PONTO_APROVADO;
+}
+
 static void cabecalho(const char *titulo, const UiState &s) {
   oled.setFont(u8g2_font_5x7_tf);
   oled.drawStr(0, 6, titulo);
@@ -145,6 +182,22 @@ static void pagLink(const UiState &s) {
     oled.drawStr(0, 58, buf);
   }
 
+  // Selo compacto do veredito: esta é a página que fica aberta enquanto se
+  // caminha, então o estado do ponto precisa aparecer aqui também.
+  char motivo[48];
+  const char *selo = "...";
+  switch (uiAvaliarPonto(s, motivo, sizeof(motivo))) {
+    case PONTO_APROVADO: selo = "OK"; break;
+    case PONTO_LIMITE: selo = "LIM"; break;
+    case PONTO_REPROVADO: selo = "REP"; break;
+    default: break;
+  }
+  int wSelo = oled.getStrWidth(selo);
+  oled.drawBox(126 - wSelo - 2, 51, wSelo + 4, 9);
+  oled.setDrawColor(0);
+  oled.drawStr(126 - wSelo, 58, selo);
+  oled.setDrawColor(1);
+
   // Perda — o indicador que condena um ponto de instalação.
   uint32_t perdidos = s.sent - s.received;
   if (s.sent > 0) {
@@ -168,31 +221,40 @@ static void pagPonto(const UiState &s) {
   char buf[48];
   oled.setFont(u8g2_font_6x10_tf);
 
-  snprintf(buf, sizeof(buf), "pacotes %lu/%lu", (unsigned long)s.received,
-           (unsigned long)s.sent);
-  oled.drawStr(0, 20, buf);
-
-  if (s.sent > 0) {
-    float perda = 100.0f * (float)(s.sent - s.received) / (float)s.sent;
-    snprintf(buf, sizeof(buf), "perda %.1f%%", (double)perda);
-  } else {
-    snprintf(buf, sizeof(buf), "perda --");
-  }
-  oled.drawStr(0, 31, buf);
+  float perda =
+      s.sent > 0 ? 100.0f * (float)(s.sent - s.received) / (float)s.sent : 0.0f;
+  snprintf(buf, sizeof(buf), "pac %lu/%lu  perda %.0f%%",
+           (unsigned long)s.received, (unsigned long)s.sent, (double)perda);
+  oled.drawStr(0, 19, buf);
 
   int16_t menor, media, maior;
   uint8_t n;
   if (uiHistStats(menor, media, maior, n)) {
     snprintf(buf, sizeof(buf), "rssi %d (%d..%d)", media, menor, maior);
-    oled.drawStr(0, 42, buf);
-    snprintf(buf, sizeof(buf), "margem %d dB",
-             (int)(media - uiSensitivityDbm(LORA_SF)));
-    oled.drawStr(0, 53, buf);
+    oled.drawStr(0, 30, buf);
+    snprintf(buf, sizeof(buf), "margem %d  assim %d",
+             (int)(media - uiSensitivityDbm(LORA_SF)),
+             abs((int)media - (int)s.rssiRemote));
+    oled.drawStr(0, 41, buf);
   } else {
-    oled.drawStr(0, 42, "sem amostras");
+    oled.drawStr(0, 30, "sem amostras");
   }
 
-  indicadorPagina();
+  // Faixa de veredito: o operador decide sem interpretar número. Ocupa o rodapé
+  // inteiro em vídeo invertido para ser legível de relance, sob sol.
+  VereditoPonto v = uiAvaliarPonto(s, buf, sizeof(buf));
+
+  oled.drawBox(0, 52, 128, 12);
+  oled.setDrawColor(0);
+  oled.setFont(u8g2_font_6x10_tf);
+  oled.drawStr(3, 61, buf);
+  oled.setDrawColor(1);
+
+  // Reprovado ganha moldura dupla — não deve ser confundido com aprovado num
+  // olhar rápido.
+  if (v == PONTO_REPROVADO) {
+    oled.drawFrame(0, 50, 128, 14);
+  }
 }
 
 // Página 3 — histórico. Caminhando em campo, a forma da curva mostra onde o

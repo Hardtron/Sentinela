@@ -27,6 +27,13 @@ apenas o apontamento.
 
 ### Feito
 
+- **Validador de ponto na tela.** O firmware avalia o ponto contra os critérios
+  do roteiro e mostra o veredito pronto — `COLETANDO n/20`, `APROVADO`,
+  `LIMITE` ou `REPROVA`, com o fator dominante. Faixa em vídeo invertido na
+  página PONTO (moldura dupla quando reprovado) e selo compacto `OK/LIM/REP` na
+  página ENLACE, que é a aberta enquanto se caminha. Os limiares ficam
+  agrupados em `ui_dev.h`, porque mudá-los muda o que o campo aprova.
+
 - **Marcação de pontos de medição** no firmware: toque longo no PRG (>1 s) zera
   as estatísticas, incrementa o ponto e marca a transição no CSV, com
   confirmação por LED. Toque curto segue trocando de página.
@@ -54,6 +61,16 @@ apenas o apontamento.
 - Power bank como alimentação inicial (custo zero), com a ressalva de que muitos
   desligam sozinhos no consumo baixo da placa. LiPo no JST fica como opção B,
   com alerta de conector 1,25 mm e conferência de polaridade por multímetro.
+- **O número do ponto é chave de ligação**, não identificador decorativo: a
+  placa não tem GPS, então ele é o que amarra a medição de rádio à coordenada
+  registrada por fora. Destino do dado: planilha → camada PostGIS → mapa de
+  cobertura → decisão de onde ficam os gateways.
+- Coordenada de cada ponto passa a ser **obrigatória**, porque é entrada do
+  modelo de propagação. Com pontos medidos e um MDE, dá para calibrar o modelo
+  contra o terreno real e **predizer cobertura onde não se mediu** — o que
+  transforma trabalho de campo, que não escala, em modelo, que escala. É
+  argumento forte para a proposta e apoia-se justamente na competência de
+  geoprocessamento já existente.
 
 ### Aprendido
 

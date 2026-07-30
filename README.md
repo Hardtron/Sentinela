@@ -76,7 +76,7 @@ Quatro páginas, alternadas pelo **botão PRG**:
 | Página | Mostra | Para quê |
 |---|---|---|
 | **ENLACE** | RSSI em fonte grande, barra de margem, SNR, RSSI remoto, perda | Ler o estado do link a um olhar, caminhando |
-| **PONTO** | Resumo consolidado do ponto: pacotes, perda %, RSSI mín/méd/máx, margem | A tela que se fotografa antes de mudar de local |
+| **PONTO** | Resumo do ponto e **faixa de veredito**: `APROVADO` / `LIMITE` / `REPROVA` / `COLETANDO` | A tela que se fotografa antes de mudar de local |
 | **HISTORICO** | Gráfico dos últimos 128 pacotes, com mín/méd/máx | A forma da curva denuncia obstrução — um degrau não é distância |
 | **RADIO** | Frequência, SF, BW, CR, potência, tempo no ar, sensibilidade | Confirmar que a placa está na configuração que se pensa |
 | **SISTEMA** | Tempo ativo, heap, reinícios, tensão de bateria | Embrião da telemetria de saúde exigida por RC-03 |
