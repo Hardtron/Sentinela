@@ -65,6 +65,42 @@ extração de strings (`HelTec_AutoMation`, `LoRa Initial success!`).
 
 ---
 
+### E-005 — Boot loop após a primeira gravação: flash de 4 MB vs 8 MB
+
+**Contexto:** primeira gravação do firmware na `HTC-01`, 30/07/2026.
+**Sintoma:** gravação bem-sucedida com hash verificado, mas a placa entra em
+reinício contínuo:
+
+```
+E (173) spi_flash: Detected size(4096k) smaller than the size in the
+        binary image header(8192k). Probe failed.
+assert failed: do_core_init startup.c:328 (flash_ret == ESP_OK)
+Rebooting...
+```
+
+**Causa:** a definição de board `heltec_wifi_lora_32_V2` do PlatformIO assume
+flash de **8 MB**, e o esptool grava esse valor no header da imagem. **Estas
+placas têm 4 MB** (Winbond `ef:4016`, confirmado no dump de 30/07). O bootloader
+detecta a divergência e aborta.
+
+**Solução:** fixar o tamanho real no `platformio.ini`:
+
+```ini
+board_upload.flash_size = 4MB
+board_upload.maximum_size = 4194304
+board_build.partitions = default.csv
+```
+
+Depois disso o arranque é normal e o rádio inicializa.
+**Status:** resolvido.
+
+> A Heltec V2 foi vendida em variantes de 4 MB e 8 MB. **Conferir o chip de
+> flash antes de gravar uma placa nova** — as cinco do inventário vieram do
+> mesmo lote, mas isso não é garantia. `esptool.py flash_id` responde em
+> segundos.
+
+---
+
 ### E-004 — Aviso de OpenSSL no PlatformIO
 
 **Contexto:** qualquer comando `pio`.
