@@ -43,13 +43,23 @@ apenas o apontamento.
   espaço próprio, com as memórias do homeserver copiadas (o backend roda lá).
   Os dois projetos ficam independentes.
 
+- **Clone do projeto no homeserver** em `/DATA/Projects/Sentinela` (remoto SSH,
+  chave `id_github` já autorizada). Era isso que faltava para o projeto aparecer
+  no aplicativo e no CasaOS: **o app conecta ao homeserver, não ao MacBook**, e
+  lista os repositórios de `/DATA/Projects`. Um projeto que existe só no Mac é
+  invisível para ele.
+
 ### Decidido
 
 - Privado por ora. Abrir depois exige definir licença (P-003).
 - Allowlist em `settings.json` **versionado** em vez de `settings.local.json`,
   para a configuração viajar com o repositório.
-- Chave SSH **não** foi autorizada no GitHub e não precisa ser — HTTPS via
-  `gh` cobre o fluxo atual (ver E-002).
+- Chave SSH do Mac **não** foi autorizada no GitHub e não precisa ser — HTTPS
+  via `gh` cobre o fluxo atual (ver E-002). O homeserver, por sua vez, já usava
+  SSH e continua assim.
+- **Divisão de papéis entre os dois clones:** firmware no MacBook (a placa está
+  na USB dele), backend/gateway/documentação no homeserver. Sincronização
+  apenas pelo GitHub — ver armadilha A-009.
 
 ### Próximo
 

@@ -118,6 +118,18 @@ MEMS deriva com temperatura, e talude exposto ao sol varia dezenas de graus por
 dia. Sem compensação térmica, o ciclo diário vira "movimento". É a principal
 fonte de falso positivo esperada (RC-09).
 
+### A-009 — Dois clones do projeto podem divergir
+
+O projeto existe no MacBook (firmware, porque a placa está na USB dele) e no
+homeserver em `/DATA/Projects/Sentinela` (backend, documentação e acesso remoto
+pelo aplicativo). **Os dois só se comunicam pelo GitHub.**
+
+`git pull` antes de começar, `git push` ao terminar — dos dois lados. Editar a
+mesma documentação nos dois sem sincronizar gera conflito desnecessário.
+
+Corolário: **nunca** colocar o projeto em `/DATA/Files` no homeserver — o
+Syncthing corrompe o `.git`. `/DATA/Projects` é o lugar certo.
+
 ### A-008 — Sensor travado no I2C do OLED derruba o diagnóstico
 
 Por isso sensores externos vão em `Wire1` (sugerido GPIO 22/23), separados do

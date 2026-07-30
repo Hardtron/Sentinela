@@ -49,6 +49,23 @@ trocar a plataforma dos nós de campo (ESP32 → STM32WLE5) mexendo apenas em
 
 ## Ambiente de desenvolvimento
 
+O projeto vive em **dois clones**, com papéis distintos:
+
+| Onde | Caminho | Papel | Remoto |
+|---|---|---|---|
+| MacBook | `~/Documents/Claude Projects/Sentinela` | **Firmware** — precisa da porta USB | HTTPS (via `gh`) |
+| Homeserver | `/DATA/Projects/Sentinela` | **Backend, gateway, documentação** e acesso remoto pelo iPhone | SSH (`id_github`) |
+
+O firmware só pode ser gravado e monitorado do MacBook: a placa está na USB
+dele. O clone do homeserver existe porque é a ele que o aplicativo se conecta —
+é o que torna o projeto editável remotamente.
+
+> **Regra para evitar divergência:** `git pull` **antes** de começar a trabalhar,
+> em qualquer um dos dois lados, e `git push` ao terminar. Os dois clones se
+> falam apenas através do GitHub. Ver armadilha A-009 em [ERROS.md](ERROS.md).
+
+### Comandos de firmware (somente no MacBook)
+
 ```bash
 pio run -e node_dev          # compila o firmware do nó
 pio run -e node_dev -t upload --upload-port /dev/cu.usbserial-0001
@@ -56,6 +73,7 @@ pio device monitor -b 115200
 ```
 
 PlatformIO Core instalado em `~/.venvs/platformio` (fora do Python do sistema).
+GitHub CLI em `~/.local/bin/gh`.
 
 ## Licença
 
