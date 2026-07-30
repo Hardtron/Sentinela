@@ -1,0 +1,31 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+firmware/.pio/
+
+# Dumps de firmware e binários grandes (ver docs/HARDWARE.md)
+*.bin
+!firmware/**/partitions*.bin
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv*/
+
+# Ambiente e segredos — chaves LoRaWAN, credenciais do banco, tokens
+.env
+*.local
+secrets/
+*.key
+*.pem
+
+# Dados de ensaio brutos (versionar apenas o consolidado em docs/)
+data/raw/
+
+# Sistema operacional e editores
+.DS_Store
+.vscode/
+.idea/
+*.swp

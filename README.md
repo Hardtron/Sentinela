@@ -1,0 +1,65 @@
+# Sentinela
+
+Rede de sensores LoRa para monitoramento de áreas de risco geológico-hidrológico
+em múltiplos municípios.
+
+O sistema mede chuva acumulada, saturação do solo, inclinação de talude e
+condições atmosféricas, correlaciona essas grandezas com a base geoespacial de
+suscetibilidade e população exposta, e entrega à Defesa Civil informação
+acionável sobre risco iminente de deslizamento.
+
+> **O Sentinela é um sistema de apoio à decisão.** Ele não substitui o
+> julgamento técnico da Defesa Civil nem aciona evacuação de forma autônoma.
+> Ver [docs/REQUISITOS.md](docs/REQUISITOS.md).
+
+## Estado atual
+
+**Fase 0 — bring-up do rádio.** Nenhum hardware além do já disponível foi
+adquirido. Ver [LOG.md](LOG.md) para o andamento e
+[ERROS.md](ERROS.md) para armadilhas já mapeadas.
+
+## Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [docs/PLANO.md](docs/PLANO.md) | Fases do projeto, escopo e critérios de saída |
+| [docs/ARQUITETURA.md](docs/ARQUITETURA.md) | Decisões técnicas registradas (ADR) |
+| [docs/HARDWARE.md](docs/HARDWARE.md) | Inventário, pinagem, alocação das placas |
+| [docs/SENSORES.md](docs/SENSORES.md) | Grandezas monitoradas e justificativa |
+| [docs/REQUISITOS.md](docs/REQUISITOS.md) | Requisitos de confiabilidade e alerta |
+| [LOG.md](LOG.md) | Diário de andamento |
+| [ERROS.md](ERROS.md) | Registro de erros e soluções |
+
+## Estrutura
+
+```
+firmware/     Firmware dos nós (PlatformIO)
+  lib/app/      Lógica de aplicação — sem código específico de chip
+  lib/hal/      Abstração de hardware — uma implementação por plataforma
+  lib/proto/    Codificação de payload — compartilhada com o backend
+gateway/      Bridge LoRa→MQTT no Raspberry Pi 4
+backend/      ChirpStack, Mosquitto, TimescaleDB/PostGIS, ingestor
+hardware/     Esquemas, caixas, notas de campo
+docs/         Documentação de projeto
+```
+
+A separação em três camadas dentro de `firmware/lib` é deliberada: permite
+trocar a plataforma dos nós de campo (ESP32 → STM32WLE5) mexendo apenas em
+`hal/`. Ver ADR-004.
+
+## Ambiente de desenvolvimento
+
+```bash
+pio run -e node_dev          # compila o firmware do nó
+pio run -e node_dev -t upload --upload-port /dev/cu.usbserial-0001
+pio device monitor -b 115200
+```
+
+PlatformIO Core instalado em `~/.venvs/platformio` (fora do Python do sistema).
+
+## Licença
+
+Ainda não definida. Ver LOG.md, pendência P-003.
+
+---
+Autoria: Matheus Marassi
