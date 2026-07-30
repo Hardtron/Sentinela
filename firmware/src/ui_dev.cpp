@@ -24,6 +24,7 @@ static const int16_t RSSI_MELHOR = -30;
 
 enum Page : uint8_t {
   PAGE_LINK = 0,
+  PAGE_PONTO,
   PAGE_GRAPH,
   PAGE_RADIO,
   PAGE_SYS,
@@ -55,12 +56,29 @@ static int mapRssiToY(int16_t rssi, int yTopo, int yBase) {
   return yBase - (int)pos;
 }
 
+bool uiHistStats(int16_t &menor, int16_t &media, int16_t &maior, uint8_t &n) {
+  if (histCount == 0) return false;
+  menor = 32767;
+  maior = -32768;
+  long soma = 0;
+  for (uint8_t i = 0; i < histCount; i++) {
+    uint8_t idx = (uint8_t)((histHead + HIST_LEN - histCount + i) % HIST_LEN);
+    int16_t v = hist[idx];
+    if (v < menor) menor = v;
+    if (v > maior) maior = v;
+    soma += v;
+  }
+  media = (int16_t)(soma / histCount);
+  n = histCount;
+  return true;
+}
+
 static void cabecalho(const char *titulo, const UiState &s) {
   oled.setFont(u8g2_font_5x7_tf);
   oled.drawStr(0, 6, titulo);
 
   char dir[20];
-  snprintf(dir, sizeof(dir), "n%u %s", (unsigned)s.nodeId,
+  snprintf(dir, sizeof(dir), "P%u n%u %s", (unsigned)s.ponto, (unsigned)s.nodeId,
            s.isPinger ? "PING" : "PONG");
   int w = oled.getStrWidth(dir);
   oled.drawStr(128 - w, 6, dir);
@@ -71,7 +89,7 @@ static void cabecalho(const char *titulo, const UiState &s) {
 /// Rodapé com o indicador de página — mostra onde se está sem ocupar espaço.
 static void indicadorPagina() {
   for (uint8_t i = 0; i < PAGE_COUNT; i++) {
-    int x = 100 + i * 7;
+    int x = 128 - PAGE_COUNT * 7 + i * 7;
     if (i == page) {
       oled.drawBox(x, 60, 5, 3);
     } else {
@@ -139,10 +157,48 @@ static void pagLink(const UiState &s) {
   indicadorPagina();
 }
 
-// Página 2 — histórico. Caminhando em campo, a forma da curva mostra onde o
+// Página 2 — resumo consolidado do ponto de medição. É esta a tela que o
+// operador anota ou fotografa antes de caminhar para o próximo ponto: ela
+// concentra tudo o que descreve a qualidade do enlace ali.
+static void pagPonto(const UiState &s) {
+  char titulo[16];
+  snprintf(titulo, sizeof(titulo), "PONTO %u", (unsigned)s.ponto);
+  cabecalho(titulo, s);
+
+  char buf[48];
+  oled.setFont(u8g2_font_6x10_tf);
+
+  snprintf(buf, sizeof(buf), "pacotes %lu/%lu", (unsigned long)s.received,
+           (unsigned long)s.sent);
+  oled.drawStr(0, 20, buf);
+
+  if (s.sent > 0) {
+    float perda = 100.0f * (float)(s.sent - s.received) / (float)s.sent;
+    snprintf(buf, sizeof(buf), "perda %.1f%%", (double)perda);
+  } else {
+    snprintf(buf, sizeof(buf), "perda --");
+  }
+  oled.drawStr(0, 31, buf);
+
+  int16_t menor, media, maior;
+  uint8_t n;
+  if (uiHistStats(menor, media, maior, n)) {
+    snprintf(buf, sizeof(buf), "rssi %d (%d..%d)", media, menor, maior);
+    oled.drawStr(0, 42, buf);
+    snprintf(buf, sizeof(buf), "margem %d dB",
+             (int)(media - uiSensitivityDbm(LORA_SF)));
+    oled.drawStr(0, 53, buf);
+  } else {
+    oled.drawStr(0, 42, "sem amostras");
+  }
+
+  indicadorPagina();
+}
+
+// Página 3 — histórico. Caminhando em campo, a forma da curva mostra onde o
 // sinal caiu; um degrau denuncia obstrução, não distância.
 static void pagGraph(const UiState &s) {
-  cabecalho("HISTORICO RSSI", s);
+  cabecalho("HISTORICO", s);
 
   const int yTopo = 12;
   const int yBase = 52;
@@ -156,24 +212,20 @@ static void pagGraph(const UiState &s) {
     return;
   }
 
-  int16_t menor = 32767, maior = -32768;
-  long soma = 0;
   int xInicial = HIST_LEN - histCount;
-
   for (uint8_t i = 0; i < histCount; i++) {
     uint8_t idx = (uint8_t)((histHead + HIST_LEN - histCount + i) % HIST_LEN);
-    int16_t v = hist[idx];
-    if (v < menor) menor = v;
-    if (v > maior) maior = v;
-    soma += v;
-    int y = mapRssiToY(v, yTopo, yBase);
+    int y = mapRssiToY(hist[idx], yTopo, yBase);
     oled.drawVLine(xInicial + i, y, yBase - y);
   }
 
-  char buf[26];
+  int16_t menor, media, maior;
+  uint8_t n;
+  uiHistStats(menor, media, maior, n);
+
+  char buf[48];
   oled.setFont(u8g2_font_5x7_tf);
-  snprintf(buf, sizeof(buf), "min%d med%d max%d", menor,
-           (int)(soma / histCount), maior);
+  snprintf(buf, sizeof(buf), "min%d med%d max%d", menor, media, maior);
   oled.drawStr(0, 62, buf);
 
   indicadorPagina();
@@ -228,6 +280,12 @@ static void pagSys(const UiState &s) {
   snprintf(buf, sizeof(buf), "vbat ~%.2fV nc", (double)s.vbat);
   oled.drawStr(0, 53, buf);
 
+  // Aviso discreto, não alarme: enquanto a leitura não for calibrada (P-005),
+  // um alerta enfático seria enganoso.
+  if (s.vbat > 0.5f && s.vbat < VBAT_BAIXA_V) {
+    oled.drawStr(84, 53, "BAIXA");
+  }
+
   indicadorPagina();
 }
 
@@ -248,10 +306,16 @@ void uiPushRssi(float rssi) {
 
 void uiNextPage() { page = (uint8_t)((page + 1) % PAGE_COUNT); }
 
+void uiResetHist() {
+  histCount = 0;
+  histHead = 0;
+}
+
 void uiDraw(const UiState &s) {
   oled.clearBuffer();
   switch (page) {
     case PAGE_LINK: pagLink(s); break;
+    case PAGE_PONTO: pagPonto(s); break;
     case PAGE_GRAPH: pagGraph(s); break;
     case PAGE_RADIO: pagRadio(s); break;
     default: pagSys(s); break;

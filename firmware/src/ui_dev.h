@@ -19,6 +19,8 @@ struct UiState {
   uint8_t nodeId;
   bool isPinger;
 
+  uint16_t ponto;  // ponto de medição corrente no ensaio de campo
+
   uint32_t seq;
   uint32_t sent;
   uint32_t received;
@@ -39,8 +41,15 @@ void uiBegin();
 /// Alimenta o histórico do gráfico. Chamar uma vez por pacote recebido.
 void uiPushRssi(float rssi);
 
-/// Avança para a próxima página (botão PRG).
+/// Avança para a próxima página (toque curto no botão PRG).
 void uiNextPage();
+
+/// Zera o histórico do gráfico. Chamado ao iniciar um novo ponto de medição,
+/// para que as estatísticas exibidas sejam só daquele ponto.
+void uiResetHist();
+
+/// Estatísticas do histórico corrente. Devolve false se não há amostras.
+bool uiHistStats(int16_t &menor, int16_t &media, int16_t &maior, uint8_t &n);
 
 /// Redesenha a página corrente.
 void uiDraw(const UiState &s);

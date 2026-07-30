@@ -34,6 +34,21 @@
 #define SENSOR_SDA 22
 #define SENSOR_SCL 23
 
+// --- Medicao de bateria ---
+// A Heltec V2 traz um divisor resistivo no GPIO37. O fator nominal e 2,0, mas
+// o ADC do ESP32 e nao-linear e a tolerancia dos resistores e larga, entao o
+// valor exibido e tratado como NAO CALIBRADO (rotulo "nc" na tela, RC-07).
+//
+// Para calibrar: medir a tensao real da bateria com multimetro, comparar com o
+// valor exibido e ajustar VBAT_CALIBRACAO pela razao entre eles. Pendencia
+// P-005 -- obrigatorio antes de qualquer conclusao sobre autonomia.
+#define VBAT_FATOR_DIVISOR 2.0f
+#define VBAT_CALIBRACAO 1.0f  // ajustar apos medicao com multimetro
+
+// Limiar de bateria baixa para celula LiPo de 3,7 V. Abaixo disso a autonomia
+// restante e curta e a placa deve ser recolhida do ensaio.
+#define VBAT_BAIXA_V 3.40f
+
 // --- Parametros de radio (ADR-003) ---
 // 916,8 MHz = canal 8 do plano AU915, dentro da faixa 915-928 MHz permitida
 // pela Anatel. A janela 907,5-915 MHz NAO e permitida (armadilha A-006).

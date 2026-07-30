@@ -26,7 +26,7 @@ não entrou em recepção".
 
 **Data:** 30/07/2026 · **Nós:** `HTC-01` (PINGER) e `HTC-02` (PONGER)
 **Configuração:** 916,8 MHz · SF9 · BW 125 kHz · CR 4/7 · 17 dBm · ToA 169 ms
-**Ambiente:** interno, ~10 m de separação, com obstrução (paredes)
+**Ambiente:** interno, ~10 m de separação, **paredes de alvenaria** entre os nós
 **Alimentação:** `HTC-01` em carregador de celular; `HTC-02` na USB do MacBook
 
 ### Resultado
@@ -76,8 +76,12 @@ funcionam ponta a ponta. Liberado para o ensaio de alcance ao ar livre.
 
 ## Próximos ensaios
 
-- [ ] **02** — Linha de visada ao ar livre, distância crescente, SF9
-- [ ] **03** — Varredura de SF7 a SF12 a distância fixa, comparando margem e ToA
+Procedimento detalhado em [ROTEIRO_CAMPO.md](ROTEIRO_CAMPO.md).
+
+- [ ] **02** — Linha de visada ao ar livre: 10 m → 25 m → 50 m → 100 m, SF9.
+      A casa a 100 m na mesma rua é o ponto final. **A leitura de 10 m com
+      visada limpa resolve a pendência do ensaio 01.**
+- [ ] **03** — Varredura SF7/SF9/SF12 no ponto de 100 m, comparando margem e ToA
 - [ ] **04** — Percurso com relevo e vegetação reais, no município-piloto
 - [ ] **05** — Nó em posição de instalação candidata, 24 h contínuas
 

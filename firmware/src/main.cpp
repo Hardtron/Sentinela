@@ -61,17 +61,44 @@ IRAM_ATTR void onPacketEvent() { packetReady = true; }
 /// de qualquer decisão baseada em tensão.
 static float readBattery() {
   int bruto = analogRead(PIN_VBAT_ADC);
-  return bruto * (3.3f / 4095.0f) * 2.0f;
+  return bruto * (3.3f / 4095.0f) * VBAT_FATOR_DIVISOR * VBAT_CALIBRACAO;
 }
 
+/// Inicia um novo ponto de medição: zera as estatísticas para que o resumo na
+/// tela descreva apenas este ponto, e marca a transição no CSV.
+static void novoPonto() {
+  ui.ponto++;
+  ui.sent = 0;
+  ui.received = 0;
+  uiResetHist();
+  Serial.printf("# ===== PONTO %u =====\n", (unsigned)ui.ponto);
+}
+
+/// Toque curto muda de página; toque longo (>1 s) marca um novo ponto de
+/// medição. Um botão só, duas funções — é o único disponível na placa.
 static void pollButton() {
   static int anterior = HIGH;
   static uint32_t ultimaMudanca = 0;
+  static uint32_t instantePressao = 0;
+
   int agora = digitalRead(PIN_PRG);
   if (agora != anterior && (millis() - ultimaMudanca) > 50) {
     ultimaMudanca = millis();
     anterior = agora;
-    if (agora == LOW) uiNextPage();
+    if (agora == LOW) {
+      instantePressao = millis();
+    } else {
+      uint32_t duracao = millis() - instantePressao;
+      if (duracao >= 1000) {
+        novoPonto();
+        // Pisca longo confirma a marcação sem exigir olhar para a tela.
+        digitalWrite(PIN_LED, HIGH);
+        delay(250);
+        digitalWrite(PIN_LED, LOW);
+      } else {
+        uiNextPage();
+      }
+    }
   }
 }
 

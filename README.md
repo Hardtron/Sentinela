@@ -27,6 +27,8 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/HARDWARE.md](docs/HARDWARE.md) | Inventário, pinagem, alocação das placas |
 | [docs/SENSORES.md](docs/SENSORES.md) | Grandezas monitoradas e justificativa |
 | [docs/REQUISITOS.md](docs/REQUISITOS.md) | Requisitos de confiabilidade e alerta |
+| [docs/ROTEIRO_CAMPO.md](docs/ROTEIRO_CAMPO.md) | Como conduzir o ensaio de alcance |
+| [docs/CAMPO.md](docs/CAMPO.md) | Resultados dos ensaios de enlace |
 | [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md) | Normas aplicáveis — Anatel, defesa civil, geotecnia, LGPD |
 | [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
 | [LOG.md](LOG.md) | Diário de andamento |
@@ -74,13 +76,17 @@ Quatro páginas, alternadas pelo **botão PRG**:
 | Página | Mostra | Para quê |
 |---|---|---|
 | **ENLACE** | RSSI em fonte grande, barra de margem, SNR, RSSI remoto, perda | Ler o estado do link a um olhar, caminhando |
+| **PONTO** | Resumo consolidado do ponto: pacotes, perda %, RSSI mín/méd/máx, margem | A tela que se fotografa antes de mudar de local |
 | **HISTORICO** | Gráfico dos últimos 128 pacotes, com mín/méd/máx | A forma da curva denuncia obstrução — um degrau não é distância |
 | **RADIO** | Frequência, SF, BW, CR, potência, tempo no ar, sensibilidade | Confirmar que a placa está na configuração que se pensa |
 | **SISTEMA** | Tempo ativo, heap, reinícios, tensão de bateria | Embrião da telemetria de saúde exigida por RC-03 |
 
+O botão PRG tem duas funções: **toque curto** muda de página, **toque longo**
+(>1 s) marca um novo ponto de medição, zerando as estatísticas.
+
 A **barra de margem** é o número que decide um ponto de instalação: distância
 até a sensibilidade do SF em uso. Margem baixa significa link que cai na
-primeira chuva forte.
+primeira chuva forte — que é exatamente quando o sistema precisa funcionar.
 
 > A tensão de bateria aparece rotulada como **`nc`** (não calibrada): o divisor
 > da Heltec V2 não foi caracterizado. Valor plausível porém errado é pior que

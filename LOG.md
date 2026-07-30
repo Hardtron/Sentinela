@@ -21,6 +21,52 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (5) — Instrumentação de campo e roteiro de ensaio
+
+**Fase:** 0 · **Duração:** ~1 sessão
+
+### Feito
+
+- **Marcação de pontos de medição** no firmware: toque longo no PRG (>1 s) zera
+  as estatísticas, incrementa o ponto e marca a transição no CSV, com
+  confirmação por LED. Toque curto segue trocando de página.
+- **Nova página PONTO** com o resumo consolidado — pacotes, perda %, RSSI
+  mínimo/médio/máximo e margem. É a tela que o operador fotografa antes de
+  mudar de local.
+- **Leitura de bateria parametrizada** (`VBAT_FATOR_DIVISOR`,
+  `VBAT_CALIBRACAO`, `VBAT_BAIXA_V`) com procedimento de calibração documentado
+  e aviso discreto de bateria baixa. Continua rotulada `nc` até P-005.
+- **`docs/ROTEIRO_CAMPO.md`** — procedimento completo do ensaio de alcance:
+  preparação, alimentação, papéis dos nós, procedimento por ponto, sequência de
+  ensaios, interpretação de margem e segurança.
+- `HTC-02` regravada com o firmware de campo, após conferência do MAC.
+- Display validado pelo usuário: legível em todas as páginas.
+
+### Decidido
+
+- **O operador caminha com o PINGER.** Só ele conta os pacotes que *não* foram
+  respondidos — o PONGER enxerga apenas o que chegou. Sem isso não há taxa de
+  perda, que é metade do resultado.
+- **Margem mínima de 20 dB** para aprovar um ponto de instalação. Chuva intensa
+  e folhagem molhada atenuam, e é durante a chuva forte que o sistema precisa
+  funcionar: enlace dimensionado no limite em dia de sol falha exatamente no
+  evento que existe para monitorar.
+- Power bank como alimentação inicial (custo zero), com a ressalva de que muitos
+  desligam sozinhos no consumo baixo da placa. LiPo no JST fica como opção B,
+  com alerta de conector 1,25 mm e conferência de polaridade por multímetro.
+
+### Aprendido
+
+- O ambiente do ensaio 01 era interno com **paredes de alvenaria** — consistente
+  com os 45–60 dB de atenuação extra. Segue como hipótese até a medição de 10 m
+  com visada limpa, que é o teste decisivo do ensaio 02.
+
+### Próximo
+
+Ensaio 02 — linha de visada, 10 m → 25 m → 50 m → 100 m.
+
+---
+
 ## 2026-07-30 (4) — Primeiras gravações e enlace estabelecido
 
 **Fase:** 0 · **Duração:** ~1 sessão
