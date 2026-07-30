@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pio run *)",
+      "Bash(pio device list)",
+      "Bash(pio device monitor *)",
+      "Bash(pio pkg *)",
+      "Bash(pio check *)",
+      "Bash(pio test *)",
+      "Bash(~/.venvs/platformio/bin/pio *)",
+      "Bash(ls /dev/cu.*)",
+      "Bash(ioreg -p IOUSB *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -F *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(python3 -m venv venv)",
+      "Bash(./venv/bin/pip install *)",
+      "Bash(./venv/bin/python *)",
+      "Read(//Users/matheus/Documents/Claude Projects/Sentinela/**)"
+    ]
+  }
+}
