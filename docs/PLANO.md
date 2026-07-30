@@ -10,7 +10,8 @@ Nenhuma compra é necessária antes da fase 4.
 
 **Objetivo.** Provar que o hardware funciona e medir o alcance real.
 
-- [ ] Firmware de bring-up: SX1276 em 916,8 MHz, OLED, serial
+- [x] Firmware de bring-up: SX1276 em 916,8 MHz, OLED, serial
+- [x] Display de diagnóstico com 4 páginas navegáveis pelo botão PRG
 - [ ] Ping-pong entre `HTC-01` e `HTC-02` com RSSI/SNR
 - [ ] Medição de consumo em operação e em deep sleep
 - [ ] **Teste de alcance em campo** com relevo e vegetação reais
@@ -107,3 +108,6 @@ e alimentação.
 | P-002 | Definir municípios-piloto e contato na Defesa Civil | Fase 5 |
 | P-003 | Definir licença do projeto | Abrir o repositório |
 | P-004 | Verificar disponibilidade de dados do CEMADEN para calibrar limiares | Fase 3 |
+| P-005 | Calibrar o divisor de tensão de bateria da Heltec V2 | Medição de autonomia |
+| P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
+| P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |

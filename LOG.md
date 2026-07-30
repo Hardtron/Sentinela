@@ -21,6 +21,57 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (3) — Conformidade, contexto de mercado e display de campo
+
+**Fase:** 0 · **Duração:** ~1 sessão
+
+### Feito
+
+- **`docs/CONFORMIDADE.md`** — levantamento das normas aplicáveis: Anatel
+  (Res. 680/2017, Ato 14448/2017, Res. 715/2019), Lei 12.608/2012 (PNPDEC),
+  ABNT NBR 11682, NBR 5419/5410, NR-35/NR-10, LGPD, INDE, OGC, Lei 14.133/2021.
+  Sete itens de ação numerados C-01 a C-07, com responsável e prazo.
+- **`docs/GEOPIXEL.md`** — análise das duas páginas públicas do Geopixel Monitor
+  e proposta de valor do Sentinela sobre a plataforma existente.
+- **Display de diagnóstico** com quatro páginas navegáveis pelo botão PRG:
+  enlace (RSSI grande + barra de margem), histórico gráfico de 128 amostras,
+  parâmetros de rádio e saúde do nó. Compila limpo nos dois papéis; RAM 7,5%,
+  Flash 10,0%.
+
+### Decidido
+
+- **A homologação Anatel é obrigatória para comercializar** (Lei 9.472/1997 +
+  Res. 715/2019). Entra no cronograma e no preço, e passa a ser a primeira
+  consulta externa do projeto (C-01/P-006), antes da fase 4. Reforça ADR-004:
+  partir de módulo já homologado reduz o escopo de ensaios.
+- **Padrões abertos como requisito**, não como preferência: OGC SensorThings,
+  CSV/KML e metadados INDE. É o que viabiliza integração com o TerraMA² e o que
+  sustenta especificação sem direcionamento em licitação.
+- O display é ferramenta de desenvolvimento e fica em `src/`, não em
+  `lib/app/` — o nó de campo definitivo não terá tela.
+- Tensão de bateria exibida como **não calibrada** em vez de omitida ou
+  apresentada como exata (RC-07). Calibração vira P-005.
+
+### Aprendido
+
+- A lacuna da plataforma Geopixel é **estrutural, não de software**: satélite e
+  modelo regional não medem poropressão nem deslocamento milimétrico, e a
+  revisão de satélite é lenta demais para um evento de horas. O Sentinela
+  fornece a camada in situ.
+- O custo real do alerta regional impreciso não é o falso positivo em si — é o
+  alerta verdadeiro que será ignorado depois que a população perder a confiança.
+- O módulo de Vistoria já existente fecha um ciclo nos dois sentidos: o sensor
+  prioriza a vistoria, e o laudo da vistoria rotula o dado que calibra os
+  limiares locais.
+- Caraguatatuba é o piloto natural: encosta da Serra do Mar, alta
+  suscetibilidade, prefeitura já cliente e instância da plataforma no ar.
+
+### Próximo
+
+Gravar `HTC-01` e `HTC-02` e fechar o enlace de bancada.
+
+---
+
 ## 2026-07-30 (2) — Publicação e ambiente de trabalho remoto
 
 **Fase:** 0 · **Duração:** ~1 sessão

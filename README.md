@@ -27,6 +27,8 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/HARDWARE.md](docs/HARDWARE.md) | Inventário, pinagem, alocação das placas |
 | [docs/SENSORES.md](docs/SENSORES.md) | Grandezas monitoradas e justificativa |
 | [docs/REQUISITOS.md](docs/REQUISITOS.md) | Requisitos de confiabilidade e alerta |
+| [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md) | Normas aplicáveis — Anatel, defesa civil, geotecnia, LGPD |
+| [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
 | [LOG.md](LOG.md) | Diário de andamento |
 | [ERROS.md](ERROS.md) | Registro de erros e soluções |
 
@@ -63,6 +65,26 @@ dele. O clone do homeserver existe porque é a ele que o aplicativo se conecta �
 > **Regra para evitar divergência:** `git pull` **antes** de começar a trabalhar,
 > em qualquer um dos dois lados, e `git push` ao terminar. Os dois clones se
 > falam apenas através do GitHub. Ver armadilha A-009 em [ERROS.md](ERROS.md).
+
+### Display de diagnóstico
+
+O OLED integrado é a interface de campo — no teste de alcance não há laptop.
+Quatro páginas, alternadas pelo **botão PRG**:
+
+| Página | Mostra | Para quê |
+|---|---|---|
+| **ENLACE** | RSSI em fonte grande, barra de margem, SNR, RSSI remoto, perda | Ler o estado do link a um olhar, caminhando |
+| **HISTORICO** | Gráfico dos últimos 128 pacotes, com mín/méd/máx | A forma da curva denuncia obstrução — um degrau não é distância |
+| **RADIO** | Frequência, SF, BW, CR, potência, tempo no ar, sensibilidade | Confirmar que a placa está na configuração que se pensa |
+| **SISTEMA** | Tempo ativo, heap, reinícios, tensão de bateria | Embrião da telemetria de saúde exigida por RC-03 |
+
+A **barra de margem** é o número que decide um ponto de instalação: distância
+até a sensibilidade do SF em uso. Margem baixa significa link que cai na
+primeira chuva forte.
+
+> A tensão de bateria aparece rotulada como **`nc`** (não calibrada): o divisor
+> da Heltec V2 não foi caracterizado. Valor plausível porém errado é pior que
+> valor ausente (RC-07). Pendência P-005.
 
 ### Comandos de firmware (somente no MacBook)
 
