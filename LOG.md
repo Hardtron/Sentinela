@@ -21,6 +21,42 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (2) — Publicação e ambiente de trabalho remoto
+
+**Fase:** 0 · **Duração:** ~1 sessão
+
+### Feito
+
+- **GitHub CLI 2.96.0** instalado em `~/.local/bin` (binário oficial
+  `gh_2.96.0_macOS_arm64.zip`, arm64), adicionado ao PATH no `~/.zshrc`.
+  Não há Homebrew nem MacPorts nesta máquina — instalação isolada, sem tocar
+  no sistema.
+- Autenticação por **device flow**, protocolo git HTTPS. Token no keyring do
+  macOS, conta `Hardtron`. Escopos: `repo`, `read:org`, `gist`.
+- Repositório publicado: **github.com/Hardtron/Sentinela**, **privado**,
+  branch padrão `main`. Dois commits enviados.
+- `.claude/settings.json` versionado com allowlist de build, gravação e git —
+  permite conduzir o trabalho de outro dispositivo sem aprovar comando a
+  comando.
+- Diretório do projeto autorizado para acesso fora do diretório de trabalho.
+- **Memória do projeto separada** da do Geo_Quality: o Sentinela passou a ter
+  espaço próprio, com as memórias do homeserver copiadas (o backend roda lá).
+  Os dois projetos ficam independentes.
+
+### Decidido
+
+- Privado por ora. Abrir depois exige definir licença (P-003).
+- Allowlist em `settings.json` **versionado** em vez de `settings.local.json`,
+  para a configuração viajar com o repositório.
+- Chave SSH **não** foi autorizada no GitHub e não precisa ser — HTTPS via
+  `gh` cobre o fluxo atual (ver E-002).
+
+### Próximo
+
+Retomar a Fase 0: gravar `HTC-01` e `HTC-02` e fechar o enlace de bancada.
+
+---
+
 ## 2026-07-30 — Identificação do hardware e concepção do projeto
 
 **Fase:** 0 · **Duração:** ~1 sessão

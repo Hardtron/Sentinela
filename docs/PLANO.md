@@ -103,7 +103,7 @@ e alimentação.
 
 | ID | Pendência | Bloqueia |
 |---|---|---|
-| P-001 | Autorizar chave SSH no GitHub para publicar o repositório | Publicação |
+| ~~P-001~~ | ~~Publicar o repositório~~ | **Resolvida em 30/07/2026** — `github.com/Hardtron/Sentinela`, privado |
 | P-002 | Definir municípios-piloto e contato na Defesa Civil | Fase 5 |
-| P-003 | Definir licença do projeto | Publicação aberta |
+| P-003 | Definir licença do projeto | Abrir o repositório |
 | P-004 | Verificar disponibilidade de dados do CEMADEN para calibrar limiares | Fase 3 |

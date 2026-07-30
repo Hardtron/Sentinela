@@ -41,9 +41,14 @@ Formato:
 **Sintoma:** o teste `ssh -T git@github.com` retorna permissão negada.
 **Causa:** existe chave `~/.ssh/id_ed25519.pub` na máquina, mas ela **não está
 autorizada na conta do GitHub**. Não há `gh` CLI nem `GITHUB_TOKEN`.
-**Solução:** adicionar a chave pública em GitHub → Settings → SSH and GPG keys.
-É ação de conta, precisa ser feita pelo titular.
-**Status:** aberto — pendência P-001.
+**Solução:** contornado por outro caminho. Em vez de autorizar a chave SSH,
+instalou-se o **GitHub CLI 2.96.0** em `~/.local/bin` e autenticou-se por
+**device flow** (`gh auth login --git-protocol https --web`). O token fica no
+keyring do macOS e o git usa HTTPS pelo credential helper do `gh`.
+**Status:** resolvido — a chave SSH continua não autorizada, e não precisa ser.
+
+> Se um dia o protocolo SSH for necessário (submódulos, CI), aí sim autorizar a
+> chave. Para o fluxo atual, HTTPS via `gh` basta.
 
 ---
 
