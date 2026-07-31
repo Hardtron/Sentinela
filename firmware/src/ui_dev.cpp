@@ -28,6 +28,7 @@ enum Page : uint8_t {
   PAGE_GRAPH,
   PAGE_RADIO,
   PAGE_SYS,
+  PAGE_BENCH,
   PAGE_COUNT
 };
 
@@ -116,7 +117,7 @@ static void cabecalho(const char *titulo, const UiState &s) {
 
   char dir[20];
   snprintf(dir, sizeof(dir), "P%u n%u %s", (unsigned)s.ponto, (unsigned)s.nodeId,
-           s.isPinger ? "PING" : "PONG");
+           s.papel);
   int w = oled.getStrWidth(dir);
   oled.drawStr(128 - w, 6, dir);
 
@@ -370,6 +371,37 @@ static void pagSys(const UiState &s) {
   indicadorPagina();
 }
 
+// Página extra — bancada. Confirma o barramento de sensores externos e lembra
+// que esta placa não deve transmitir sem antena (A-003). Disponível em
+// qualquer papel — em PINGER/PONGER só confirma que não há sensor pendurado.
+static void pagBench(const UiState &s) {
+  cabecalho("BANCADA", s);
+
+  oled.setFont(u8g2_font_6x10_tf);
+  oled.drawStr(0, 20, "SEM TX - so recepcao");
+
+  char buf[26];
+  snprintf(buf, sizeof(buf), "I2C sensores: %u", s.i2cCount);
+  oled.drawStr(0, 33, buf);
+
+  if (s.i2cCount == 0) {
+    oled.drawStr(0, 44, "nenhum encontrado");
+  } else {
+    char lista[26] = "";
+    for (uint8_t i = 0; i < s.i2cCount; i++) {
+      char item[6];
+      snprintf(item, sizeof(item), "0x%02X ", s.i2cAddr[i]);
+      strncat(lista, item, sizeof(lista) - strlen(lista) - 1);
+    }
+    oled.drawStr(0, 44, lista);
+  }
+
+  snprintf(buf, sizeof(buf), "pacotes ouvidos: %lu", (unsigned long)s.received);
+  oled.drawStr(0, 55, buf);
+
+  indicadorPagina();
+}
+
 // -------------------------------------------------------------------- API --
 
 void uiBegin() {
@@ -399,7 +431,8 @@ void uiDraw(const UiState &s) {
     case PAGE_PONTO: pagPonto(s); break;
     case PAGE_GRAPH: pagGraph(s); break;
     case PAGE_RADIO: pagRadio(s); break;
-    default: pagSys(s); break;
+    case PAGE_SYS: pagSys(s); break;
+    default: pagBench(s); break;
   }
   oled.sendBuffer();
 }

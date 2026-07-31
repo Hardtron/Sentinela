@@ -9,6 +9,12 @@
 // nos DOIS sentidos, que é o que interessa no teste de alcance: o link pode ser
 // assimétrico, e descobrir isso em campo custa caro depois.
 //
+// Um terceiro papel, ROLE_BENCH, existe para placas SEM antena conectada:
+// inicializa o rádio e escuta passivamente, mas nunca chama radio.transmit()
+// — transmitir sem antena degrada o PA (armadilha A-003). Com 6 placas e
+// apenas 2 antenas no inventário (HARDWARE.md), é o que permite validar as
+// demais 4 placas — flash, OLED, I2C dos sensores, ADC — sem risco.
+//
 // O display é a interface de campo (ver ui_dev.h) e o botão PRG alterna entre
 // as páginas. A saída serial é CSV, para registro do ensaio.
 //
@@ -17,12 +23,13 @@
 #include <Arduino.h>
 #include <RadioLib.h>
 #include <SPI.h>
+#include <Wire.h>
 
 #include "board_heltec_v2.h"
 #include "ui_dev.h"
 
-#if !defined(ROLE_PINGER) && !defined(ROLE_PONGER)
-#error "Defina ROLE_PINGER ou ROLE_PONGER no platformio.ini"
+#if !defined(ROLE_PINGER) && !defined(ROLE_PONGER) && !defined(ROLE_BENCH)
+#error "Defina ROLE_PINGER, ROLE_PONGER ou ROLE_BENCH no platformio.ini"
 #endif
 
 // ---------------------------------------------------------------- protocolo --
@@ -102,6 +109,21 @@ static void pollButton() {
   }
 }
 
+#if defined(ROLE_BENCH)
+/// Varre o barramento I2C dos sensores externos (Wire1, GPIO 22/23) e guarda
+/// os primeiros endereços encontrados. Roda uma vez no boot — é teste de
+/// bancada, não precisa repetir a cada quadro.
+static void escaneiaI2C() {
+  ui.i2cCount = 0;
+  for (uint8_t addr = 1; addr < 127 && ui.i2cCount < 4; addr++) {
+    Wire1.beginTransmission(addr);
+    if (Wire1.endTransmission() == 0) {
+      ui.i2cAddr[ui.i2cCount++] = addr;
+    }
+  }
+}
+#endif  // ROLE_BENCH
+
 #if defined(ROLE_PINGER)
 /// Espera mantendo a interface viva. Um laço com delay() cego deixaria o botão
 /// sem resposta justamente durante o intervalo entre pings, que é quando o
@@ -135,6 +157,9 @@ static bool readPacket(Packet &pkt) {
   return true;
 }
 
+#if defined(ROLE_PINGER) || defined(ROLE_PONGER)
+/// Só existe nos papéis que transmitem. Em ROLE_BENCH nem é compilada — é o
+/// compilador confirmando, em tempo de build, que não há caminho de TX.
 static void sendPacket(uint8_t kind, uint32_t seq) {
   Packet pkt;
   pkt.magic = PKT_MAGIC;
@@ -150,6 +175,7 @@ static void sendPacket(uint8_t kind, uint32_t seq) {
   digitalWrite(PIN_LED, LOW);
   radio.startReceive();
 }
+#endif  // ROLE_PINGER || ROLE_PONGER
 
 // -------------------------------------------------------------------- setup --
 
@@ -162,9 +188,11 @@ void setup() {
   memset(&ui, 0, sizeof(ui));
   ui.nodeId = NODE_ID;
 #if defined(ROLE_PINGER)
-  ui.isPinger = true;
+  ui.papel = "PING";
+#elif defined(ROLE_PONGER)
+  ui.papel = "PONG";
 #else
-  ui.isPinger = false;
+  ui.papel = "BENCH";
 #endif
   ui.bootCount = bootCount;
 
@@ -177,8 +205,8 @@ void setup() {
 
   Serial.println();
   Serial.println(F("# Sentinela - bring-up Fase 0"));
-  Serial.printf("# no=%d papel=%s boots=%lu\n", NODE_ID,
-                ui.isPinger ? "PINGER" : "PONGER", (unsigned long)bootCount);
+  Serial.printf("# no=%d papel=%s boots=%lu\n", NODE_ID, ui.papel,
+                (unsigned long)bootCount);
 
   // A Heltec V2 não usa os pinos VSPI padrão do ESP32: o SPI precisa ser
   // inicializado explicitamente antes do rádio.
@@ -211,6 +239,13 @@ void setup() {
 
   radio.setPacketReceivedAction(onPacketEvent);
   radio.startReceive();
+
+#if defined(ROLE_BENCH)
+  Wire1.begin(SENSOR_SDA, SENSOR_SCL);
+  escaneiaI2C();
+  Serial.printf("# bancada: %u sensor(es) no barramento I2C externo\n",
+                (unsigned)ui.i2cCount);
+#endif
 
   ui.vbat = readBattery();
   uiDraw(ui);
@@ -268,7 +303,7 @@ void loop() {
   idleWithUi(INTERVALO_PING_MS);
 }
 
-#else  // ROLE_PONGER
+#elif defined(ROLE_PONGER)
 
 void loop() {
   static uint32_t proximoDesenho = 0;
@@ -318,6 +353,30 @@ void loop() {
                 (unsigned long)ui.received);
 
   uiDraw(ui);
+}
+
+#else  // ROLE_BENCH
+
+/// Só recebe. `sendPacket()` nunca é chamado neste papel — é essa ausência
+/// que torna seguro rodar sem antena (A-003).
+void loop() {
+  static uint32_t proximoDesenho = 0;
+
+  pollButton();
+
+  if (packetReady) {
+    packetReady = false;
+    Packet pkt;
+    if (readPacket(pkt)) ui.received++;
+    radio.startReceive();
+  }
+
+  if ((int32_t)(millis() - proximoDesenho) >= 0) {
+    ui.vbat = readBattery();
+    uiDraw(ui);
+    proximoDesenho = millis() + 150;
+  }
+  delay(5);
 }
 
 #endif

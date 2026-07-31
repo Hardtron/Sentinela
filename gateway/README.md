@@ -22,13 +22,51 @@ SF, quebra o join procedure, impede ADR e está fora da especificação LoRaWAN.
 Ensina vícios que depois precisam ser desaprendidos, e falhas dele seriam
 confundidas com bugs nossos.
 
-## Conteúdo previsto (Fase 2)
+## Estado atual
 
-- `bridge.py` — serial → MQTT, com reconexão e buffer em disco
-- Unidade systemd para iniciar no boot e reiniciar em falha
-- Publicação de saúde da própria bridge (RC-02 vale para ela também)
+- [x] **`bridge.py`** — serial → MQTT, com reconexão automática de ambos os
+      lados e **buffer em disco** (`buffer.jsonl`) que sobrevive a reinício do
+      processo, testado sem broker no ar.
+- [x] **`sentinela-bridge.service`** — unidade systemd, reinicia sozinha em
+      falha.
+- [x] Publicação de saúde da própria bridge em `sentinela/bridge/<id>/saude`
+      (RC-02 vale para ela também — bridge muda não é diferente de nó mudo).
+- [ ] Instalação real no Raspberry Pi 4 — requer acesso SSH à placa, ainda não
+      configurado nesta sessão.
+
+### Testar sem nenhum hardware
+
+`bridge.py` aceita `--simular <arquivo.csv>` no lugar da serial — lê o mesmo
+formato CSV de um arquivo e segue o resto do fluxo (parsing, MQTT, buffer)
+normalmente. É assim que a lógica foi validada antes de a Atalaia `HTC-03` ter
+antena disponível para operar como bridge de verdade (HARDWARE.md):
+
+```bash
+./tools/venv/bin/python gateway/bridge.py --simular exemplo.csv --veloz
+```
+
+Sem broker MQTT no ar, o comando acima cai no buffer em disco automaticamente
+— comportamento verificado: mensagens ficam em `buffer.jsonl` e são reenviadas
+assim que o broker aparecer, sem duplicar nem perder nada entre execuções.
+
+### Rodar com hardware real
+
+```bash
+# broker local, se ainda não houver um rodando
+sudo apt install mosquitto mosquitto-clients
+sudo systemctl enable --now mosquitto
+
+# a bridge propriamente dita
+python3 gateway/bridge.py --porta /dev/ttyUSB0 --broker localhost --bridge-id FAR-01
+```
+
+Tópicos publicados: `sentinela/no/<node_id>/telemetria` (uma mensagem por
+linha CSV recebida) e `sentinela/bridge/<bridge_id>/saude` (a cada 30 s).
 
 ## Decisões pendentes
 
 - Mosquitto no RPi 4 ou no homeserver. Inclinação: **no RPi 4**, para que a
   bridge continue enfileirando se o enlace até o homeserver cair.
+- Acesso remoto ao Raspberry Pi 4 para instalação e testes com hardware real
+  — falta configurar (diferente do homeserver, que já tem acesso SSH
+  estabelecido).

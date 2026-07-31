@@ -4,22 +4,52 @@
 
 | Qtd | Item | Observação |
 |---|---|---|
-| 5 | Heltec WiFi LoRa 32 **V2** | ESP32-D0WDQ6, SX1276, OLED, 915 MHz |
+| **6** | Heltec WiFi LoRa 32 **V2** | ESP32-D0WDQ6, SX1276, OLED, 915 MHz |
 | 1 | Raspberry Pi 4 | Bridge/servidor de bancada |
+| **2** | Antena, **2 dBi** | Único par disponível — ver §"Restrição de antenas" |
+| 0 | Bateria | **Não adquirida** |
+| 0 | Sensor (qualquer grandeza) | **Não adquirido** |
 | 0 | Concentrador LoRa (SX1302/SX1303) | **Não adquirido** — ver ADR-002 |
 
 Nenhuma compra realizada até o momento. As fases 0 a 3 foram desenhadas para
-rodar integralmente com o inventário acima.
+rodar integralmente com o inventário acima — mas **dentro da fase 0**, a
+combinação "6 placas, 2 antenas, sem bateria, sem sensor" exige uma alocação
+que separe o que é seguro fazer agora do que espera peça.
 
-## Alocação das 5 placas
+## Restrição de antenas — regra operacional
 
-| ID | Papel | Onde |
+Só existem **2 antenas** para **6 placas**. A armadilha A-003
+(nunca transmitir sem antena — degrada o PA) vale por placa: **uma placa sem
+antena não pode rodar firmware que chame `radio.transmit()`.** Receber (RX) é
+seguro sem antena — só a transmissão é que arrisca o hardware.
+
+Isso definiu dois papéis de firmware, não um:
+
+| Papel | O que faz | Exige antena? |
 |---|---|---|
-| `HTC-01` | Nó de desenvolvimento — PINGER | Bancada, USB do MacBook |
-| `HTC-02` | Nó par para teste de alcance — PONGER | Campo, bateria |
-| `HTC-03` | Bridge / concentrador | USB do Raspberry Pi 4 |
-| `HTC-04` | Nó de sensores | Bancada, protoboard |
-| `HTC-05` | Reserva / futuro repetidor | — |
+| **RF-ativo** (`node_dev`, `node_range`) | Transmite periodicamente | **Sim, obrigatório** |
+| **Bancada** (`ROLE_BENCH`) | Inicializa o rádio, escuta passivamente, nunca transmite; testa OLED, I2C, ADC, watchdog | Não — seguro sem antena |
+
+**Regra prática:** as 2 antenas ficam sempre nas placas RF-ativas do momento
+(hoje `HTC-01`/`HTC-02`). As demais rodam em modo bancada até uma antena ficar
+disponível para um teste específico (ex.: varredura de SF, segundo Farol). Ver
+`firmware/platformio.ini`, ambientes `bench_*`.
+
+## Alocação das 6 placas
+
+| ID | Papel | Firmware | Onde |
+|---|---|---|---|
+| `HTC-01` | Nó de desenvolvimento — PINGER | `node_dev` | Bancada, USB do MacBook, **com antena** |
+| `HTC-02` | Nó par de alcance — PONGER | `node_range` | Campo/bancada, **com antena** |
+| `HTC-03` | Bridge do Raspberry Pi 4 (fase 2) | `bench_03` até antena disponível, depois `bridge` | USB do RPi 4 |
+| `HTC-04` | Futuro nó de sensores (fase 1) | `bench_04` até sensor disponível | Bancada, protoboard |
+| `HTC-05` | Reserva / par de varredura de SF | `bench_05` até antena disponível | — |
+| `HTC-06` **novo** | Segundo Farol (diversidade multi-gateway, ADR-001) / spare | `bench_06` até antena disponível | — |
+
+O firmware de bancada permite validar **todas as 6 placas hoje** — flash,
+MAC, SPI do rádio, OLED, barramento I2C dos sensores, ADC de bateria, watchdog
+— sem gastar as duas antenas e sem risco ao PA. Quando bateria e sensores
+chegarem, o hardware já está com defeito de fábrica descartado.
 
 ### Identificação individual
 
@@ -31,6 +61,14 @@ como `/dev/cu.usbserial-0001`. O que identifica cada placa é o **MAC do ESP32**
 |---|---|---|
 | `HTC-01` | `3c:71:bf:8c:2c:d0` | 4 MB |
 | `HTC-02` | `3c:71:bf:8c:2f:9c` | 4 MB |
+| `HTC-03` | **[?]** a identificar na primeira gravação | — |
+| `HTC-04` | **[?]** a identificar na primeira gravação | — |
+| `HTC-05` | **[?]** a identificar na primeira gravação | — |
+| `HTC-06` | **[?]** a identificar na primeira gravação | — |
+
+Ao gravar cada placa nova pela primeira vez, registrar o MAC aqui — é o que
+resolve a ambiguidade do E-005/A-009 quando várias placas passam pela mesma
+porta ao longo do tempo.
 
 Antes de gravar, conferir qual placa está na porta:
 

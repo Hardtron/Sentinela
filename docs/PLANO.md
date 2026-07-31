@@ -1,7 +1,8 @@
 # Plano de desenvolvimento
 
 Diretriz vigente: **gasto financeiro mínimo**. As fases 0 a 3 rodam
-integralmente com o inventário já disponível (5 × Heltec V2 + Raspberry Pi 4).
+integralmente com o inventário já disponível (6 × Heltec V2 + Raspberry Pi 4,
+com apenas 2 antenas — ver HARDWARE.md).
 Nenhuma compra é necessária antes da fase 4.
 
 ---
@@ -45,11 +46,13 @@ reinício sem perder acumulado (RC-06).
 
 **Objetivo.** Dados chegando ao banco, ponta a ponta.
 
-- [ ] `HTC-03` como receptor, ligada por USB ao Raspberry Pi 4
-- [ ] Bridge serial → MQTT no RPi 4
-- [ ] Mosquitto
+- [ ] `HTC-03` como receptor, ligada por USB ao Raspberry Pi 4 — aguarda antena
+- [x] Bridge serial → MQTT no RPi 4 — `gateway/bridge.py`, testado sem
+      hardware via `--simular`; falta instalar no RPi real (acesso pendente)
+- [ ] Mosquitto — unidade systemd pronta em `gateway/sentinela-bridge.service`
 - [ ] Ingestor MQTT → banco, decodificando `proto/`
-- [ ] Detecção de nó silencioso (RC-02)
+- [x] Detecção de nó silencioso (RC-02) — implementada na bridge (saúde
+      publicada a cada 30 s); falta o lado do banco/ingestor
 
 **Critério de saída.** Leitura do sensor visível no banco em menos de 5 s.
 
@@ -115,5 +118,9 @@ e alimentação.
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
 | ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
 | ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
+| P-010 | Configurar acesso SSH ao Raspberry Pi 4 (mesmo padrão do homeserver) | Instalação real da bridge |
+| P-011 | Comprar 4 antenas adicionais (2 dBi basta; ver CONFORMIDADE.md §1.1.1 para até quantos dBi valem a pena) | Liberar `HTC-03`–`06` do modo bancada |
+| P-012 | Comprar bateria(s) para ensaio de autonomia | Fase 1/4 |
+| P-013 | Definir e comprar o primeiro sensor (báscula de chuva é o de maior prioridade, ver SENSORES.md) | Fase 1 |
 | A-01 a A-05 | Pendências do projeto de ancoragem | Ver ANCORAGEM.md §10 |
 | R-01 a R-06 | Habilitação profissional e responsabilidade técnica | Ver RESPONSABILIDADE_TECNICA.md §10 |

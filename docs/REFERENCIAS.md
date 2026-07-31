@@ -115,6 +115,18 @@ acima não admite [E].
 
 Substituída por descrição referenciada do mecanismo, em ANCORAGEM.md §3.
 
+### R5 — Tabela I e regra de ganho de antena, antes `[VERIFICAR]` **[resolvido]**
+
+CONFORMIDADE.md §1.1 marcava como `[VERIFICAR]` os valores numéricos da
+Tabela I do Ato 14448/2017 e a relação entre ganho de antena e potência de
+transmissão. O texto integral do Ato foi obtido em 31/07/2026 e ambos os
+pontos foram resolvidos com o valor primário da norma: Tabela I confirma
+50 mV/m (fundamental) a 3 m para 915–928 MHz; item 10.5 estabelece **6 dBi**
+como ganho de antena de referência, com redução de potência dB-a-dB acima
+disso — o que implica EIRP de transmissão constante além de 6 dBi,
+independente do ganho usado. Verificação laboratorial formal para homologação
+continua pendente, mas o dimensionamento de engenharia deixa de ser suposição.
+
 ### R4 — Custos de materiais são estimativa, e passam a ser marcados **[corrigido]**
 
 Valores em reais de tubos, sensores e caixas eram estimativas de mercado sem
@@ -198,7 +210,11 @@ formal antes de compor proposta comercial.
 ### 4.5 Telecomunicações e regulação
 
 - [Resolução Anatel nº 680/2017](https://informacoes.anatel.gov.br/legislacao/resolucoes/2017/936resolucao-680) — radiação restrita. · **[N]**
-- [Ato Anatel nº 14448/2017](https://informacoes.anatel.gov.br/legislacao/atos-de-certificacao-de-produtos/2017/1139-) — requisitos técnicos. · **[N]**
+- [Ato Anatel nº 14448/2017](https://informacoes.anatel.gov.br/legislacao/atos-de-certificacao-de-produtos/2017/1139-) — requisitos técnicos.
+  **Texto integral obtido em 31/07/2026.** Tabela I (915–928 MHz: 50 mV/m
+  fundamental, 500 µV/m harmônicos a 3 m) e item 10.5 (antena de referência
+  6 dBi para equipamentos de espalhamento espectral, com redução de potência
+  dB-a-dB acima disso) — base do CONFORMIDADE.md §1.1.1. · **[N]**
 - [Resolução Anatel nº 715/2019](https://informacoes.anatel.gov.br/legislacao/resolucoes/2019/1350-resolucao-715) — avaliação de conformidade e homologação. · **[N]**
 - **Semtech SX1276 datasheet** — sensibilidade por spreading factor. **[?]**
   Ainda não citado formalmente; os valores em uso vêm de tabela do fabricante e

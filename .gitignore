@@ -24,6 +24,9 @@ secrets/
 # Dados de ensaio brutos (versionar apenas o consolidado em docs/)
 data/raw/
 
+# Estado de execução da bridge — não é código-fonte (gateway/bridge.py)
+gateway/buffer.jsonl
+
 # Sistema operacional e editores
 .DS_Store
 .vscode/

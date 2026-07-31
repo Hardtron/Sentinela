@@ -1,0 +1,36 @@
+# Sentinela — unidade systemd da bridge serial → MQTT
+#
+# Reinicia sozinha se o processo cair (queda de energia, exceção não tratada,
+# placa desconectada por tempo demais) — é o que RC-02 exige da bridge tanto
+# quanto dos nós de campo: silêncio prolongado tem que ser exceção, não modo
+# de falha silencioso.
+#
+# Instalação no Raspberry Pi:
+#   sudo cp gateway/sentinela-bridge.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now sentinela-bridge
+#   journalctl -u sentinela-bridge -f      # acompanhar o log
+#
+# Ajustar ExecStart e WorkingDirectory ao caminho real de instalação no RPi
+# antes de copiar — os valores abaixo assumem o clone em /DATA/Projects, mas
+# o Raspberry Pi 4 provavelmente terá caminho próprio (ex.: /home/pi/sentinela).
+#
+# Autoria: Matheus Marassi
+
+[Unit]
+Description=Sentinela — bridge LoRa serial para MQTT
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/sentinela/gateway
+ExecStart=/home/pi/sentinela/tools/venv/bin/python /home/pi/sentinela/gateway/bridge.py --porta /dev/ttyUSB0 --broker localhost --bridge-id FAR-01
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

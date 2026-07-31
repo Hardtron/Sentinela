@@ -32,9 +32,70 @@ pelo menos 50 dB do nível da fundamental.
 **Decisão do projeto:** operação em 915–928 MHz. P2P em 916,8 MHz; LoRaWAN em
 AU915 sub-banda 2 (canais 8–15, 916,8–918,2 MHz). Ver ADR-003.
 
-**[VERIFICAR]** Os valores numéricos da Tabela I do regulamento e a verificação
-de que a combinação transmissor + antena escolhida atende ao limite de
-intensidade de campo. Isso é ensaio de laboratório, não cálculo de planilha.
+**Tabela I do Ato nº 14.448/2017 — resolvido [N].** Texto integral obtido em
+31/07/2026. Para 915–928 MHz: intensidade de campo da fundamental **50 mV/m**
+a 3 m; harmônicos **500 µV/m** a 3 m. Mesmos valores para 902–907,5 MHz.
+
+Fecha a maior parte do item C-02. O que permanece pendente é só a
+**verificação laboratorial formal** — a norma exige medição por OCD para
+homologar, cálculo não substitui o ensaio — mas o dimensionamento de engenharia
+já pode ser feito com os números reais, não mais por suposição.
+
+### 1.1.1 Ganho de antena — a regra que decide quantos dBi usar
+
+Achado direto do texto do Ato, item 10 (**Equipamentos Utilizando Tecnologia de
+Espalhamento Espectral ou outras Tecnologias de Modulação Digital**) — LoRa
+(CSS) se enquadra aqui pela própria definição de espalhamento espectral do
+documento (item 3.1.9) **[N]**:
+
+> *"Equipamentos [...] que façam uso de antenas de transmissão com ganho
+> direcional superior a 6 dBi[,] devem ter a potência de pico máxima na saída
+> do transmissor reduzida [...] pela quantidade em dB que o ganho direcional da
+> antena exceder a 6 dBi."* — item 10.5
+
+Ou seja: **6 dBi é o ganho de referência**. Até esse valor, potência plena, sem
+redução. Acima, a potência conduzida tem que cair na mesma proporção em dB que
+o ganho excede 6 dBi.
+
+**Consequência matemática, e é o que resolve a pergunta de quantos dBi
+comprar:** como a redução exigida cancela exatamente o ganho extra, o **EIRP
+máximo legal fica constante em `potência_conduzida + 6 dBi`, qualquer que seja
+o ganho da antena acima de 6 dBi.** Antena de 9, 12 ou 15 dBi não aumenta o
+alcance de transmissão além do que uma antena de 6 dBi já entrega na potência
+máxima — a diferença tem que ser devolvida em potência.
+
+| Configuração | Conduzido | Ganho | Redução exigida | **EIRP legal** |
+|---|---|---|---|---|
+| Atual (2 dBi, sem redução) | 17 dBm | 2 dBi | nenhuma | **19 dBm** (~79 mW) |
+| **Alvo — 6 dBi, sem redução** | 17 dBm | 6 dBi | nenhuma | **23 dBm** (~200 mW) |
+| Hipotético 9 dBi | 14 dBm (17−3) | 9 dBi | 3 dB | 23 dBm — **igual ao de 6 dBi** |
+| Máximo do chip [?] B-01 | ~20 dBm | 6 dBi | nenhuma | ~26 dBm — ainda dentro do teto de 30 dBm (item 10.3.2) |
+
+**Resposta prática:** subir de 2 para 6 dBi dá **+4 dB de EIRP de graça**, só
+trocando a antena, sem tocar no firmware — ganho equivalente a mais que dobrar
+a potência de transmissão. **Acima de 6 dBi não há mais ganho de alcance em
+transmissão** — o que sobra é ganho de **recepção**, porque a regra do EIRP
+governa apenas o que se transmite, não a sensibilidade de quem escuta. Antena
+de 9 dBi ouve 3 dB melhor que uma de 6 dBi, com zero penalidade — só não
+transmite mais longe.
+
+**Isso orienta onde investir cada dBi:**
+
+- **Atalaia (transmite e recebe, cobertura em várias direções):** manter **até
+  6 dBi**, preferencialmente omnidirecional. Acima disso não ganha alcance de
+  uplink e ainda exige reduzir potência.
+- **Farol/gateway (ouve muitas Atalaias, direção conhecida):** antena acima de
+  6 dBi **vale a pena para a recepção**, mesmo sem ganho na transmissão — foi
+  exatamente o que o SitkaNet fez com a Yagi de 9 dBi no hub
+  (ANCORAGEM.md §7).
+- **Não há limite físico do conector** — o SMA/u.FL aceita qualquer antena de
+  50 Ω. O limite é inteiramente regulatório, não de hardware.
+
+**[?]** Confirmar com o OCD, no processo de homologação (C-01), a
+classificação exata do produto sob o item 10 e a leitura de "ganho direcional"
+para antena omnidirecional simples — a norma fala em "ganho direcional", termo
+que tecnicamente se refere a diretividade e pode ter leitura específica do
+examinador.
 
 ### 1.2 Homologação — impacto direto no plano de produto
 
@@ -160,7 +221,7 @@ Aplicável ao painel, se ele for exposto a usuário do poder público.
 | # | Item | Quando | Quem |
 |---|---|---|---|
 | C-01 | Consultar OCD sobre homologação Anatel e aproveitamento de módulo homologado | **Antes da fase 4** | OCD |
-| C-02 | Confirmar limites da Tabela I (Res. 680) para o conjunto rádio + antena | Fase 4 | Laboratório |
+| ~~C-02~~ | ~~Tabela I e regra de ganho de antena~~ | **Resolvida em 31/07/2026** — texto integral do Ato 14448 obtido; verificação laboratorial formal segue pendente para homologação | Laboratório |
 | C-03 | Definir responsável técnico geotécnico (ART) para os pontos de instrumentação | Fase 4 | Eng. geotécnico |
 | C-04 | Análise LGPD do cruzamento com população exposta | Fase 3 | Jurídico |
 | C-05 | Verificar exigência metrológica para o pluviômetro | Fase 1 | Inmetro/INMET |

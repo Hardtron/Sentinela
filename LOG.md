@@ -21,6 +21,72 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (5) — Ganho de antena resolvido, modo bancada e bridge do RPi
+
+**Fase:** 0 → 2 · **Duração:** ~1 sessão
+
+### Contexto
+
+Atualização de inventário: **6 placas Heltec V2** (não mais 5) e **1
+Raspberry Pi 4**, mas **apenas 2 antenas de 2 dBi**, sem bateria e sem sensor
+ainda. Sessão focada em decidir o que é seguro e produtivo fazer nesse cenário.
+
+### Feito
+
+- **Texto integral do Ato Anatel 14448/2017 obtido** — resolve C-02, que estava
+  `[VERIFICAR]` desde a auditoria de proveniência.
+- **`docs/CONFORMIDADE.md` §1.1.1** — regra de ganho de antena documentada com
+  a norma primária: item 10.5 fixa **6 dBi como ganho de referência** para
+  equipamentos de espalhamento espectral (LoRa/CSS se enquadra). Acima disso,
+  redução de potência dB-a-dB — o que torna o EIRP de transmissão **constante**
+  além de 6 dBi, qualquer que seja o ganho adicional.
+- **`ROLE_BENCH`** no firmware — papel novo, seguro sem antena: inicializa o
+  rádio, escuta passivamente, nunca transmite. Testa I2C externo, ADC de
+  bateria e OLED. Ambientes `bench_03` a `bench_06` em `platformio.ini`.
+  Compila limpo nos 6 ambientes; complexidade máxima do arquivo caiu (loop do
+  bench = CC 4).
+- **`gateway/bridge.py`** — serial → MQTT com reconexão automática dos dois
+  lados e buffer em disco. Aceita `--simular <csv>` para testar sem hardware
+  nenhum — validado: publica quando há broker, cai para o buffer quando não
+  há, e retoma o buffer entre execuções sem duplicar nem perder mensagem.
+- **`gateway/sentinela-bridge.service`** — unidade systemd, reinicia sozinha.
+- `docs/HARDWARE.md` reescrito para 6 placas, com a restrição de antenas como
+  regra operacional explícita e tabela de alocação por papel/firmware.
+- Armadilha **A-010** registrada: nunca gravar papel RF-ativo em placa sem
+  antena confirmada fisicamente.
+
+### Aprendido
+
+- **A resposta a "quantos dBi podemos usar" não é um limite de hardware — é
+  puramente regulatório, e tem um número exato.** O conector SMA/u.FL aceita
+  qualquer antena de 50 Ω; o que limita é a Anatel. Subir de 2 para 6 dBi dá
+  **+4 dB de EIRP de graça**, sem mexer no firmware. Acima de 6 dBi, a regra de
+  redução de potência cancela o ganho extra — **zero benefício de alcance em
+  transmissão**, mas ganho real de **recepção** (não regulado), o que explica
+  por que o SitkaNet usou Yagi de 9 dBi só no hub, não nos nós de campo.
+- RX é seguro sem antena; só TX arrisca o PA (reflexão em carga aberta). Isso
+  permitiu desenhar um papel de firmware genuinamente útil (não um stub vazio)
+  para as 4 placas sem antena hoje.
+- Testar a bridge sem hardware via arquivo simulando a serial provou toda a
+  lógica de resiliência (buffer, reconexão) que só apareceria em campo depois
+  de já estar em produção — encontrar isso agora custou zero.
+
+### Decidido
+
+- **As 2 antenas ficam sempre nas placas RF-ativas do momento** (hoje
+  `HTC-01`/`HTC-02`); as demais rodam `bench_*` até uma antena ficar disponível
+  para teste específico.
+- Novas pendências P-010 a P-013: acesso SSH ao RPi 4, compra de antenas
+  adicionais, bateria e primeiro sensor.
+
+### Próximo
+
+Confirmar qual placa está de fato na porta antes de gravar (checklist A-010);
+gravar `bench_04`/`05`/`06` nas placas sem antena para validar hardware;
+configurar acesso ao Raspberry Pi 4 (P-010) para instalar a bridge de verdade.
+
+---
+
 ## 2026-07-31 (4) — Cinco frentes de negócio: mercado, concorrência, patente e valor
 
 **Fase:** transversal · **Duração:** ~1 sessão

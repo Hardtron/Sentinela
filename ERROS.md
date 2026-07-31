@@ -170,3 +170,21 @@ Syncthing corrompe o `.git`. `/DATA/Projects` é o lugar certo.
 
 Por isso sensores externos vão em `Wire1` (sugerido GPIO 22/23), separados do
 barramento do display.
+
+### A-010 — Mais placas que antenas: nunca gravar papel RF-ativo numa placa sem antena
+
+Com 6 Atalaias e apenas 2 antenas no inventário (HARDWARE.md), é fácil gravar
+sem pensar o firmware errado numa placa que não tem antena — e `node_dev` ou
+`node_range` chamam `radio.transmit()` a cada poucos segundos, o que degrada o
+PA sem carga (A-003).
+
+**Solução adotada:** papel `ROLE_BENCH` (`firmware/platformio.ini`, ambientes
+`bench_03` a `bench_06`). Inicializa o rádio e escuta passivamente — nunca
+transmite. Compilador confirma em tempo de build que não há caminho de TX
+(`sendPacket()` nem é compilado nesse papel). Serve também para validar
+hardware das placas sem sensor: escaneia o barramento I2C externo, lê o ADC de
+bateria, testa o OLED — tudo isso não precisa de antena nem de peça que ainda
+não chegou.
+
+**Regra antes de gravar qualquer placa:** confirmar fisicamente se há antena
+parafusada. Se não houver, o ambiente é `bench_*`, nunca `node_dev`/`node_range`.

@@ -18,7 +18,7 @@
 /// Instantâneo do estado do nó, montado pelo laço principal a cada desenho.
 struct UiState {
   uint8_t nodeId;
-  bool isPinger;
+  const char *papel;  // "PING", "PONG" ou "BENCH" — rótulo curto do cabeçalho
 
   uint16_t ponto;  // ponto de medição corrente no ensaio de campo
 
@@ -35,6 +35,10 @@ struct UiState {
   uint32_t toaMs;       // tempo no ar do quadro
   float vbat;           // V — não calibrado, ver pendência no README
   uint32_t bootCount;
+
+  // --- modo bancada (ROLE_BENCH) — placa sem antena, ver A-003/HARDWARE.md ---
+  uint8_t i2cCount;      // sensores encontrados no barramento externo
+  uint8_t i2cAddr[4];    // primeiros endereços encontrados
 };
 
 void uiBegin();
