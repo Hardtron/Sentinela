@@ -1,0 +1,40 @@
+# Sentinela — painel de controle sempre no ar (homeserver).
+#
+# Por que no homeserver e não no MacBook: o painel precisa estar disponível
+# sempre, e o Mac dorme. Some-se a isso o TCC do macOS, que bloqueia serviços
+# em segundo plano de lerem `~/Documents` — um LaunchAgent apontando para o
+# repositório lá falha com "Operation not permitted" antes mesmo de subir
+# (testado em 31/07/2026).
+#
+# O homeserver já tem o túnel MQTT (sentinela-tunel-mqtt.service) e o banco,
+# então a aba Monitoramento funciona sem depender de mais nada.
+#
+# Fica em 127.0.0.1: o painel expõe toda a documentação do projeto e não deve
+# ir para a LAN. O acesso a partir do Mac é por encaminhamento SSH — ver
+# tools/launchd/com.sentinela.painel-tunel.plist.
+#
+# **Unidade de usuário** (o sudo do homeserver pede senha):
+#   cp tools/painel/sentinela-painel.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now sentinela-painel
+#   journalctl --user -u sentinela-painel -f
+#
+# Autoria: Matheus Marassi
+
+[Unit]
+Description=Sentinela — painel de controle
+After=sentinela-tunel-mqtt.service
+Wants=sentinela-tunel-mqtt.service
+
+[Service]
+Type=simple
+WorkingDirectory=/DATA/Projects/Sentinela
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/DATA/Projects/Sentinela/tools/venv/bin/python /DATA/Projects/Sentinela/tools/painel/servidor.py --porta 8765
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

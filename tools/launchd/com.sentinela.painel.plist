@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sentinela — painel de controle sempre no ar (macOS LaunchAgent).
+
+  Por que existe: o painel era iniciado à mão e morria junto com o terminal.
+  Pior, um processo antigo podia continuar rodando com o código de horas
+  atrás — foi o que aconteceu em 31/07/2026, com a aba Monitoramento
+  devolvendo 404 porque o servidor no ar era anterior a telemetria.py.
+
+  Usa o Python do venv (tools/venv), não o do sistema: é ele que tem
+  paho-mqtt, sem o qual a aba de monitoramento sobe sem dados.
+
+  Instalação:
+    cp tools/launchd/com.sentinela.painel.plist ~/Library/LaunchAgents/
+    launchctl unload ~/Library/LaunchAgents/com.sentinela.painel.plist 2>/dev/null
+    launchctl load  ~/Library/LaunchAgents/com.sentinela.painel.plist
+
+  Log: ~/Library/Logs/sentinela-painel.log
+
+  Autoria: Matheus Marassi
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.sentinela.painel</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/matheus/Documents/Claude Projects/Sentinela/tools/venv/bin/python</string>
+    <string>/Users/matheus/Documents/Claude Projects/Sentinela/tools/painel/servidor.py</string>
+    <string>--porta</string>
+    <string>8765</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/matheus/Documents/Claude Projects/Sentinela</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/matheus/Library/Logs/sentinela-painel.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/matheus/Library/Logs/sentinela-painel.log</string>
+</dict>
+</plist>

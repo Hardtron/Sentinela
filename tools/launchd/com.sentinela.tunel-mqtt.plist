@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sentinela — túnel SSH até o broker MQTT do Raspberry Pi (macOS LaunchAgent).
+
+  Sem este túnel a aba Monitoramento do painel abre, mas sem dado nenhum: o
+  Mosquitto do RPi escuta só em 127.0.0.1 e assim deve continuar enquanto não
+  houver autenticação e TLS (gateway/README.md). O túnel dá acesso sem expor
+  o broker na rede.
+
+  Sem `-f`: o launchd precisa do processo em primeiro plano para poder
+  supervisionar e reiniciar. `ExitOnForwardFailure` faz o ssh morrer (e o
+  launchd reerguer) se a porta 1883 local estiver ocupada por um túnel órfão,
+  em vez de ficar de pé sem encaminhar nada.
+
+  Instalação:
+    cp tools/launchd/com.sentinela.tunel-mqtt.plist ~/Library/LaunchAgents/
+    launchctl unload ~/Library/LaunchAgents/com.sentinela.tunel-mqtt.plist 2>/dev/null
+    launchctl load  ~/Library/LaunchAgents/com.sentinela.tunel-mqtt.plist
+
+  Log: ~/Library/Logs/sentinela-tunel-mqtt.log
+
+  Autoria: Matheus Marassi
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.sentinela.tunel-mqtt</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/ssh</string>
+    <string>-N</string>
+    <string>-o</string><string>BatchMode=yes</string>
+    <string>-o</string><string>ExitOnForwardFailure=yes</string>
+    <string>-o</string><string>ServerAliveInterval=20</string>
+    <string>-o</string><string>ServerAliveCountMax=3</string>
+    <string>-o</string><string>StrictHostKeyChecking=accept-new</string>
+    <string>-i</string><string>/Users/matheus/.ssh/id_ed25519</string>
+    <string>-L</string><string>127.0.0.1:1883:127.0.0.1:1883</string>
+    <string>sentinelapi@192.168.15.73</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/matheus/Library/Logs/sentinela-tunel-mqtt.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/matheus/Library/Logs/sentinela-tunel-mqtt.log</string>
+</dict>
+</plist>

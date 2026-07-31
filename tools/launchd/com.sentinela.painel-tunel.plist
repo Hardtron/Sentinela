@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sentinela — encaminha o painel do homeserver para localhost no Mac.
+
+  O painel roda no homeserver (tools/painel/sentinela-painel.service), preso
+  em 127.0.0.1 porque expõe toda a documentação do projeto e não deve ir para
+  a LAN. Este agente traz a porta 8765 para o Mac, de modo que
+  http://localhost:8765 continue funcionando como sempre — sem nada exposto
+  na rede e sem depender do Mac estar acordado para o painel existir.
+
+  Por que não rodar o painel no próprio Mac: além de o Mac dormir, o TCC do
+  macOS bloqueia serviços em segundo plano de lerem `~/Documents`. Um
+  LaunchAgent apontando para o repositório falha com "Operation not
+  permitted" — verificado em 31/07/2026. Encaminhar porta não esbarra nisso,
+  porque o ssh não toca no repositório.
+
+  Instalação:
+    cp tools/launchd/com.sentinela.painel-tunel.plist ~/Library/LaunchAgents/
+    launchctl unload ~/Library/LaunchAgents/com.sentinela.painel-tunel.plist 2>/dev/null
+    launchctl load  ~/Library/LaunchAgents/com.sentinela.painel-tunel.plist
+
+  Log: ~/Library/Logs/sentinela-painel-tunel.log
+
+  Autoria: Matheus Marassi
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.sentinela.painel-tunel</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/ssh</string>
+    <string>-N</string>
+    <string>-o</string><string>BatchMode=yes</string>
+    <string>-o</string><string>ExitOnForwardFailure=yes</string>
+    <string>-o</string><string>ServerAliveInterval=20</string>
+    <string>-o</string><string>ServerAliveCountMax=3</string>
+    <string>-o</string><string>StrictHostKeyChecking=accept-new</string>
+    <string>-L</string><string>127.0.0.1:8765:127.0.0.1:8765</string>
+    <string>192.168.15.66</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/matheus/Library/Logs/sentinela-painel-tunel.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/matheus/Library/Logs/sentinela-painel-tunel.log</string>
+</dict>
+</plist>
