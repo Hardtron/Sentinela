@@ -122,61 +122,82 @@ Dados em `dados/ensaio02.geojson`, `.kml` e `-geo.csv`. Fotos originais em
 
 ### Resultado
 
-Distâncias medidas a partir de P0 (ponto de partida, próximo à casa).
+Nó fixo `HTC-02` ancorado em **−23,57543, −45,330545**, altitude 9,4 m — quintal
+de casa, teto livre, **muros de alvenaria ao redor**. Distâncias reais medidas a
+partir dele.
 
 | Ponto | Dist. | Alt. | RSSI méd | Faixa | Margem | Perda | Veredito | Ambiente |
 |---|---|---|---|---|---|---|---|---|
-| P0 | 0 m | 6,1 m | −85 | −96 a −82 | 44 dB | 0% | **APROVADO** | partida |
-| P1 | 36 m | 9,6 m | −102 | −111 a −99 | 27 dB | 0% | **APROVADO** | alvenaria próxima |
-| P2 | 90 m | 5,2 m | −116 | −133 a −114 | 13 dB | 3,7% | LIMITE | rua, alvenaria |
-| P3 | 138 m | 5,6 m | −120 | −128 a −114 | 9 dB | 7,4% | **REPROVADO** | rua, alvenaria |
-| P4 | 174 m | 6,7 m | −118 | −127 a −115 | 11 dB | 8,0% | **REPROVADO** | descampado com mato |
-| P5 | 207 m | 16,7 m | −114 | −124 a −111 | 15 dB | 4,5% | LIMITE | **ponto mais alto** |
-| P6 | 205 m | 17,4 m | −114 | −117 a −112 | 15 dB | **0%** | LIMITE | **ponto mais alto** |
+| P0 | 14 m | 6,1 m | −85 | −96 a −82 | 44 dB | 0% | **APROVADO** | partida |
+| P1 | 42 m | 9,6 m | −102 | −111 a −99 | 27 dB | 0% | **APROVADO** | alvenaria próxima |
+| P2 | 96 m | 5,2 m | −116 | −133 a −114 | 13 dB | 3,7% | LIMITE | rua, alvenaria |
+| P3 | 143 m | 5,6 m | −120 | −128 a −114 | 9 dB | 7,4% | **REPROVADO** | rua, alvenaria |
+| P4 | 175 m | 6,7 m | −118 | −127 a −115 | 11 dB | 8,0% | **REPROVADO** | descampado com mato |
+| P5 | 194 m | 16,7 m | −114 | −124 a −111 | 15 dB | 4,5% | LIMITE | **ponto mais alto** |
+| P6 | 193 m | 17,4 m | −114 | −117 a −112 | 15 dB | **0%** | LIMITE | **ponto mais alto** |
+
+O `HTC-02` acumulou **1137 pacotes sem perda** durante todo o ensaio, e não
+reiniciou — o contador contínuo confirma que a série é íntegra.
 
 ### Achado principal: altura vence distância
 
 Este é o resultado que mais importa para o projeto.
 
-**P3/P4** ficam a ~156 m em média, a 6,2 m de altitude: RSSI médio −119 dBm, com
+**P3/P4** ficam a ~159 m em média, a 6,2 m de altitude: RSSI médio −119 dBm, com
 **7 a 8% de perda — reprovados**.
 
-**P5/P6** ficam a ~206 m, **50 m mais longe**, a 17,0 m de altitude: RSSI médio
+**P5/P6** ficam a ~194 m, **35 m mais longe**, a 17,0 m de altitude: RSSI médio
 −114 dBm, e o P6 fechou **20/20 pacotes, zero perda**.
 
-Ou seja: **+51 m de distância e +11 m de altura resultaram em +5 dB de ganho**.
-Pelo modelo ajustado abaixo, os 51 m adicionais custariam ~3 dB; então a altura
-sozinha entregou cerca de **8 dB — por 11 metros de elevação**.
+Contra o modelo ajustado dos pontos baixos, os dois pontos altos ficam
+**+9 dB acima do previsto** — e o valor é idêntico nos dois, o que descarta
+coincidência:
 
-Oito decibéis é muito: equivale a multiplicar a potência de transmissão por
-seis, ou a subir dois níveis de spreading factor. Ganho que nenhum ajuste de
-firmware entrega, e que se obtém apenas escolhendo onde instalar.
+| Ponto | Distância | Previsto | Medido | Ganho |
+|---|---|---|---|---|
+| P5 | 194 m | −123 dBm | −114 dBm | **+9 dB** |
+| P6 | 193 m | −123 dBm | −114 dBm | **+9 dB** |
 
-Isso confirma empiricamente a diretriz do roteiro — *altura de antena vale mais
-que potência* — e tem consequência direta na fase 4: **a escolha do ponto do
-gateway é a decisão de engenharia de maior impacto do sistema**, acima de
-potência, antena ou spreading factor.
+Nove decibéis é muito: equivale a multiplicar a potência por oito, ou a subir
+três níveis de spreading factor. Ganho que nenhum ajuste de firmware entrega, e
+que se obtém apenas escolhendo onde instalar.
+
+**E o modelo de dois raios explica o valor com precisão.** Elevar de 6,2 m para
+17,0 m preveria 20·log10(17,0/6,2) = **+8,8 dB**. Medimos **+9 dB**. Essa
+concordância valida usar o modelo de dois raios para dimensionar a altura das
+hastes dos sensores — ver [PROPAGACAO.md](PROPAGACAO.md).
+
+Consequência direta para a fase 4: **a escolha da altura de instalação é a
+decisão de engenharia de maior impacto do sistema**, acima de potência, antena
+ou spreading factor.
 
 ### Modelo de propagação ajustado
 
-Regressão log-distância sobre P1–P4 (altitude entre 5 e 10 m, para não misturar
-o efeito da altura):
+Regressão log-distância sobre P0–P4 (altitude entre 5 e 10 m, para não misturar
+o efeito da altura), com as distâncias reais ao `HTC-02`:
 
 ```
-RSSI = −63,3 − 25,7·log10(d)      expoente n = 2,57      resíduo RMS = 2,2 dB
+RSSI = −48,1 − 32,8·log10(d)      expoente n = 3,28      resíduo RMS = 2,2 dB
 ```
 
-Um resíduo de **2,2 dB com 4 pontos em ambiente real e chuva** é um ajuste
-notavelmente bom. O expoente **n = 2,57** fica entre o espaço livre (2,0) e o
-urbano denso (3,5–4,0) — coerente com área residencial de baixa densidade.
+Resíduo de **2,2 dB sobre 5 pontos**, em ambiente real e sob chuva, com o maior
+desvio individual em +3,6 dB (P4, o ponto em descampado). Ajuste bom o
+suficiente para dimensionar.
 
-**Alcance previsto, mantendo ambos os nós baixos:**
+O expoente **n = 3,28** encontra respaldo direto na literatura, e o paralelo é
+notável — ver [PROPAGACAO.md](PROPAGACAO.md) §3.
+
+**Alcance previsto neste ambiente**, com ambos os nós baixos:
 
 | Margem alvo | Alcance |
 |---|---|
-| 20 dB (critério de aprovação) | **60 m** |
-| 10 dB (limite operacional) | 147 m |
-| 0 dB (enlace marginal) | 359 m |
+| 20 dB (critério de aprovação) | **72 m** |
+| 10 dB (limite operacional) | 145 m |
+| 0 dB (enlace marginal) | 293 m |
+
+Esses números são pessimistas de propósito: incluem os **33,4 dB de perda fixa**
+do ambiente do nó fixo, que um gateway bem instalado não terá. Ver
+PROPAGACAO.md §4.
 
 ### Leituras adicionais
 
@@ -199,18 +220,28 @@ adicional embutida.
 **Simetria excelente** em todo o percurso: assimetria de 1 a 4 dB. Nenhum
 problema de antena em qualquer das pontas.
 
-### Limitação — o que impede fechar a análise absoluta
+### A perda fixa de 33 dB — e a hipótese que precisa ser testada
 
-A posição exata do `HTC-02` não foi registrada, então as distâncias são medidas
-**a partir de P0**, não do nó fixo. O modelo relativo (n = 2,57) é robusto e não
-depende disso, mas o termo absoluto fica comprometido: o intercepto de −63,3 dBm
-a 1 m é cerca de 45 dB pior que o esperado em espaço livre, o que indica ou uma
-distância adicional entre o `HTC-02` e P0, ou obstrução fixa na saída do nó fixo
-(provavelmente a própria casa).
+Além do FSPL e do expoente, o ajuste revela **33,4 dB de perda fixa**. É muito,
+e a explicação importa: se for do ambiente, o gateway definitivo não a terá, e o
+alcance real será várias vezes maior que o medido.
 
-**Pendência P-008:** registrar a coordenada e a altura do `HTC-02` para
-recalcular as distâncias reais. Com esse dado, o modelo passa a prever alcance
-absoluto — e é o que permite calibrá-lo contra o MDE.
+Candidatas, da mais provável para a menos:
+
+1. **Muros de alvenaria ao redor do nó fixo.** O `HTC-02` está num quintal
+   cercado — o sinal atravessa alvenaria logo na saída, em todas as direções.
+2. **Antena baixa nas duas pontas.** Nó fixo próximo ao solo e placa na mão a
+   ~1,4 m: a primeira zona de Fresnel fica obstruída desde o início.
+3. **Descasamento de polarização.** Na foto do `HTC-02`, a placa aparece
+   deitada. Se a antena dele estava horizontal e a do `HTC-01` vertical, a
+   polarização cruzada custa tipicamente **20 a 30 dB** — sozinha explicaria a
+   maior parte do desvio.
+
+**Teste que separa as hipóteses (P-009):** repetir a medição de um ponto já
+caracterizado — o P6 serve — com a antena do `HTC-02` comprovadamente **vertical**
+e erguida acima do muro. Se o RSSI saltar 20 dB ou mais, era polarização e/ou
+muro, e todo o alcance previsto sobe na mesma proporção. É meia hora de trabalho
+e pode multiplicar o alcance útil do sistema.
 
 ### Conclusão
 
@@ -218,9 +249,10 @@ Ensaio **válido e produtivo**. O sistema de medição funcionou ponta a ponta e
 campo real: marcação de pontos, veredito automático e georreferenciamento por
 foto. Sete pontos classificados sem nenhuma anotação manual de coordenada.
 
-Para a operação, dois números orientam a fase 4: **n = 2,57** para o modelo de
-cobertura, e **~8 dB de ganho por 11 m de elevação** para o posicionamento do
-gateway.
+Três números orientam a fase 4: **n = 3,28** para o modelo de cobertura,
+**+9 dB por 11 m de elevação** (confirmado por dois raios) para o dimensionamento
+das hastes, e **33,4 dB de perda fixa a investigar**, que é a maior incerteza
+aberta e a de maior potencial de ganho.
 
 ---
 

@@ -24,7 +24,11 @@
         "altitude_m": 6.1,
         "ambiente": "partida - proximo a casa",
         "foto": "IMG_3341.HEIC",
-        "quando": "2026-07-31 00:57:30 +0000"
+        "quando": "2026-07-31 00:57:30 +0000",
+        "distancia_m": 14.5,
+        "perda_percurso_db": 102.0,
+        "fspl_db": 54.9,
+        "excesso_db": 47.1
       }
     },
     {
@@ -50,7 +54,11 @@
         "altitude_m": 9.6,
         "ambiente": "alvenaria proxima",
         "foto": "IMG_3342.HEIC",
-        "quando": "2026-07-31 00:59:26 +0000"
+        "quando": "2026-07-31 00:59:26 +0000",
+        "distancia_m": 42.2,
+        "perda_percurso_db": 119.0,
+        "fspl_db": 64.2,
+        "excesso_db": 54.8
       }
     },
     {
@@ -76,7 +84,11 @@
         "altitude_m": 5.2,
         "ambiente": "rua - alvenaria",
         "foto": "IMG_3343.HEIC",
-        "quando": "2026-07-31 01:01:48 +0000"
+        "quando": "2026-07-31 01:01:48 +0000",
+        "distancia_m": 95.6,
+        "perda_percurso_db": 133.0,
+        "fspl_db": 71.3,
+        "excesso_db": 61.7
       }
     },
     {
@@ -102,7 +114,11 @@
         "altitude_m": 5.6,
         "ambiente": "rua - alvenaria",
         "foto": "IMG_3345.HEIC",
-        "quando": "2026-07-31 01:04:14 +0000"
+        "quando": "2026-07-31 01:04:14 +0000",
+        "distancia_m": 143.1,
+        "perda_percurso_db": 137.0,
+        "fspl_db": 74.8,
+        "excesso_db": 62.2
       }
     },
     {
@@ -128,7 +144,11 @@
         "altitude_m": 6.7,
         "ambiente": "descampado com mato",
         "foto": "IMG_3347.HEIC",
-        "quando": "2026-07-31 01:06:47 +0000"
+        "quando": "2026-07-31 01:06:47 +0000",
+        "distancia_m": 174.9,
+        "perda_percurso_db": 135.0,
+        "fspl_db": 76.5,
+        "excesso_db": 58.5
       }
     },
     {
@@ -154,7 +174,11 @@
         "altitude_m": 16.7,
         "ambiente": "ponto mais alto",
         "foto": "IMG_3348.HEIC",
-        "quando": "2026-07-31 01:09:41 +0000"
+        "quando": "2026-07-31 01:09:41 +0000",
+        "distancia_m": 194.4,
+        "perda_percurso_db": 131.0,
+        "fspl_db": 77.5,
+        "excesso_db": 53.5
       }
     },
     {
@@ -180,7 +204,11 @@
         "altitude_m": 17.4,
         "ambiente": "ponto mais alto",
         "foto": "IMG_3349.HEIC",
-        "quando": "2026-07-31 01:10:59 +0000"
+        "quando": "2026-07-31 01:10:59 +0000",
+        "distancia_m": 192.8,
+        "perda_percurso_db": 131.0,
+        "fspl_db": 77.4,
+        "excesso_db": 53.6
       }
     }
   ]

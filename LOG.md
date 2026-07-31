@@ -21,6 +21,67 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (8) — Modelo de propagação calibrado contra a literatura
+
+**Fase:** 0 · **Duração:** ~1 sessão
+
+### Feito
+
+- **Coordenada do `HTC-02` registrada** (−23,57543, −45,330545, alt 9,4 m,
+  quintal murado com teto livre) — fecha a pendência P-008 e permite recalcular
+  o ensaio 02 com distâncias reais.
+- **Modelo refeito:** com as distâncias corretas, **n = 3,28 com RMS de 2,2 dB**
+  sobre 5 pontos (antes 2,57, com P0 como referência errada).
+- **`docs/PROPAGACAO.md`** — modelo calibrado, confronto com a literatura,
+  dimensionamento de haste, zona de Fresnel e comparação SF × autonomia.
+- **`tools/alcance.py`** — calculadora de alcance por cenário, spreading factor,
+  altura de antena e perda fixa do ambiente.
+- Foto do nó fixo preservada como âncora do ensaio.
+
+### Aprendido
+
+- **Nosso n = 3,28 é praticamente idêntico ao n = 3,22 medido em floresta
+  tropical a 923 MHz.** Alvenaria esparsa e mata atenuam de forma comparável —
+  ambos são meios com obstruções distribuídas. Consequência prática grande: os
+  dados urbanos servem como **proxy do cenário de encosta com mata**, o que
+  permite dimensionar antes de ter acesso ao talude real.
+- **O modelo de dois raios prevê o ganho de altura com precisão**: previa
+  +8,8 dB para a elevação de 6,2 → 17,0 m, medimos +9 dB. Isso autoriza usá-lo
+  para dimensionar as hastes dos sensores.
+- **Haste de 3 a 4 m é o ponto ótimo**: entrega 6,6 a 9,1 dB — equivalente a
+  dois ou três spreading factors, **sem custo de energia**. O ganho é
+  logarítmico, então acima de 4 m o custo estrutural e de SPDA cresce mais
+  rápido que o benefício.
+- **Elevar antena é melhor troca que subir SF.** SF7 → SF12 rende 14 dB ao custo
+  de 28× de tempo de rádio ligado; uma haste de 4 m rende 9 dB de graça. Regra:
+  primeiro altura e posicionamento, SF alto só para o que sobrar.
+- **A perda fixa de 33,4 dB é a maior incerteza aberta e a maior oportunidade.**
+  Reduzi-la para ~15 dB (gateway bem instalado) multiplicaria o alcance por
+  ~3,6. Hipóteses: muros do quintal, antena baixa e — a mais provável —
+  **polarização cruzada**, com o `HTC-02` deitado. Polarização cruzada custa
+  20 a 30 dB e sozinha explicaria a maior parte.
+- Literatura alerta: com **dossel acima de ~23 m** o enlace passa a depender de
+  difração, RSSI cai para −120 a −127 dBm e o alcance fica em torno de 250 m em
+  área florestada montanhosa. Nossos P3/P4 mediram exatamente essa faixa.
+- **O relevo que cria o risco ajuda o rádio.** Em declive, a linha entre sensor
+  na encosta e gateway em cota alta passa acima do terreno intermediário por
+  geometria — a folga de Fresnel vem do desnível, não da haste.
+
+### Decidido
+
+- **P-009 vira prioridade sobre o ensaio 03.** Testar polarização e altura do nó
+  fixo pode reclassificar todo o dimensionamento da rede, e custa meia hora.
+- Haste de **3 a 4 m** entra no escopo da fase 4 como item de projeto, com a
+  ressalva de que precisa ser solidária ao solo medido e rígida — haste que
+  oscila com vento vira falso movimento no inclinômetro.
+
+### Próximo
+
+1. **P-009** — repetir o P6 com antena do `HTC-02` vertical e acima do muro.
+2. Ensaio 03 — varredura de SF, já com o nó fixo corrigido.
+
+---
+
 ## 2026-07-30 (7) — Ensaio 02 em campo: altura vence distância
 
 **Fase:** 0 · **Duração:** ~14 min de percurso, 7 pontos

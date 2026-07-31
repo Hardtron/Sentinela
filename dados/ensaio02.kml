@@ -5,11 +5,11 @@
 <Style id="LIMITE"><IconStyle><color>ff00ffff</color><scale>1.1</scale></IconStyle></Style>
 <Style id="REPROVADO"><IconStyle><color>ff0000ff</color><scale>1.1</scale></IconStyle></Style>
 <Style id="COLETANDO"><IconStyle><color>ff888888</color><scale>1.1</scale></IconStyle></Style>
-<Placemark><name>P0 APROVADO</name><description>rssi -85 dBm | margem 44 dB | perda 0.0% | partida - proximo a casa</description><styleUrl>#APROVADO</styleUrl><Point><coordinates>-45.330475,-23.5753167</coordinates></Point></Placemark>
-<Placemark><name>P1 APROVADO</name><description>rssi -102 dBm | margem 27 dB | perda 0.0% | alvenaria proxima</description><styleUrl>#APROVADO</styleUrl><Point><coordinates>-45.3307217,-23.5750867</coordinates></Point></Placemark>
-<Placemark><name>P2 LIMITE</name><description>rssi -116 dBm | margem 13 dB | perda 3.7% | rua - alvenaria</description><styleUrl>#LIMITE</styleUrl><Point><coordinates>-45.331055,-23.5747083</coordinates></Point></Placemark>
-<Placemark><name>P3 REPROVADO</name><description>rssi -120 dBm | margem 9 dB | perda 7.4% | rua - alvenaria</description><styleUrl>#REPROVADO</styleUrl><Point><coordinates>-45.331375,-23.5743917</coordinates></Point></Placemark>
-<Placemark><name>P4 REPROVADO</name><description>rssi -118 dBm | margem 11 dB | perda 8.0% | descampado com mato</description><styleUrl>#REPROVADO</styleUrl><Point><coordinates>-45.331905,-23.57447</coordinates></Point></Placemark>
-<Placemark><name>P5 LIMITE</name><description>rssi -114 dBm | margem 15 dB | perda 4.5% | ponto mais alto</description><styleUrl>#LIMITE</styleUrl><Point><coordinates>-45.332205,-23.5762917</coordinates></Point></Placemark>
-<Placemark><name>P6 LIMITE</name><description>rssi -114 dBm | margem 15 dB | perda 0.0% | ponto mais alto</description><styleUrl>#LIMITE</styleUrl><Point><coordinates>-45.3321833,-23.5762967</coordinates></Point></Placemark>
+<Placemark><name>P0 APROVADO</name><description>rssi -85 dBm | margem 44 dB | perda 0.0% | partida - proximo a casa | 14 m</description><styleUrl>#APROVADO</styleUrl><Point><coordinates>-45.330475,-23.5753167</coordinates></Point></Placemark>
+<Placemark><name>P1 APROVADO</name><description>rssi -102 dBm | margem 27 dB | perda 0.0% | alvenaria proxima | 42 m</description><styleUrl>#APROVADO</styleUrl><Point><coordinates>-45.3307217,-23.5750867</coordinates></Point></Placemark>
+<Placemark><name>P2 LIMITE</name><description>rssi -116 dBm | margem 13 dB | perda 3.7% | rua - alvenaria | 96 m</description><styleUrl>#LIMITE</styleUrl><Point><coordinates>-45.331055,-23.5747083</coordinates></Point></Placemark>
+<Placemark><name>P3 REPROVADO</name><description>rssi -120 dBm | margem 9 dB | perda 7.4% | rua - alvenaria | 143 m</description><styleUrl>#REPROVADO</styleUrl><Point><coordinates>-45.331375,-23.5743917</coordinates></Point></Placemark>
+<Placemark><name>P4 REPROVADO</name><description>rssi -118 dBm | margem 11 dB | perda 8.0% | descampado com mato | 175 m</description><styleUrl>#REPROVADO</styleUrl><Point><coordinates>-45.331905,-23.57447</coordinates></Point></Placemark>
+<Placemark><name>P5 LIMITE</name><description>rssi -114 dBm | margem 15 dB | perda 4.5% | ponto mais alto | 194 m</description><styleUrl>#LIMITE</styleUrl><Point><coordinates>-45.332205,-23.5762917</coordinates></Point></Placemark>
+<Placemark><name>P6 LIMITE</name><description>rssi -114 dBm | margem 15 dB | perda 0.0% | ponto mais alto | 193 m</description><styleUrl>#LIMITE</styleUrl><Point><coordinates>-45.3321833,-23.5762967</coordinates></Point></Placemark>
 </Document></kml>

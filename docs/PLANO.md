@@ -81,6 +81,7 @@ sensores comum: o cruzamento com a base geoespacial é o que produz decisão, e
 
 - [ ] Porte de `hal/` para STM32WLE5 (RAK3172) — ADR-004
 - [ ] Migração para LoRaWAN + ChirpStack; concentrador SX1302/SX1303
+- [ ] Haste de 3 a 4 m para o sensor — PROPAGACAO.md §5
 - [ ] Caixa IP67, alimentação solar, aterramento e proteção contra surto
 - [ ] Ensaio de campo prolongado com medição de autonomia
 
@@ -111,4 +112,5 @@ e alimentação.
 | P-005 | Calibrar o divisor de tensão de bateria da Heltec V2 | Medição de autonomia |
 | P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
-| P-008 | Registrar coordenada e altura do `HTC-02` para fechar a análise absoluta do ensaio 02 | Modelo de cobertura |
+| ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
+| **P-009** | **Testar polarização e altura do nó fixo** — pode reclassificar todo o alcance (CAMPO.md) | **Dimensionamento da rede** |
