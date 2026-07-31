@@ -27,21 +27,28 @@ Isso definiu dois papéis de firmware, não um:
 
 | Papel | O que faz | Exige antena? |
 |---|---|---|
-| **RF-ativo** (`node_dev`, `node_range`) | Transmite periodicamente | **Sim, obrigatório** |
+| **RF-ativo** (`node_dev`, `node_range`, `bridge`) | Transmite periodicamente | **Sim, obrigatório** |
 | **Bancada** (`ROLE_BENCH`) | Inicializa o rádio, escuta passivamente, nunca transmite; testa OLED, I2C, ADC, watchdog | Não — seguro sem antena |
 
 **Regra prática:** as 2 antenas ficam sempre nas placas RF-ativas do momento
-(hoje `HTC-01`/`HTC-02`). As demais rodam em modo bancada até uma antena ficar
+(hoje `HTC-01`/`HTC-03`). As demais rodam em modo bancada até uma antena ficar
 disponível para um teste específico (ex.: varredura de SF, segundo Farol). Ver
 `firmware/platformio.ini`, ambientes `bench_*`.
+
+**31/07/2026 — antena da `HTC-02` remanejada para a `HTC-03`.** Para validar o
+bridge MQTT (fase 2), a antena que estava na `HTC-02` foi movida para a
+`HTC-03`, que passou de `bench_03` para `bridge` (RF-ativo, PONGER). A
+`HTC-02` ficou sem antena e foi regravada para `bench_02` no mesmo momento,
+por segurança (A-003/A-010) — ela não deve voltar a rodar `node_range` até
+receber antena de novo.
 
 ## Alocação das 6 placas
 
 | ID | Papel | Firmware | Onde |
 |---|---|---|---|
 | `HTC-01` | Nó de desenvolvimento — PINGER | `node_dev` | Bancada, USB do MacBook, **com antena** |
-| `HTC-02` | Nó par de alcance — PONGER | `node_range` | Campo/bancada, **com antena** |
-| `HTC-03` | Bridge do Raspberry Pi 4 (fase 2) | `bench_03` até antena disponível, depois `bridge` | USB do RPi 4 |
+| `HTC-02` | Nó par de alcance — PONGER | `bench_02` — **sem antena desde 31/07/2026** (remanejada para HTC-03) | Bancada |
+| `HTC-03` | Bridge do Raspberry Pi 4 (fase 2) | `bridge` — **RF-ativo, com antena desde 31/07/2026** | USB do RPi 4 |
 | `HTC-04` | **Display defeituoso** — firmware headless (`lib/app`/`lib/hal`) | `bench_04` até sensor disponível | Bancada, protoboard |
 | `HTC-05` | Reserva / par de varredura de SF | `bench_05` até antena disponível | — |
 | `HTC-06` **novo** | Segundo Farol (diversidade multi-gateway, ADR-001) / spare | `bench_06` até antena disponível | — |

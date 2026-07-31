@@ -21,6 +21,52 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (10) — HTC-03 vira bridge de verdade; antena remanejada da HTC-02
+
+**Fase:** 2 · **Duração:** curta
+
+### Feito
+
+- **`HTC-03` regravada de `bench_03` para `bridge`** (RF-ativo, ROLE_PONGER,
+  `NODE_ID=3`), com antena conectada — confirmado pelo usuário e verificado
+  por boot serial (`no=3` implícito no ambiente, heartbeat `# rx ativo | ruido
+  -87 dBm | recebidos 0`). Passa a ser o receptor real para validar o bridge
+  MQTT com o Raspberry Pi.
+- A antena veio da **`HTC-02`**, que ficou sem antena. Por segurança
+  (A-003/A-010: nunca RF-ativo sem antena confirmada), a `HTC-02` foi
+  imediatamente regravada para um novo ambiente **`bench_02`** (criado em
+  `firmware/platformio.ini`, mesmo padrão dos demais `bench_*`). Boot
+  confirmado por serial: `# no=2 papel=BENCH boots=1`.
+- MAC conferido antes de cada gravação via `esptool.py flash_id`: `HTC-03` =
+  `3c:71:bf:8c:31:70`, `HTC-02` = `3c:71:bf:8c:2f:9c` — ambos batem com
+  `HARDWARE.md`.
+- `docs/HARDWARE.md`, `docs/PLANO.md` (P-011, item da Fase 2) e
+  `firmware/platformio.ini` atualizados para refletir a nova alocação de
+  antenas: hoje só `HTC-01` e `HTC-03` têm antena; `HTC-02`, `HTC-04`,
+  `HTC-05`, `HTC-06` seguem em modo bancada até a compra de mais antenas
+  (P-011).
+
+### Aprendido
+
+- Reconfirma o achado de E-006: abrir a porta serial nem sempre reseta a
+  placa. Para capturar o boot completo de uma placa recém-gravada (útil em
+  `ROLE_BENCH`, que só imprime uma vez, sem heartbeat periódico como o
+  PONGER), o método confiável foi encadear `esptool.py --after hard_reset
+  flash_id` (que sempre reseta via RTS ao final) imediatamente antes de abrir
+  a porta para leitura — não confiar em toggles manuais de DTR/RTS via
+  pyserial, que nesta sessão chegaram a travar o processo sem gerar reset
+  nem erro.
+
+### Próximo
+
+1. Conectar fisicamente a `HTC-03` na USB do Raspberry Pi assim que o SSH
+   estiver acessível, e rodar `gateway/bridge.py` real (não mais
+   `--simular`) para validar a chegada de telemetria via MQTT ponta a ponta.
+2. `HTC-02` some da lista de nós de campo ativos até uma antena nova chegar
+   (P-011) — não usar `node_range` nela enquanto isso.
+
+---
+
 ## 2026-07-31 (9) — Economia de tela e teste serial da HTC-03
 
 **Fase:** 0 · **Duração:** curta

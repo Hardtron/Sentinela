@@ -46,7 +46,8 @@ reinício sem perder acumulado (RC-06).
 
 **Objetivo.** Dados chegando ao banco, ponta a ponta.
 
-- [ ] `HTC-03` como receptor, ligada por USB ao Raspberry Pi 4 — aguarda antena
+- [x] `HTC-03` gravada com `bridge` (RF-ativo, PONGER) e antena conectada,
+      31/07/2026 — falta ligar fisicamente na USB do RPi 4 (SSH ainda pendente)
 - [x] Bridge serial → MQTT no RPi 4 — `gateway/bridge.py`, testado sem
       hardware via `--simular`; falta instalar no RPi real (acesso pendente)
 - [ ] Mosquitto — unidade systemd pronta em `gateway/sentinela-bridge.service`
@@ -119,7 +120,7 @@ e alimentação.
 | ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
 | ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
 | P-010 | Configurar acesso SSH ao Raspberry Pi 4 — **decidido**: Raspberry Pi OS Lite 64-bit oficial, ver ADR-007 para o passo a passo | Instalação real da bridge |
-| P-011 | Comprar 4 antenas adicionais — **6 dBi**, não mais que isso (CONFORMIDADE.md §1.1.1: acima de 6 dBi não há ganho extra de transmissão) | Liberar `HTC-03`–`06` do modo bancada |
+| P-011 | Comprar 4 antenas adicionais — **6 dBi**, não mais que isso (CONFORMIDADE.md §1.1.1: acima de 6 dBi não há ganho extra de transmissão) | Liberar `HTC-02`, `HTC-04`–`06` do modo bancada (antenas hoje só em `HTC-01`/`HTC-03`) |
 | P-012 | Comprar bateria(s) para ensaio de autonomia | Fase 1/4 |
 | P-013 | Definir e comprar o primeiro sensor (báscula de chuva é o de maior prioridade, ver SENSORES.md) | Fase 1 |
 | A-01 a A-05 | Pendências do projeto de ancoragem | Ver ANCORAGEM.md §10 |
