@@ -107,7 +107,7 @@ primeira chuva forte — que é exatamente quando o sistema precisa funcionar.
 > da Heltec V2 não foi caracterizado. Valor plausível porém errado é pior que
 > valor ausente (RC-07). Pendência P-005.
 
-### Comandos de firmware (somente no MacBook)
+### Comandos de firmware
 
 ```bash
 pio run -e node_dev          # compila o firmware do nó
@@ -115,8 +115,32 @@ pio run -e node_dev -t upload --upload-port /dev/cu.usbserial-0001
 pio device monitor -b 115200
 ```
 
-PlatformIO Core instalado em `~/.venvs/platformio` (fora do Python do sistema).
-GitHub CLI em `~/.local/bin/gh`.
+PlatformIO Core instalado em `~/.venvs/platformio` (fora do Python do sistema)
+**nas duas máquinas** — MacBook e homeserver. GitHub CLI em `~/.local/bin/gh`.
+
+#### Duas estações de trabalho
+
+O projeto roda em duas pontas, e **compilar funciona nas duas**. O que muda é
+o que está fisicamente ligado a cada uma:
+
+| | MacBook | homeserver |
+|---|---|---|
+| Compilar firmware | sim | sim |
+| Gravar placa local | sim (placas na USB) | só se a placa estiver ligada nele |
+| Gravar a `HTC-03` | sim (por SSH até o RPi) | sim (por SSH até o RPi) |
+| Painel, banco, ingestor | — | sim, sempre no ar |
+
+**Compatibilidade entre os sistemas** já está resolvida no código, não é
+manual: a porta serial se chama `cu.usbserial-*` no macOS e `ttyUSB*` no
+Linux, então tanto o painel (`portas_seriais()`) quanto a varredura
+(`acha_porta_serial()`) procuram os dois padrões. `tools/varredura_sf.py`
+também descobre onde estão o `pio` e o `esptool` em tempo de execução, e
+aceita `--porta` para sobrescrever.
+
+**O que ainda exige o Mac:** só o que depende de placa fisicamente conectada
+nele. Se precisar gravar a `HTC-01` a partir do homeserver, é preciso mover o
+cabo USB para lá — o resto (compilar, gravar a `HTC-03`, rodar a varredura,
+consultar o banco, usar o painel) funciona igual dos dois lados.
 
 ### Painel de controle
 
