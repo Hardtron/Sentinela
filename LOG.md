@@ -21,6 +21,35 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (7) — HTC-04 gravada: primeira placa em modo bancada
+
+**Fase:** 0 · **Duração:** curta
+
+### Feito
+
+- **`HTC-04` (placa com display defeituoso) gravada com `bench_04`** e
+  verificada por hash. MAC confirmado: `3c:71:bf:8c:2f:a4` — registrado em
+  HARDWARE.md.
+- Confirmado por serial: `no=4 papel=BENCH boots=1`, rádio inicializado,
+  varredura I2C rodou (0 sensores, esperado sem hardware ainda). Sem antena
+  conectada e sem chamada de `radio.transmit()` — exatamente o comportamento
+  que a armadilha A-010 exige.
+
+### Aprendido
+
+- O venv Python isolado criado numa sessão anterior (`scratchpad/venv-esp`)
+  não persistiu entre sessões — o scratchpad é efêmero. `esptool.py` já vem
+  empacotado com o PlatformIO (`~/.platformio/packages/tool-esptoolpy/`), o
+  que evita recriar esse venv toda vez; usar esse caminho como padrão daqui
+  em diante para inspeção rápida de MAC/flash sem gravar.
+
+### Próximo
+
+Gravar as demais placas sem antena (`HTC-03`, `05`, `06`) em modo bancada
+conforme forem conectadas, confirmando MAC antes de cada gravação (E-005/A-010).
+
+---
+
 ## 2026-07-31 (6) — Bobina identificada, placa sem display realocada, SO do RPi decidido
 
 **Fase:** transversal · **Duração:** ~1 sessão
