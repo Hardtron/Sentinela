@@ -218,6 +218,38 @@ concluir qualquer coisa. A 0,200 A, célula de 3400 mAh vazia leva ~17 h.
 
 ---
 
+### E-009 — Painel "no ar" servindo código velho, e LaunchAgent barrado pelo TCC
+
+**Contexto:** 31/07/2026, ao tornar o painel permanentemente acessível.
+**Sintoma:** `http://localhost:8792` não abria (porta de teste, encerrada), e
+`http://localhost:8765` abria **com a aba Monitoramento quebrada** —
+`/api/telemetria` devolvia `404 rota desconhecida`.
+**Causa (dupla, e a segunda só apareceu ao corrigir a primeira):**
+1. Havia um processo do painel no ar **desde as 06:56**, anterior à criação de
+   `telemetria.py`. Python carrega os módulos no arranque: o servidor seguia
+   servindo o código de horas antes, sem a rota nova. Rodava ainda com o
+   Python do sistema, sem `paho-mqtt` — então nem com a rota teria dado.
+2. Ao tentar resolver com um LaunchAgent no Mac, ele falhou com
+   `PermissionError: Operation not permitted` em `tools/venv/pyvenv.cfg`. É o
+   **TCC do macOS**: serviços em segundo plano não têm acesso a
+   `~/Documents`. Confirmado que não era peculiaridade do venv — um agente de
+   teste rodando só `head README.md` no repositório também foi bloqueado.
+**Solução:** painel movido para o **homeserver** como unidade de usuário
+(`tools/painel/sentinela-painel.service`), com o Mac apenas encaminhando a
+porta 8765 por SSH (`tools/launchd/com.sentinela.painel-tunel.plist`). Resolve
+os dois problemas de uma vez e ainda cobre o terceiro, que ninguém tinha
+levantado: **o Mac dorme**, então mesmo sem TCC o painel não estaria "sempre"
+disponível ali. Recuperação automática verificada matando os processos à
+força nas duas pontas.
+**Status:** resolvido.
+
+> Processo de servidor no ar **não é garantia de que o código no ar é o
+> atual**. Depois de mexer em qualquer módulo do painel, reiniciar o serviço —
+> ou, melhor, deixar que um supervisor (systemd/launchd) o gerencie, em vez de
+> processos soltos que ninguém lembra de ter iniciado.
+
+---
+
 ## Armadilhas conhecidas (ainda não encontradas)
 
 Registradas preventivamente. Se alguma se manifestar, promover para a seção

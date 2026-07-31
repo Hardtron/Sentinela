@@ -120,29 +120,63 @@ GitHub CLI em `~/.local/bin/gh`.
 
 ### Painel de controle
 
+**Sempre no ar em <http://localhost:8765>** — não precisa iniciar nada.
+
+Reúne visão geral, pendências consolidadas de todos os documentos, hardware,
+ensaios de rede com gráfico, builds do firmware, complexidade ciclomática, a
+documentação renderizada e o **monitoramento em tempo real** da rede LoRa
+(margem de enlace nos dois sentidos, RSSI, SNR, assimetria, perda de pacotes,
+estado de cada placa e da bridge).
+
+#### Como está montado
+
+| Onde | O quê | Serviço |
+|---|---|---|
+| homeserver | Painel, preso em `127.0.0.1:8765` | `sentinela-painel.service` (usuário) |
+| homeserver | Túnel MQTT até o broker do RPi | `sentinela-tunel-mqtt.service` (usuário) |
+| MacBook | Traz a porta 8765 para `localhost` | `com.sentinela.painel-tunel` (LaunchAgent) |
+
+**Por que o painel roda no homeserver, e não no Mac.** Duas razões, e as duas
+importam: o Mac dorme (e "sempre acessível" não combina com isso), e o **TCC
+do macOS bloqueia serviços em segundo plano de lerem `~/Documents`** — um
+LaunchAgent apontando para o repositório falha com `Operation not permitted`
+antes mesmo de subir. Encaminhar porta não esbarra nisso, porque o `ssh` não
+toca no repositório.
+
+Nada é exposto na LAN: painel e broker ficam em `127.0.0.1` nas respectivas
+máquinas, e o que atravessa a rede são túneis SSH sobre chave.
+
+Ambas as camadas se reerguem sozinhas (`Restart=always` no systemd,
+`KeepAlive` no launchd) — verificado matando os processos à força.
+
+#### Instalação (uma vez, por máquina)
+
 ```bash
-./tools/venv/bin/python tools/painel/servidor.py
+# homeserver
+cp tools/painel/sentinela-painel.service ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now sentinela-painel
+
+# MacBook
+cp tools/launchd/com.sentinela.painel-tunel.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.sentinela.painel-tunel.plist
 ```
 
-Abre em `http://localhost:8765`. Reúne visão geral, pendências consolidadas de
-todos os documentos, hardware, ensaios de rede com gráfico, builds do firmware,
-complexidade ciclomática e a documentação renderizada com navegação entre
-documentos.
-
-**Monitoramento em tempo real.** A aba *Monitoramento* mostra a telemetria ao
-vivo da rede: margem de enlace nos dois sentidos, RSSI, SNR, assimetria, perda
-de pacotes e estado de cada placa e da bridge. Ela assina o broker MQTT do
-Raspberry Pi, que escuta apenas em `localhost` — **sem autenticação, não deve
-ser aberto na rede**. O acesso se faz por túnel SSH, com a chave já
-estabelecida:
+#### Diagnóstico
 
 ```bash
-ssh -N -L 1883:127.0.0.1:1883 sentinelapi@192.168.15.73
+ssh 192.168.15.66 "journalctl --user -u sentinela-painel -n 30"
 ```
 
-Com o túnel aberto, o painel encontra o broker no padrão (`localhost:1883`).
-Sem ele, a aba explica o que falta e **todo o resto do painel continua
-funcionando** — a dependência de `paho-mqtt` é opcional por construção.
+```bash
+launchctl list | grep sentinela
+```
+
+Rodar o painel **local** no Mac (para ver builds do firmware e portas seriais,
+que só existem lá) continua funcionando pelo terminal, em outra porta:
+
+```bash
+./tools/venv/bin/python tools/painel/servidor.py --porta 8766
+```
 
 ### Verificação de qualidade
 
