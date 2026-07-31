@@ -137,76 +137,95 @@ static void indicadorPagina() {
 
 // ------------------------------------------------------------------ páginas --
 
-// Página 1 — o enlace. É a que fica na tela durante o teste de alcance:
-// o número grande é o RSSI, e a barra é a margem até perder o link.
-static void pagLink(const UiState &s) {
-  cabecalho("ENLACE", s);
+// --- blocos da página de enlace ------------------------------------------
+// Divididos por complexidade ciclomática (docs/QUALIDADE_CODIGO.md): a versão
+// monolítica desta página chegava a CC 12, acima do limite do projeto.
 
+/// Bloco superior: RSSI em fonte grande e SNR.
+static void blocoRssi(const UiState &s) {
   char buf[24];
-
   if (s.received == 0) {
     oled.setFont(u8g2_font_6x10_tf);
     oled.drawStr(0, 30, "aguardando pacote");
-  } else {
-    oled.setFont(u8g2_font_10x20_tf);
-    snprintf(buf, sizeof(buf), "%d", (int)s.rssiLocal);
-    oled.drawStr(0, 28, buf);
-    int w = oled.getStrWidth(buf);
-    oled.setFont(u8g2_font_5x7_tf);
-    oled.drawStr(w + 3, 28, "dBm");
-
-    // SNR à direita, no mesmo bloco
-    oled.setFont(u8g2_font_6x10_tf);
-    snprintf(buf, sizeof(buf), "SNR %+.0f", (double)s.snrLocal);
-    oled.drawStr(78, 27, buf);
+    return;
   }
+  oled.setFont(u8g2_font_10x20_tf);
+  snprintf(buf, sizeof(buf), "%d", (int)s.rssiLocal);
+  oled.drawStr(0, 28, buf);
+  int w = oled.getStrWidth(buf);
+  oled.setFont(u8g2_font_5x7_tf);
+  oled.drawStr(w + 3, 28, "dBm");
 
-  // Barra de margem de enlace: quanto ainda sobra acima da sensibilidade.
-  float margem = s.rssiLocal - uiSensitivityDbm(LORA_SF);
-  if (s.received == 0) margem = 0;
+  oled.setFont(u8g2_font_6x10_tf);
+  snprintf(buf, sizeof(buf), "SNR %+.0f", (double)s.snrLocal);
+  oled.drawStr(78, 27, buf);
+}
+
+/// Barra de margem: quanto sobra acima da sensibilidade do SF em uso.
+static void blocoMargem(const UiState &s) {
+  const float MARGEM_CHEIA_DB = 50.0f;  // acima disto a barra satura
+  float margem = (s.received == 0) ? 0.0f
+                                   : s.rssiLocal - uiSensitivityDbm(LORA_SF);
   if (margem < 0) margem = 0;
-  if (margem > 50) margem = 50;  // 50 dB de margem já é sinal muito forte
-  int larg = (int)(margem * 126.0f / 50.0f);
+  if (margem > MARGEM_CHEIA_DB) margem = MARGEM_CHEIA_DB;
 
   oled.drawFrame(0, 32, 128, 9);
+  int larg = (int)(margem * 126.0f / MARGEM_CHEIA_DB);
   if (larg > 0) oled.drawBox(1, 33, larg, 7);
 
+  char buf[24];
   oled.setFont(u8g2_font_5x7_tf);
-  snprintf(buf, sizeof(buf), "margem %d dB", (int)(s.rssiLocal - uiSensitivityDbm(LORA_SF)));
-  if (s.received == 0) snprintf(buf, sizeof(buf), "margem --");
+  if (s.received == 0) {
+    snprintf(buf, sizeof(buf), "margem --");
+  } else {
+    snprintf(buf, sizeof(buf), "margem %d dB",
+             (int)(s.rssiLocal - uiSensitivityDbm(LORA_SF)));
+  }
   oled.drawStr(0, 50, buf);
+}
 
-  // Eco: como o outro lado nos ouve. Link assimétrico aparece aqui.
+/// Eco do outro lado e contagem de perda.
+static void blocoEco(const UiState &s) {
+  char buf[24];
   if (s.received > 0) {
     snprintf(buf, sizeof(buf), "remoto %d dBm", s.rssiRemote);
     oled.drawStr(0, 58, buf);
   }
-
-  // Selo compacto do veredito: esta é a página que fica aberta enquanto se
-  // caminha, então o estado do ponto precisa aparecer aqui também.
-  char motivo[48];
-  const char *selo = "...";
-  switch (uiAvaliarPonto(s, motivo, sizeof(motivo))) {
-    case PONTO_APROVADO: selo = "OK"; break;
-    case PONTO_LIMITE: selo = "LIM"; break;
-    case PONTO_REPROVADO: selo = "REP"; break;
-    default: break;
-  }
-  int wSelo = oled.getStrWidth(selo);
-  oled.drawBox(126 - wSelo - 2, 51, wSelo + 4, 9);
-  oled.setDrawColor(0);
-  oled.drawStr(126 - wSelo, 58, selo);
-  oled.setDrawColor(1);
-
-  // Perda — o indicador que condena um ponto de instalação.
-  uint32_t perdidos = s.sent - s.received;
   if (s.sent > 0) {
-    snprintf(buf, sizeof(buf), "%lu/%lu", (unsigned long)perdidos,
-             (unsigned long)s.sent);
-    int w = oled.getStrWidth(buf);
-    oled.drawStr(96 - w, 50, buf);
+    snprintf(buf, sizeof(buf), "%lu/%lu",
+             (unsigned long)(s.sent - s.received), (unsigned long)s.sent);
+    oled.drawStr(96 - oled.getStrWidth(buf), 50, buf);
   }
+}
 
+static const char *seloDoVeredito(VereditoPonto v) {
+  switch (v) {
+    case PONTO_APROVADO: return "OK";
+    case PONTO_LIMITE: return "LIM";
+    case PONTO_REPROVADO: return "REP";
+    default: return "...";
+  }
+}
+
+/// Selo compacto do veredito, em vídeo invertido no canto.
+static void blocoSelo(const UiState &s) {
+  char motivo[48];
+  const char *selo = seloDoVeredito(uiAvaliarPonto(s, motivo, sizeof(motivo)));
+  int w = oled.getStrWidth(selo);
+  oled.drawBox(126 - w - 2, 51, w + 4, 9);
+  oled.setDrawColor(0);
+  oled.drawStr(126 - w, 58, selo);
+  oled.setDrawColor(1);
+}
+
+// Página 1 — o enlace. É a que fica na tela durante o teste de alcance:
+// o número grande é o RSSI, e a barra é a margem até perder o link.
+static void pagLink(const UiState &s) {
+  cabecalho("ENLACE", s);
+  blocoRssi(s);
+  blocoMargem(s);
+  blocoEco(s);
+  blocoSelo(s);
   indicadorPagina();
 }
 

@@ -21,6 +21,50 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (2) — Painel de controle e complexidade ciclomática como política
+
+**Fase:** transversal · **Duração:** ~1 sessão
+
+### Feito
+
+- **`tools/complexidade.py`** — análise de complexidade ciclomática (McCabe)
+  para Python (via AST) e C/C++ (varredura léxica), com faixas, limite
+  configurável e saída JSON.
+- **`docs/QUALIDADE_CODIGO.md`** — política permanente: limite 10 para toda
+  função do repositório, incluindo firmware. Padrões de refatoração
+  documentados.
+- **Refatoração de todo o código acima do limite**, com verificação funcional:
+  `pagLink` no firmware (12 → 3), `georreferenciar.main` (25 → 6),
+  `coleta.main` (19 → 5), `importar_fotos.main` (18 → 8).
+- **`tools/painel/`** — painel de controle do projeto: servidor HTTP em
+  biblioteca padrão e interface em nove seções, com tema claro/escuro,
+  navegação por hash, gráficos SVG próprios e conversor Markdown próprio.
+  Zero dependência externa e zero CDN.
+
+### Aprendido
+
+- Refatorar por complexidade **melhorou a legibilidade**, não piorou. As quatro
+  funções divididas ficaram com partes que fazem sentido isoladamente —
+  `blocoRssi`, `blocoMargem`, `parse_amostra`, `escreve_kml`. Onde a divisão
+  não produz nome óbvio, o corte estaria errado.
+- O firmware já estava saudável antes da política: só uma função acima do
+  limite, e as demais em torno de 5. O problema estava nas ferramentas Python,
+  onde os `main` acumulavam parsing, laço, escrita e impressão.
+
+### Decidido
+
+- **Limite de 10 para toda função**, mais rígido que o clássico de McCabe (20).
+  O custo de dividir é baixo; o benefício em código que decide sobre alerta é
+  alto. Verificação obrigatória antes de commit que toque em código.
+- Painel sem dependência externa: biblioteca padrão no servidor, SVG e
+  Markdown próprios no navegador. Mantém o projeto auditável e sem CDN.
+
+### Próximo
+
+Ensaio 03 — varredura de spreading factor.
+
+---
+
 ## 2026-07-31 — Política de proveniência e auditoria retroativa
 
 **Fase:** transversal · **Duração:** ~1 sessão

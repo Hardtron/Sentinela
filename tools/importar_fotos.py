@@ -126,6 +126,105 @@ def fspl_db(d_m, freq_mhz):
     return 20 * math.log10(d_m / 1000.0) + 20 * math.log10(freq_mhz) + 32.44
 
 
+def monta_propriedades(lin, g):
+    env, rec = int(lin["enviados"]), int(lin["recebidos"])
+    perda = 100.0 * (env - rec) / env if env else 0.0
+    return {
+        "ponto": int(lin["ponto"]),
+        "veredito": lin["veredito"],
+        "motivo": lin["motivo"],
+        "rssi_med": float(lin["rssi_med"]),
+        "rssi_min": float(lin["rssi_min"]),
+        "rssi_max": float(lin["rssi_max"]),
+        "margem_db": float(lin["margem_db"]),
+        "assimetria_db": float(lin["assimetria_db"]),
+        "perda_pct": round(perda, 1),
+        "pacotes": f"{rec}/{env}",
+        "altitude_m": g["alt"],
+        "ambiente": lin.get("ambiente", ""),
+        "foto": lin["foto"],
+        "quando": g["quando"],
+    }
+
+
+def metricas_de_percurso(lin, g, gw, args):
+    """Distância ao nó fixo e comparação com o espaço livre."""
+    d = distancia_m(gw[0], gw[1], g["lat"], g["lon"])
+    medida = args.tx_dbm - float(lin["rssi_med"])
+    fspl = fspl_db(d, args.freq)
+    return {
+        "distancia_m": round(d, 1),
+        "perda_percurso_db": round(medida, 1),
+        "fspl_db": round(fspl, 1),
+        "excesso_db": round(medida - fspl, 1),
+    }
+
+
+def escreve_saidas(base, feicoes, ensaio):
+    f_geo = base.with_name(base.name + ".geojson")
+    f_kml = base.with_name(base.name + ".kml")
+    f_csv = base.with_name(base.name + "-geo.csv")
+
+    with open(f_geo, "w", encoding="utf-8") as f:
+        json.dump({"type": "FeatureCollection", "features": feicoes}, f,
+                  ensure_ascii=False, indent=2)
+
+    campos = list(feicoes[0]["properties"].keys())
+    with open(f_csv, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["lat", "lon"] + campos)
+        for ft in feicoes:
+            lon, lat = ft["geometry"]["coordinates"]
+            w.writerow([lat, lon] + [ft["properties"].get(c, "") for c in campos])
+
+    with open(f_kml, "w", encoding="utf-8") as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write('<kml xmlns="http://www.opengis.net/kml/2.2"><Document>\n')
+        f.write(f"<name>Sentinela - ensaio {ensaio}</name>\n")
+        for v, cor in CORES_KML.items():
+            f.write(f'<Style id="{v}"><IconStyle><color>{cor}</color>'
+                    f"<scale>1.1</scale></IconStyle></Style>\n")
+        for ft in feicoes:
+            f.write(placemark_kml(ft))
+        f.write("</Document></kml>\n")
+
+    return f_geo, f_kml, f_csv
+
+
+def placemark_kml(ft):
+    p = ft["properties"]
+    lon, lat = ft["geometry"]["coordinates"]
+    desc = (f"rssi {p['rssi_med']:.0f} dBm | margem {p['margem_db']:.0f} dB | "
+            f"perda {p['perda_pct']}% | {p['ambiente']}")
+    if "distancia_m" in p:
+        desc += f" | {p['distancia_m']:.0f} m"
+    return (f"<Placemark><name>P{p['ponto']} {p['veredito']}</name>"
+            f"<description>{desc}</description>"
+            f"<styleUrl>#{p['veredito']}</styleUrl>"
+            f"<Point><coordinates>{lon},{lat}</coordinates></Point>"
+            f"</Placemark>\n")
+
+
+def imprime_geometria(feicoes):
+    print("\n=== distancias entre pontos consecutivos ===")
+    for i in range(1, len(feicoes)):
+        a = feicoes[i - 1]["geometry"]["coordinates"]
+        b = feicoes[i]["geometry"]["coordinates"]
+        d = distancia_m(a[1], a[0], b[1], b[0])
+        pa = feicoes[i - 1]["properties"]["ponto"]
+        pb = feicoes[i]["properties"]["ponto"]
+        print(f"  P{pa} -> P{pb}: {d:6.0f} m")
+
+    p0 = feicoes[0]["geometry"]["coordinates"]
+    print("\n=== distancia ao ponto de partida (P0) ===")
+    for ft in feicoes:
+        c = ft["geometry"]["coordinates"]
+        d = distancia_m(p0[1], p0[0], c[1], c[0])
+        p = ft["properties"]
+        print(f"  P{p['ponto']}: {d:6.0f} m   rssi {p['rssi_med']:>6.0f} dBm   "
+              f"margem {p['margem_db']:>3.0f} dB   {p['veredito']}")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Importa ensaio registrado por fotos")
     ap.add_argument("--transcricao", required=True)
@@ -168,34 +267,9 @@ def main():
             print(f"  aviso: sem GPS: {arq.name}")
             continue
 
-        env = int(lin["enviados"])
-        rec = int(lin["recebidos"])
-        perda = 100.0 * (env - rec) / env if env else 0.0
-
-        props = {
-            "ponto": int(lin["ponto"]),
-            "veredito": lin["veredito"],
-            "motivo": lin["motivo"],
-            "rssi_med": float(lin["rssi_med"]),
-            "rssi_min": float(lin["rssi_min"]),
-            "rssi_max": float(lin["rssi_max"]),
-            "margem_db": float(lin["margem_db"]),
-            "assimetria_db": float(lin["assimetria_db"]),
-            "perda_pct": round(perda, 1),
-            "pacotes": f"{rec}/{env}",
-            "altitude_m": g["alt"],
-            "ambiente": lin.get("ambiente", ""),
-            "foto": lin["foto"],
-            "quando": g["quando"],
-        }
-
+        props = monta_propriedades(lin, g)
         if gw:
-            d = distancia_m(gw[0], gw[1], g["lat"], g["lon"])
-            perda_medida = args.tx_dbm - float(lin["rssi_med"])
-            props["distancia_m"] = round(d, 1)
-            props["perda_percurso_db"] = round(perda_medida, 1)
-            props["fspl_db"] = round(fspl_db(d, args.freq), 1)
-            props["excesso_db"] = round(perda_medida - fspl_db(d, args.freq), 1)
+            props.update(metricas_de_percurso(lin, g, gw, args))
 
         feicoes.append({
             "type": "Feature",
@@ -214,63 +288,9 @@ def main():
 
     base = Path(args.saida) if args.saida else \
         Path(args.transcricao).parent / f"ensaio{args.ensaio}"
-    f_geo = base.with_name(base.name + ".geojson")
-    f_kml = base.with_name(base.name + ".kml")
-    f_csv = base.with_name(base.name + "-geo.csv")
-
-    with open(f_geo, "w", encoding="utf-8") as f:
-        json.dump({"type": "FeatureCollection", "features": feicoes}, f,
-                  ensure_ascii=False, indent=2)
-
-    campos = list(feicoes[0]["properties"].keys())
-    with open(f_csv, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["lat", "lon"] + campos)
-        for ft in feicoes:
-            lon, lat = ft["geometry"]["coordinates"]
-            w.writerow([lat, lon] + [ft["properties"].get(c, "") for c in campos])
-
-    with open(f_kml, "w", encoding="utf-8") as f:
-        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        f.write('<kml xmlns="http://www.opengis.net/kml/2.2"><Document>\n')
-        f.write(f"<name>Sentinela - ensaio {args.ensaio}</name>\n")
-        for v, cor in CORES_KML.items():
-            f.write(f'<Style id="{v}"><IconStyle><color>{cor}</color>'
-                    f"<scale>1.1</scale></IconStyle></Style>\n")
-        for ft in feicoes:
-            p = ft["properties"]
-            lon, lat = ft["geometry"]["coordinates"]
-            desc = (f"rssi {p['rssi_med']:.0f} dBm | margem {p['margem_db']:.0f} dB | "
-                    f"perda {p['perda_pct']}% | {p['ambiente']}")
-            if "distancia_m" in p:
-                desc += f" | {p['distancia_m']:.0f} m"
-            f.write(f"<Placemark><name>P{p['ponto']} {p['veredito']}</name>"
-                    f"<description>{desc}</description>"
-                    f"<styleUrl>#{p['veredito']}</styleUrl>"
-                    f"<Point><coordinates>{lon},{lat}</coordinates></Point>"
-                    f"</Placemark>\n")
-        f.write("</Document></kml>\n")
-
+    f_geo, f_kml, f_csv = escreve_saidas(base, feicoes, args.ensaio)
     print(f"\ngerado:\n  {f_geo}\n  {f_kml}\n  {f_csv}")
-
-    # --- geometria do percurso -------------------------------------------
-    print("\n=== distancias entre pontos consecutivos ===")
-    for i in range(1, len(feicoes)):
-        a = feicoes[i - 1]["geometry"]["coordinates"]
-        b = feicoes[i]["geometry"]["coordinates"]
-        d = distancia_m(a[1], a[0], b[1], b[0])
-        pa = feicoes[i - 1]["properties"]["ponto"]
-        pb = feicoes[i]["properties"]["ponto"]
-        print(f"  P{pa} -> P{pb}: {d:6.0f} m")
-
-    p0 = feicoes[0]["geometry"]["coordinates"]
-    print("\n=== distancia ao ponto de partida (P0) ===")
-    for ft in feicoes:
-        c = ft["geometry"]["coordinates"]
-        d = distancia_m(p0[1], p0[0], c[1], c[0])
-        p = ft["properties"]
-        print(f"  P{p['ponto']}: {d:6.0f} m   rssi {p['rssi_med']:>6.0f} dBm   "
-              f"margem {p['margem_db']:>3.0f} dB   {p['veredito']}")
+    imprime_geometria(feicoes)
 
 
 if __name__ == "__main__":

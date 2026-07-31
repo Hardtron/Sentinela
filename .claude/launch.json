@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "painel",
+      "runtimeExecutable": "tools/venv/bin/python",
+      "runtimeArgs": ["tools/painel/servidor.py", "--porta", "8765"],
+      "port": 8765
+    }
+  ]
+}

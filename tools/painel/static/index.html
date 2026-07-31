@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinela — painel de controle</title>
+<link rel="stylesheet" href="estilo.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+<div class="app">
+
+  <aside class="lateral" id="lateral">
+    <header class="marca">
+      <div class="marca-simbolo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 21V10"/><circle cx="12" cy="7" r="2.5"/>
+          <path d="M6.5 12.5a7 7 0 0 1 0-9"/><path d="M17.5 3.5a7 7 0 0 1 0 9"/>
+          <path d="M4 21h16"/>
+        </svg>
+      </div>
+      <div class="marca-texto">
+        <strong>Sentinela</strong>
+        <span>painel de controle</span>
+      </div>
+    </header>
+
+    <nav aria-label="Seções do projeto">
+      <p class="nav-grupo">Projeto</p>
+      <a href="#/visao-geral" data-rota="visao-geral"><span class="ico">◈</span>Visão geral</a>
+      <a href="#/pendencias"  data-rota="pendencias"><span class="ico">◔</span>Pendências<em class="selo" id="selo-pend"></em></a>
+      <a href="#/timeline"    data-rota="timeline"><span class="ico">◷</span>Linha do tempo</a>
+
+      <p class="nav-grupo">Engenharia</p>
+      <a href="#/hardware"    data-rota="hardware"><span class="ico">▤</span>Hardware</a>
+      <a href="#/rede"        data-rota="rede"><span class="ico">◉</span>Rede LoRa</a>
+      <a href="#/firmware"    data-rota="firmware"><span class="ico">▣</span>Firmware</a>
+      <a href="#/qualidade"   data-rota="qualidade"><span class="ico">◫</span>Qualidade<em class="selo" id="selo-cc"></em></a>
+
+      <p class="nav-grupo">Conhecimento</p>
+      <a href="#/documentos"  data-rota="documentos"><span class="ico">▥</span>Documentos</a>
+      <a href="#/referencias" data-rota="referencias"><span class="ico">◇</span>Referências</a>
+    </nav>
+
+    <footer class="lateral-rodape">
+      <button id="alternar-tema" class="btn-icone" type="button" aria-label="Alternar tema">
+        <span class="so-claro">☾</span><span class="so-escuro">☀</span>
+      </button>
+      <span class="estado-git" id="estado-git">—</span>
+    </footer>
+  </aside>
+
+  <main class="conteudo" id="conteudo" tabindex="-1">
+    <div id="rota"><div class="carregando">carregando…</div></div>
+  </main>
+
+</div>
+
+<script src="markdown.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

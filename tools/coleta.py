@@ -194,63 +194,93 @@ def main():
     wb.writerow(["hora", "ponto", "seq", "rssi_dbm", "snr_db",
                  "rssi_remoto_dbm", "snr_remoto_db", "enviados", "recebidos"])
 
-    ultimo_veredito = None
+    estado = {"sf": sf, "atual": atual, "ultimo_veredito": None}
     try:
         while not _encerrar:
             linha = porta.readline().decode("utf-8", "replace").strip()
             if not linha:
                 continue
-            agora = datetime.now()
-
-            if linha.startswith("#"):
-                m = RE_SF.search(linha)
-                if m:
-                    sf = int(m.group(1))
-                    print(f"[config] SF{sf}, sensibilidade {SENSIBILIDADE[sf]} dBm")
-                m = RE_PONTO.search(linha)
-                if m:
-                    grava_resumo(f_resumo, pontos, sf)
-                    atual = Ponto(int(m.group(1)), agora)
-                    pontos.append(atual)
-                    ultimo_veredito = None
-                    print(f"\n=== PONTO {atual.numero} iniciado ===")
-                continue
-
-            campos = linha.split(",")
-            if len(campos) != 7:
-                continue
-            try:
-                seq = int(campos[0])
-                rssi = float(campos[1]) if campos[1] else None
-                snr = float(campos[2]) if campos[2] else None
-                rssi_rem = int(campos[3]) if campos[3] else None
-                snr_rem = int(campos[4]) if campos[4] else None
-                enviados = int(campos[5])
-                recebidos = int(campos[6])
-            except ValueError:
-                continue
-
-            atual.amostra(agora, rssi, snr, rssi_rem, enviados, recebidos)
-            wb.writerow([agora.isoformat(timespec="seconds"), atual.numero, seq,
-                         campos[1], campos[2], campos[3], campos[4],
-                         enviados, recebidos])
-            bruto.flush()
-
-            v, motivo = atual.veredito(sf)
-            rssi_txt = f"{rssi:6.1f}" if rssi is not None else "  ----"
-            print(f"P{atual.numero} #{seq:<4} rssi {rssi_txt} dBm  "
-                  f"perda {atual.perda_pct:4.0f}%  {v} ({motivo})")
-            if v != ultimo_veredito:
-                if v == "APROVADO":
-                    print("   >>> ponto APROVADO")
-                elif v == "REPROVADO":
-                    print("   >>> ponto REPROVADO — procure outra posicao")
-                ultimo_veredito = v
+            processa_linha(linha, estado, pontos, wb, bruto, f_resumo)
     finally:
         bruto.close()
         porta.close()
-        grava_resumo(f_resumo, pontos, sf)
+        grava_resumo(f_resumo, pontos, estado["sf"])
 
+    imprime_resumo_final(pontos, estado["sf"], f_bruto, f_resumo)
+
+
+def processa_cabecalho(linha, estado, pontos, f_resumo, agora):
+    """Linhas iniciadas por '#': configuração do rádio e marcação de ponto."""
+    m = RE_SF.search(linha)
+    if m:
+        estado["sf"] = int(m.group(1))
+        print(f"[config] SF{estado['sf']}, "
+              f"sensibilidade {SENSIBILIDADE[estado['sf']]} dBm")
+    m = RE_PONTO.search(linha)
+    if not m:
+        return
+    grava_resumo(f_resumo, pontos, estado["sf"])
+    estado["atual"] = Ponto(int(m.group(1)), agora)
+    pontos.append(estado["atual"])
+    estado["ultimo_veredito"] = None
+    print(f"\n=== PONTO {estado['atual'].numero} iniciado ===")
+
+
+def parse_amostra(campos):
+    """Converte a linha CSV em valores. Devolve None se malformada."""
+    if len(campos) != 7:
+        return None
+    try:
+        return dict(
+            seq=int(campos[0]),
+            rssi=float(campos[1]) if campos[1] else None,
+            snr=float(campos[2]) if campos[2] else None,
+            rssi_rem=int(campos[3]) if campos[3] else None,
+            enviados=int(campos[5]),
+            recebidos=int(campos[6]),
+        )
+    except ValueError:
+        return None
+
+
+def anuncia_veredito(v, estado):
+    """Só fala quando o veredito muda — evita poluir a saída em campo."""
+    if v == estado["ultimo_veredito"]:
+        return
+    if v == "APROVADO":
+        print("   >>> ponto APROVADO")
+    elif v == "REPROVADO":
+        print("   >>> ponto REPROVADO — procure outra posicao")
+    estado["ultimo_veredito"] = v
+
+
+def processa_linha(linha, estado, pontos, wb, bruto, f_resumo):
+    agora = datetime.now()
+    if linha.startswith("#"):
+        processa_cabecalho(linha, estado, pontos, f_resumo, agora)
+        return
+
+    campos = linha.split(",")
+    a = parse_amostra(campos)
+    if a is None:
+        return
+
+    atual = estado["atual"]
+    atual.amostra(agora, a["rssi"], a["snr"], a["rssi_rem"],
+                  a["enviados"], a["recebidos"])
+    wb.writerow([agora.isoformat(timespec="seconds"), atual.numero, a["seq"],
+                 campos[1], campos[2], campos[3], campos[4],
+                 a["enviados"], a["recebidos"]])
+    bruto.flush()
+
+    v, motivo = atual.veredito(estado["sf"])
+    rssi_txt = f"{a['rssi']:6.1f}" if a["rssi"] is not None else "  ----"
+    print(f"P{atual.numero} #{a['seq']:<4} rssi {rssi_txt} dBm  "
+          f"perda {atual.perda_pct:4.0f}%  {v} ({motivo})")
+    anuncia_veredito(v, estado)
+
+
+def imprime_resumo_final(pontos, sf, f_bruto, f_resumo):
     print("\n\n=== RESUMO DO ENSAIO ===")
     for p in pontos:
         if p.enviados == 0:

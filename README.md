@@ -34,6 +34,7 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md) | Normas aplicáveis — Anatel, defesa civil, geotecnia, LGPD |
 | [docs/RESPONSABILIDADE_TECNICA.md](docs/RESPONSABILIDADE_TECNICA.md) | Habilitação profissional e camadas de responsabilidade |
 | [docs/REFERENCIAS.md](docs/REFERENCIAS.md) | **Política de proveniência** e bibliografia central |
+| [docs/QUALIDADE_CODIGO.md](docs/QUALIDADE_CODIGO.md) | **Complexidade ciclomática** e padrões de código |
 | [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
 | [docs/PROMPT_PAINEL.md](docs/PROMPT_PAINEL.md) | Prompt autocontido para gerar o painel de resultados |
 | [LOG.md](LOG.md) | Diário de andamento |
@@ -42,7 +43,7 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 ## Estrutura
 
 ```
-tools/        Coleta do ensaio e georreferenciamento (Python)
+tools/        Ferramentas de ensaio, análise e o painel de controle
 firmware/     Firmware dos nós (PlatformIO)
   lib/app/      Lógica de aplicação — sem código específico de chip
   lib/hal/      Abstração de hardware — uma implementação por plataforma
@@ -108,6 +109,25 @@ pio device monitor -b 115200
 
 PlatformIO Core instalado em `~/.venvs/platformio` (fora do Python do sistema).
 GitHub CLI em `~/.local/bin/gh`.
+
+### Painel de controle
+
+```bash
+./tools/venv/bin/python tools/painel/servidor.py
+```
+
+Abre em `http://localhost:8765`. Reúne visão geral, pendências consolidadas de
+todos os documentos, hardware, ensaios de rede com gráfico, builds do firmware,
+complexidade ciclomática e a documentação renderizada com navegação entre
+documentos.
+
+### Verificação de qualidade
+
+```bash
+./tools/venv/bin/python tools/complexidade.py --limite 10
+```
+
+Nenhuma função pode passar de 10 — ver [QUALIDADE_CODIGO.md](docs/QUALIDADE_CODIGO.md).
 
 ### Coleta do ensaio de campo
 
