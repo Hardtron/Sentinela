@@ -166,6 +166,7 @@ Aplicável ao painel, se ele for exposto a usuário do poder público.
 | C-05 | Verificar exigência metrológica para o pluviômetro | Fase 1 | Inmetro/INMET |
 | C-06 | Avaliar integração com S2ID/CEMADEN e adoção de SensorThings API | Fase 3 | Projeto |
 | C-07 | Projeto de SPDA e aterramento conforme NBR 5419 | Fase 4 | Eng. eletricista |
+| C-08 | Definir as responsabilidades técnicas por camada — ver [RESPONSABILIDADE_TECNICA.md](RESPONSABILIDADE_TECNICA.md) | **Antes do piloto** | Projeto |
 
 **Fontes:**
 [Resolução Anatel nº 680/2017](https://informacoes.anatel.gov.br/legislacao/resolucoes/2017/936resolucao-680) ·

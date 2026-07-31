@@ -116,3 +116,4 @@ e alimentação.
 | ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
 | ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
 | A-01 a A-05 | Pendências do projeto de ancoragem | Ver ANCORAGEM.md §10 |
+| R-01 a R-06 | Habilitação profissional e responsabilidade técnica | Ver RESPONSABILIDADE_TECNICA.md §10 |
