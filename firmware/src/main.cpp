@@ -320,9 +320,13 @@ void loop() {
   // rádio que não entrou em recepção. O piso de ruído do canal desfaz a
   // ambiguidade — se ele varia, o receptor está de fato escutando.
   if ((int32_t)(millis() - proximoHeartbeat) >= 0) {
-    Serial.printf("# rx ativo | ruido %.0f dBm | recebidos %lu\n",
+    // O `sf=` repetido aqui não é redundância: a bridge pode ser reiniciada
+    // com a placa já rodando, e nesse caso ela nunca veria o banner de boot.
+    // Reanunciar o parâmetro faz a telemetria se autodescrever mesmo assim —
+    // e é o SF que define a sensibilidade contra a qual a margem é medida.
+    Serial.printf("# rx ativo | ruido %.0f dBm | recebidos %lu | sf=%d\n",
                   (double)radio.getRSSI(false, false),
-                  (unsigned long)ui.received);
+                  (unsigned long)ui.received, LORA_SF);
     proximoHeartbeat = millis() + 5000;
   }
 
