@@ -24,6 +24,7 @@ Autoria: Matheus Marassi
 
 import argparse
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -33,14 +34,52 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 FIRMWARE = RAIZ / "firmware"
 
-PORTA_LOCAL = "/dev/cu.usbserial-0001"
-PIO = str(Path.home() / ".venvs/platformio/bin/pio")
-ESPTOOL_LOCAL = [str(Path.home() / ".venvs/platformio/bin/python"),
-                 str(Path.home() / ".platformio/packages/tool-esptoolpy/esptool.py")]
 ESPTOOL_REMOTO = "/home/sentinelapi/sentinela/tools/venv/bin/python -m esptool"
 RPI_HOST = "sentinelapi@192.168.15.73"
 RPI_PORTA_SERIAL = "/dev/ttyUSB0"
 HOMESERVER = "192.168.15.66"
+
+# --- portabilidade entre MacBook e homeserver -----------------------------
+# O projeto tem duas estações de trabalho: o MacBook (onde as placas ficam na
+# USB) e o homeserver (acesso de reserva quando o Mac não está disponível).
+# Caminho fixo de macOS aqui quebrava o script no Linux logo na primeira
+# linha, então tudo que muda de sistema é descoberto em tempo de execução.
+
+# macOS nomeia o CP2102 como cu.usbserial-*; Linux como ttyUSB*.
+PADROES_SERIAL = ("cu.usbserial*", "cu.SLAB_USBtoUART*", "ttyUSB*", "ttyACM*")
+
+
+def acha_pio():
+    """PlatformIO fica em ~/.venvs/platformio nas duas máquinas, mas aceita
+    também um `pio` no PATH — cobre instalação feita de outro jeito."""
+    candidatos = [Path.home() / ".venvs/platformio/bin/pio",
+                  RAIZ / "tools" / "venv" / "bin" / "pio"]
+    for c in candidatos:
+        if c.exists():
+            return str(c)
+    achado = shutil.which("pio")
+    if achado:
+        return achado
+    sys.exit("PlatformIO não encontrado (nem ~/.venvs/platformio nem no PATH)")
+
+
+def acha_esptool():
+    """O esptool que vem junto do PlatformIO, onde quer que ele tenha caído."""
+    base = Path.home() / ".platformio" / "packages" / "tool-esptoolpy"
+    script = base / "esptool.py"
+    python = Path(acha_pio()).parent / "python"
+    if script.exists() and python.exists():
+        return [str(python), str(script)]
+    return [sys.executable, "-m", "esptool"]
+
+
+def acha_porta_serial():
+    """Primeira porta USB-serial presente, no padrão do sistema em uso."""
+    for padrao in PADROES_SERIAL:
+        achadas = sorted(Path("/dev").glob(padrao))
+        if achadas:
+            return str(achadas[0])
+    return None
 
 SF_PADRAO = [7, 8, 9, 10, 11, 12]
 
@@ -59,7 +98,7 @@ def executa(cmd, **kw):
 
 
 def _mac_local(porta):
-    r = subprocess.run([*ESPTOOL_LOCAL, "--port", porta, "flash_id"],
+    r = subprocess.run([*acha_esptool(), "--port", porta, "flash_id"],
                        capture_output=True, text=True, check=True)
     achado = RE_MAC.search(r.stdout)
     return achado.group(1).lower() if achado else None
@@ -89,7 +128,7 @@ def confere_mac(mac_lido, mac_esperado, placa):
 # ------------------------------------------------------------------ flash --
 
 def compila(env):
-    executa([PIO, "run", "-e", env, "-d", str(FIRMWARE)])
+    executa([acha_pio(), "run", "-e", env, "-d", str(FIRMWARE)])
 
 
 def grava_local(env, porta):
@@ -97,7 +136,7 @@ def grava_local(env, porta):
     USB não distingue placas (mesmo número de série CP2102 em todas, E-005).
     Só então PlatformIO compila e grava num único comando."""
     confere_mac(_mac_local(porta), MAC_HTC01, "HTC-01")
-    executa([PIO, "run", "-e", env, "-t", "upload",
+    executa([acha_pio(), "run", "-e", env, "-t", "upload",
              "--upload-port", porta, "-d", str(FIRMWARE)])
 
 
@@ -171,13 +210,13 @@ def resume_sf(sf, desde):
 
 # ---------------------------------------------------------------- rodada ---
 
-def roda_sf(sf, amostras_alvo, espera_max_s):
+def roda_sf(sf, amostras_alvo, espera_max_s, porta):
     print(f"\n=== SF{sf} ===", flush=True)
     desde = datetime.now(timezone.utc).isoformat()
 
     compila(f"sf{sf}_pinger")
     compila(f"sf{sf}_bridge")
-    grava_local(f"sf{sf}_pinger", PORTA_LOCAL)
+    grava_local(f"sf{sf}_pinger", porta)
     grava_remota(f"sf{sf}_bridge")
 
     time.sleep(6)  # boot das duas placas antes de cobrar amostra
@@ -210,15 +249,23 @@ def parse_args():
                     help="amostras mínimas por SF antes de avançar")
     ap.add_argument("--espera-max", dest="espera_max", type=int, default=180,
                     help="segundos máximos de espera por SF")
+    ap.add_argument("--porta", default=None,
+                    help="porta serial da HTC-01; padrão é detectar sozinho")
     return ap.parse_args()
 
 
 def main():
     args = parse_args()
+    porta = args.porta or acha_porta_serial()
+    if porta is None:
+        sys.exit("nenhuma porta USB-serial encontrada — a HTC-01 está "
+                 "conectada nesta máquina? Use --porta para indicar.")
+    print(f"porta serial: {porta}", flush=True)
+
     resultados = {}
     try:
         for sf in args.sf:
-            resultados[sf] = roda_sf(sf, args.amostras, args.espera_max)
+            resultados[sf] = roda_sf(sf, args.amostras, args.espera_max, porta)
     finally:
         imprime_tabela(resultados)
 

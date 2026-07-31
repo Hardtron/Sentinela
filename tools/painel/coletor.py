@@ -128,10 +128,19 @@ def pendencias():
 
 # -------------------------------------------------------------- hardware --
 
+# O nome da porta serial muda com o sistema: macOS expõe o CP2102 destas
+# placas como `cu.usbserial-*`, Linux como `ttyUSB*` (e `ttyACM*` para
+# dispositivos CDC-ACM). O painel roda nos dois — no MacBook, onde ficam as
+# placas de bancada, e no homeserver, que é o acesso de reserva quando o Mac
+# não está disponível. Uma lista só, aplicada em qualquer um.
+PADROES_SERIAL = ("cu.usbserial*", "cu.SLAB_USBtoUART*", "ttyUSB*", "ttyACM*")
+
+
 def portas_seriais():
     itens = []
-    for caminho in sorted(Path("/dev").glob("cu.usbserial*")):
-        itens.append({"porta": str(caminho), "presente": True})
+    for padrao in PADROES_SERIAL:
+        for caminho in sorted(Path("/dev").glob(padrao)):
+            itens.append({"porta": str(caminho), "presente": True})
     return itens
 
 
@@ -173,13 +182,23 @@ def hardware():
 
 # -------------------------------------------------------------- firmware --
 
-RE_TAM = re.compile(r"(RAM|Flash):\s+\[[= ]*\]\s+([\d.]+)%\s+"
-                    r"\(used (\d+) bytes from (\d+) bytes\)")
+RE_ENV = re.compile(r"^\[env:([^\]]+)\]", re.M)
+
+
+def _ambientes_declarados():
+    """Lê os ambientes direto do platformio.ini.
+
+    A lista era fixa com três nomes e o projeto já vai em vinte (os `bench_*`
+    e os doze da varredura SF7–SF12): ficava escondendo builds que existem.
+    Lendo da fonte, a aba Firmware não tem como divergir do que o PlatformIO
+    de fato constrói.
+    """
+    return RE_ENV.findall(_texto(RAIZ / "firmware" / "platformio.ini"))
 
 
 def firmware():
     ambientes = []
-    for env in ("node_dev", "node_range", "bridge"):
+    for env in _ambientes_declarados():
         binario = RAIZ / "firmware" / ".pio" / "build" / env / "firmware.bin"
         ambientes.append({
             "env": env,
