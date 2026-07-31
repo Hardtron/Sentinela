@@ -193,6 +193,86 @@ do modelo. Ponto medido sem coordenada é dado perdido.
 
 ---
 
+## 4.3 Coleta automática — MacBook na mochila
+
+**Esta é a forma recomendada de conduzir o ensaio**, e resolve dois problemas de
+uma vez: alimenta a placa e registra tudo, sem depender de bateria e sem exigir
+anotação manual.
+
+O MacBook vai na mochila com a `HTC-01` conectada pela USB. O laptop alimenta a
+placa, e o script grava cada amostra com carimbo de hora.
+
+```bash
+cd "~/Documents/Claude Projects/Sentinela"
+./tools/venv/bin/python tools/coleta.py --ensaio 02
+```
+
+A saída ao vivo mostra o veredito a cada pacote, e dois arquivos são gravados em
+`dados/`:
+
+| Arquivo | Conteúdo |
+|---|---|
+| `ensaio02-*-amostras.csv` | Toda amostra, com hora, ponto, RSSI, SNR e contadores |
+| `ensaio02-*-pontos.csv` | Resumo por ponto, com estatísticas e veredito |
+
+O resumo é regravado **a cada novo ponto**, então uma queda no meio do ensaio
+não leva junto o que já foi medido. Encerrar com `Ctrl+C`.
+
+> O script configura DTR/RTS **antes** de abrir a porta, de propósito: abrir a
+> serial de qualquer outro jeito reinicia o ESP32 e apaga o ponto em andamento.
+
+### Sobre conectar a placa ao iPhone
+
+Não funciona. O iOS não expõe porta serial USB a aplicativos de terceiros — o
+acesso exige o programa MFi da Apple, e o CP2102 da placa não é um dispositivo
+MFi. Não há adaptador que contorne isso.
+
+O caminho para usar o celular como registrador existiria pelo **BLE do próprio
+ESP32**, que dispensa cabo. Mas é desenvolvimento adicional, gasta bateria e não
+é necessário: o MacBook já resolve, e é o que temos.
+
+O celular tem, porém, um papel insubstituível no ensaio — o GPS. Ver §4.4.
+
+---
+
+## 4.4 Georreferenciamento pelas fotos
+
+A placa não tem GPS; o celular tem. E **toda foto tirada pelo celular carrega a
+coordenada no EXIF**. Isso permite georreferenciar sem digitar coordenada
+nenhuma: basta tirar uma foto durante a medição de cada ponto.
+
+O script casa as duas fontes pelo relógio — para cada ponto medido, procura as
+fotos tiradas naquele intervalo e usa a coordenada delas.
+
+```bash
+./tools/venv/bin/python tools/georreferenciar.py \
+    --pontos dados/ensaio02-20260730-2130-pontos.csv \
+    --fotos ~/Desktop/fotos-ensaio02
+```
+
+Gera três arquivos prontos para uso:
+
+| Formato | Para quê |
+|---|---|
+| `.geojson` | **QGIS** — camada com RSSI, margem, perda e veredito como atributos |
+| `.kml` | **Google Earth** — pinos coloridos por veredito, conferência rápida |
+| `-geo.csv` | Planilha, ou importação em qualquer lugar |
+
+### Requisitos
+
+- **Ative a localização na câmera do celular.** Sem isso a foto não tem
+  coordenada e o ponto fica sem posição.
+- Relógios do MacBook e do celular sincronizados. Ambos usam NTP por padrão, então
+  na prática já estão. Se houver desvio, corrija com `--offset <segundos>`.
+- Ao menos **uma foto durante a medição** de cada ponto. Fotografar a tela na
+  página PONTO mata dois coelhos: georreferencia e guarda o veredito como
+  evidência.
+
+O script avisa quais pontos ficaram sem foto, para você saber o que faltou antes
+de ir embora do local.
+
+---
+
 ## 5. Procedimento em cada ponto
 
 1. Chegue ao ponto e **pare de caminhar**. Medir andando mistura

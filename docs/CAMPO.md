@@ -74,6 +74,42 @@ funcionam ponta a ponta. Liberado para o ensaio de alcance ao ar livre.
 
 ---
 
+---
+
+## Ensaio 01b — Bancada, curta distância (validação das ferramentas)
+
+**Data:** 30/07/2026 · **Configuração:** idêntica ao ensaio 01
+**Ambiente:** interno, placas próximas, sem obstrução relevante entre elas
+
+| Métrica | Valor |
+|---|---|
+| Pacotes | 19/19 — **0% de perda** |
+| RSSI médio | **−51,7 dBm** (−56,0 a −50,0) |
+| SNR médio | +11,3 dB |
+| Margem | 77 dB |
+| **Assimetria** | **0,1 dB** |
+
+### Leitura
+
+Ensaio feito para validar as ferramentas de coleta, mas produziu dois resultados
+técnicos que valem por si:
+
+**As antenas estão boas.** Assimetria de **0,1 dB** entre o que cada lado ouve é
+praticamente medida idêntica. Isso derruba com folga a hipótese de antena ou
+conector defeituoso levantada no ensaio 01 — se houvesse problema em uma das
+pontas, apareceria aqui como desequilíbrio.
+
+**A hipótese das paredes ganha força.** Sem obstrução relevante, o enlace mede
+−51,7 dBm; no ensaio 01, a ~10 m e através de paredes de alvenaria, media −77 a
+−94 dBm. A diferença é consistente com atenuação por alvenaria.
+
+Isso **não substitui** a medição de 10 m com visada limpa do ensaio 02 — a
+distância aqui não foi controlada, então não dá para comparar diretamente com o
+modelo de espaço livre. Mas remove a preocupação mais séria: o hardware está
+saudável.
+
+---
+
 ## Próximos ensaios
 
 Procedimento detalhado em [ROTEIRO_CAMPO.md](ROTEIRO_CAMPO.md).

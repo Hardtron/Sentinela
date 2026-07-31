@@ -21,6 +21,54 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (6) — Ferramentas de coleta e georreferenciamento
+
+**Fase:** 0 · **Duração:** ~1 sessão
+
+### Feito
+
+- **`tools/coleta.py`** — captura a serial do PINGER, carimba cada amostra com a
+  hora, grava `-amostras.csv` e `-pontos.csv`, e mostra o veredito ao vivo
+  aplicando os mesmos critérios do firmware. O resumo é regravado a cada novo
+  ponto, então queda no meio do ensaio não leva junto o que já foi medido.
+- **`tools/georreferenciar.py`** — casa os pontos medidos com as fotos do
+  celular pelo EXIF e gera **GeoJSON, KML e CSV** com RSSI, margem, perda e
+  veredito como atributos.
+- Cadeia validada ponta a ponta contra hardware real: serial → CSV → EXIF →
+  GeoJSON/KML.
+- Ensaio 01b registrado (validação das ferramentas, mas com resultado técnico
+  próprio).
+
+### Aprendido
+
+- **Perda de dados por não haver registro.** Uma rodada de medições do usuário
+  se perdeu: as estatísticas viviam só na RAM da placa e sumiram no reinício.
+  Foi o que motivou as ferramentas — a partir daqui, todo ensaio grava em disco.
+- **Abrir a porta serial reinicia o ESP32** se DTR/RTS forem acionados na
+  abertura, apagando o ponto em andamento. Corrigido configurando as linhas
+  **antes** de abrir (`Serial()` sem porta, depois `open()`). Detectado no teste
+  porque o `seq` voltava a 1.
+- **As antenas estão boas**: assimetria de **0,1 dB** entre os dois sentidos no
+  ensaio 01b. Derruba a hipótese de antena ou conector defeituoso.
+- **iOS não expõe serial USB a aplicativos de terceiros** — exige o programa MFi
+  da Apple, e o CP2102 não é MFi. Registrar pelo iPhone via cabo está descartado;
+  o caminho, se um dia for necessário, é BLE do próprio ESP32.
+- **Foto de celular carrega coordenada no EXIF** — é o que permite
+  georreferenciar sem digitar coordenada nenhuma.
+
+### Decidido
+
+- **MacBook na mochila** como forma padrão de conduzir o ensaio: alimenta a
+  placa e registra tudo, resolvendo de uma vez a falta de bateria e a anotação
+  manual.
+- Coordenada por foto em vez de digitada: menos trabalho em campo e menos erro.
+
+### Próximo
+
+Ensaio 02 com coleta automática — linha de visada, 10 m → 25 m → 50 m → 100 m.
+
+---
+
 ## 2026-07-30 (5) — Instrumentação de campo e roteiro de ensaio
 
 **Fase:** 0 · **Duração:** ~1 sessão

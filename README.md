@@ -37,6 +37,7 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 ## Estrutura
 
 ```
+tools/        Coleta do ensaio e georreferenciamento (Python)
 firmware/     Firmware dos nós (PlatformIO)
   lib/app/      Lógica de aplicação — sem código específico de chip
   lib/hal/      Abstração de hardware — uma implementação por plataforma
@@ -102,6 +103,18 @@ pio device monitor -b 115200
 
 PlatformIO Core instalado em `~/.venvs/platformio` (fora do Python do sistema).
 GitHub CLI em `~/.local/bin/gh`.
+
+### Coleta do ensaio de campo
+
+```bash
+./tools/venv/bin/python tools/coleta.py --ensaio 02
+./tools/venv/bin/python tools/georreferenciar.py \
+    --pontos dados/ensaio02-...-pontos.csv --fotos ~/Desktop/fotos-ensaio02
+```
+
+O primeiro grava cada amostra com carimbo de hora e resume por ponto; o segundo
+casa esses pontos com as fotos do celular pelo EXIF e gera GeoJSON, KML e CSV
+para o QGIS. Detalhes em [ROTEIRO_CAMPO.md](docs/ROTEIRO_CAMPO.md) §4.3 e §4.4.
 
 ## Licença
 
