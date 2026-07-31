@@ -21,6 +21,67 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (19) — Auditoria do painel: seis desatualizações, quatro delas numéricas
+
+**Fase:** transversal · **Duração:** média
+
+### Feito
+
+Percorri as 11 abas do painel comparando cada número com a fonte de verdade.
+Todas renderizam; o problema não era quebra, era **conteúdo velho apresentado
+com aparência de atual** — o pior modo de falha para um painel.
+
+- **Fase fixa em "0 — bring-up do rádio".** Texto escrito à mão em
+  `coletor.py`, errado desde que o trabalho passou a correr em várias fases ao
+  mesmo tempo (Fase 2 fechou 8/8 e a 3 começou, com a 0 ainda em aberto).
+  Substituído por `fases()`, que **conta as caixas do PLANO.md** — mesma
+  estratégia já usada em `_ambientes_declarados()`. A visão geral ganhou uma
+  barra de progresso por fase (verde = feito, âmbar = parcial).
+- **`n = 2,57` em dois lugares** (PLANO.md e resumo do CAMPO.md) contra
+  `n = 3,28` em dez outros — e a própria equação ajustada
+  (`−32,8·log10(d)`) dá 3,28. Eram linhas-resumo escritas antes do modelo ser
+  refinado. Corrigidas.
+- **"~8 dB por 11 m"** no mesmo resumo, contra **+9 dB** medido em dois raios
+  independentes (P5 e P6) no corpo do documento. Corrigido.
+- **Margens de SF11/SF12 do ensaio 03a ainda estavam calculadas com a
+  sensibilidade errada** corrigida na entrada 18: 39,8 → **38,3 dB** e
+  44,2 → **43,2 dB**. Recomputadas direto do banco (que já usava a função
+  corrigida), não recalculadas à mão.
+- **`sensibilidade_dbm` digitada solta** na aba Hardware (−129,0 fixo, à
+  parte da tabela). Passou a ser derivada de `SENSIBILIDADE_DBM[SF]`, com a
+  tabela do datasheet e a citação junto. Acrescentado `potencia_max_dbm: 20`
+  (PA_BOOST, mesmo datasheet), que resolve o `[?] B-01` do CONFORMIDADE.md.
+- **Marcadores `[?] B-01/B-03/B-04` resolvidos** em CAMPO.md e
+  CONFORMIDADE.md — inclusive uma **pergunta em aberto que a pesquisa da
+  entrada 18 respondeu**: a separação entre chuva e folhagem molhada em
+  915 MHz. A resposta é assimétrica (gotas ~0,001 dB/km, desprezível;
+  vegetação molhada é o mecanismo real) e já está escrita no lugar certo.
+
+### Aprendido
+
+- **Um erro numérico corrigido no código não se propaga sozinho para os
+  documentos que já citaram o número.** A correção da entrada 18 tocou 7
+  arquivos e a função do banco, mas deixou para trás a tabela do ensaio 03a
+  em CAMPO.md, que tinha as margens escritas como texto. Depois de corrigir
+  uma constante, vale grepar pelos **valores derivados**, não só pela
+  constante.
+- Painel que mostra número velho é pior que painel fora do ar: o fora do ar
+  se percebe, o número velho não. Daí a preferência, aqui, por **derivar da
+  fonte** (fases, ambientes de firmware, sensibilidade) em vez de repetir o
+  valor.
+
+### Próximo
+
+1. **Lacuna real, não resolvida:** o painel não lê o banco. A aba
+   Monitoramento mostra só a janela em memória do MQTT, e os 2.600+ registros
+   históricos (inclusive a varredura SF) não têm nenhuma visualização. É a
+   próxima peça óbvia do painel, e é trabalho de feature, não de auditoria.
+2. Aba *Frota* segue com catálogo previsto e `operando: 0` — correto (nenhuma
+   Atalaia em campo), mas convive mal com a aba Monitoramento mostrando duas
+   placas ativas. Vale unificar a linguagem quando houver nó de campo real.
+
+---
+
 ## 2026-07-31 (18) — Pendências de literatura: um erro numérico real encontrado
 
 **Fase:** transversal · **Duração:** média

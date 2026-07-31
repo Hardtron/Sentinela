@@ -308,8 +308,8 @@ ponta) antes de gastar uma saída de campo nele.
 | 8  | 23 | −97,6 dBm | −110,1 dBm | 28,4 dB | 12,5 dB | 0 |
 | 9  | 24 | −89,2 dBm | −102,9 dBm | 39,8 dB | 13,7 dB | 0 |
 | 10 | 25 | −86,8 dBm | −100,7 dBm | 45,2 dB | 13,9 dB | 0 |
-| 11 | 24 | −94,7 dBm | −108,3 dBm | 39,8 dB | 13,6 dB | 0 |
-| 12 | 37 | −92,8 dBm | −107,9 dBm | 44,2 dB | 14,1 dB | 0 |
+| 11 | 24 | −94,7 dBm | −108,3 dBm | 38,3 dB | 13,6 dB | 0 |
+| 12 | 37 | −92,8 dBm | −107,9 dBm | 43,2 dB | 14,1 dB | 0 |
 
 **[M]** Números direto do banco (`enlace_analise`), isolados por rodada a
 partir dos intervalos de tempo entre gravações (cada regravação gera um
