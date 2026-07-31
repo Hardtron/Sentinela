@@ -33,6 +33,63 @@ em geoprocessamento pesa mais (ADR-005).
 
 A mesma base é consultável direto no QGIS, sem exportação intermediária.
 
+## Estado atual — no ar desde 31/07/2026
+
+```
+HTC-01 →(LoRa)→ HTC-03/bridge →(MQTT)→ túnel SSH → ingestor → TimescaleDB+PostGIS
+        RPi 4 (192.168.15.73)              homeserver (192.168.15.66)
+```
+
+| Peça | Como roda | Estado |
+|---|---|---|
+| Banco | `docker compose` no homeserver, preso em `127.0.0.1:5432` | TimescaleDB 2.29 + PostGIS 3.6 |
+| Túnel MQTT | `sentinela-tunel-mqtt.service` (unidade de **usuário**) | ativo |
+| Ingestor | `sentinela-ingestor.service` (unidade de **usuário**) | ativo |
+
+```bash
+cd backend && docker compose up -d          # banco
+systemctl --user status sentinela-ingestor  # ingestor
+journalctl --user -u sentinela-ingestor -f  # log ao vivo
+```
+
+Consulta rápida:
+
+```bash
+docker exec -it sentinela-banco psql -U sentinela -d sentinela
+```
+
+### Por que unidades de usuário, e não de sistema
+
+O `sudo` do homeserver pede senha interativa, e nenhum dos dois serviços
+precisa de privilégio: o ingestor fala com `localhost` e o túnel usa uma chave
+SSH do próprio usuário. Para sobreviverem a reboot foi habilitado
+`loginctl enable-linger` (não exigiu sudo).
+
+### Por que o ingestor roda no homeserver, e não no RPi
+
+Assim a credencial do PostgreSQL **nunca sai de `localhost`**. O que atravessa
+a rede é só o MQTT, dentro de um túnel SSH cuja chave está registrada no RPi
+com `restrict,port-forwarding,permitopen="127.0.0.1:1883"` — ela não abre
+shell nem encaminha nada além da porta do broker, mesmo se vazar.
+
+### Tabelas que já existem
+
+- `no` — cadastro das 6 placas, com geometria (nula enquanto em bancada)
+- `enlace` — hypertable da telemetria de enlace (RSSI/SNR/sequência)
+- `enlace_analise` — view com margem e assimetria derivadas do SF
+- `enlace_hora` — agregação contínua horária
+- `saude_bridge` — hypertable de saúde da bridge (RC-02)
+- `ponto_ensaio` — os 7 pontos do ensaio 02 em PostGIS
+
+`leitura` (sensor) **ainda não existe**: entra na Fase 1 com `lib/proto/`.
+Chamar a tabela atual de `leitura` seria mentir sobre o que ela contém.
+
+### Idempotência
+
+A bridge reenvia o buffer em disco quando o broker volta. O índice único
+`(bridge_id, node_id, seq, recebido_em)` com `ON CONFLICT DO NOTHING` impede
+que isso duplique amostra e falseie a taxa de perda.
+
 ## Modelo de dados previsto (Fase 3)
 
 - `no` — cadastro dos nós, com geometria e talude associado

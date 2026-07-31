@@ -209,11 +209,47 @@ LoRaWAN: **AU915, sub-banda 2** (canais 8–15, 916,8–918,2 MHz).
 
 > **Nunca transmitir sem antena conectada.** O PA do SX1276 sem carga se degrada.
 
-## Consumo — limitação conhecida da V2
+## Consumo
+
+### Medido em operação — 31/07/2026 **[M]**
+
+Medidor USB em série com a `HTC-01` rodando `node_dev` (PINGER, SF9, 17 dBm,
+ping a cada 3 s, OLED ligado), sem sono:
+
+| Grandeza | Valor |
+|---|---|
+| Tensão de entrada | 5,223 V |
+| Corrente | **81 mA** |
+| Potência | **423 mW** |
+| Acumulado | 320 mAh / 1,664 Wh em ~3,9 h |
+
+O acumulado dividido pelo tempo dá ~81 mA, **igual à leitura instantânea** — o
+consumo é estável, como esperado de um nó que passa quase todo o ciclo em
+recepção com rajadas curtas de transmissão.
+
+**Três ressalvas que impedem usar esse número direto para autonomia:**
+
+1. **É medido na entrada USB de 5 V, não no barramento de 3,3 V.** O regulador
+   linear da placa não converte, ele dissipa: a corrente de entrada é
+   praticamente igual à de saída, então ~267 mW chegam ao circuito e ~156 mW
+   viram calor. Alimentar por bateria de 3,7 V muda essa conta.
+2. **Inclui o CP2102**, que existe só para a USB e **não existirá no nó de
+   campo**.
+3. **O OLED estava ligado.** A economia de tela por inatividade
+   (`TELA_INATIVIDADE_MS`) foi implementada no mesmo dia; medir com a tela
+   apagada quantifica quanto ela custa — ensaio ainda não feito.
+
+**Consequência prática:** a 81 mA contínuos, uma célula de 2000 mAh duraria
+**cerca de 25 horas**. Isso confirma pelo lado da medição o que o ADR-004 já
+sustentava por outro caminho: **sem sono profundo não existe nó de campo
+autônomo**, e a V2 não é a plataforma final.
+
+### Deep sleep — limitação conhecida da V2 **[L]**
 
 A Heltec V2 consome tipicamente **~800 µA a 1 mA em deep sleep**, contra os
 ~20 µA teóricos do ESP32, por causa do regulador e do CP2102 permanentemente
-alimentados.
+alimentados. **[?]** Ainda não medido nesta bancada — o firmware atual não
+dorme; medir exige a Fase 1.
 
 Isso é irrelevante em bancada e **inviabiliza a V2 como nó de campo autônomo**.
 Ver ADR-004 para o caminho de migração.

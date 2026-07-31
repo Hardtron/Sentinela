@@ -14,7 +14,9 @@ Nenhuma compra é necessária antes da fase 4.
 - [x] Firmware de bring-up: SX1276 em 916,8 MHz, OLED, serial
 - [x] Display de diagnóstico com 4 páginas navegáveis pelo botão PRG
 - [x] Ping-pong entre `HTC-01` e `HTC-02` com RSSI/SNR — ensaio 01, 0% de perda
-- [ ] Medição de consumo em operação e em deep sleep
+- [~] Medição de consumo — **em operação medida** (81 mA / 423 mW a 5 V,
+      31/07/2026, ver HARDWARE.md); **deep sleep pendente**, o firmware ainda
+      não dorme
 - [x] **Teste de alcance em campo** — ensaio 02, 7 pontos, modelo n = 2,57
 - [ ] Levantamento de alcance por spreading factor (SF7 a SF12) — **prioritário**
 
@@ -61,7 +63,10 @@ reinício sem perder acumulado (RC-06).
       assinando MQTT: margem de enlace nos dois sentidos, RSSI, SNR,
       assimetria, perda por buraco de sequência, estado de nós e da bridge
       (`tools/painel/telemetria.py`), 31/07/2026
-- [ ] Ingestor MQTT → banco, decodificando `proto/`
+- [x] **Ingestor MQTT → banco** — `backend/ingestor.py` no homeserver,
+      gravando em TimescaleDB + PostGIS; idempotente contra reenvio do buffer
+      da bridge, 31/07/2026. (Decodificação de `proto/` entra na Fase 1,
+      quando o payload binário existir.)
 - [x] Detecção de nó silencioso (RC-02) — implementada na bridge (saúde
       publicada a cada 30 s); falta o lado do banco/ingestor
 
@@ -73,8 +78,11 @@ reinício sem perder acumulado (RC-06).
 
 **Objetivo.** Transformar telemetria em informação de risco.
 
-- [ ] PostgreSQL + TimescaleDB + PostGIS no homeserver
-- [ ] Hypertables e agregação contínua de chuva (24 h / 72 h / 96 h)
+- [x] **PostgreSQL + TimescaleDB + PostGIS no homeserver** — em Docker,
+      preso em 127.0.0.1, 31/07/2026 (`backend/docker-compose.yml`)
+- [~] **Hypertables e agregação contínua** — `enlace` e `saude_bridge` já são
+      hypertables, com agregação horária contínua funcionando. A janela de
+      chuva (24/72/96 h) depende do pluviômetro (P-013)
 - [ ] Modelo geoespacial: nós, taludes, áreas de alcance, população exposta
 - [ ] Motor de limiar intensidade-duração
 - [ ] Dashboard operacional

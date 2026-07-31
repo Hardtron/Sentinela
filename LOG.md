@@ -21,6 +21,75 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (15) — O dado para de evaporar: ingestor, banco e consumo medido
+
+**Fase:** 2 → 3 · **Duração:** longa
+
+### Feito
+
+- **Achado que motivou a prioridade:** 549 pacotes já haviam trafegado
+  ponta a ponta e **nenhum existia em lugar nenhum**. O `buffer.jsonl` só
+  guarda o que *falha* ao publicar (e nada falhava), o `mosquitto.db` tinha
+  286 bytes (mensagem retida, não histórico) e o painel mantinha 600 amostras
+  em RAM. A esteira estava completa e era um cano aberto.
+- **Banco no ar no homeserver**: TimescaleDB 2.29 + PostGIS 3.6 na mesma
+  instância (`backend/docker-compose.yml`), porta presa em `127.0.0.1`.
+  Tabelas: `no`, `enlace` (hypertable), `saude_bridge` (hypertable),
+  `ponto_ensaio`, view `enlace_analise` e agregação contínua `enlace_hora`.
+- **Ingestor rodando** (`backend/ingestor.py`), idempotente por índice único
+  `(bridge_id, node_id, seq, recebido_em)` + `ON CONFLICT DO NOTHING` — a
+  bridge reenvia o buffer ao reconectar, e sem isso a taxa de perda ficaria
+  falseada por duplicata. **763 amostras persistidas** na primeira meia hora.
+- **Ensaio 02 carregado no PostGIS** (`backend/carrega_ensaio.py`). Serviu de
+  verificação cruzada: as distâncias registradas em campo batem com as
+  calculadas por `ST_Distance` a partir do nó fixo **dentro de 0,3 m**.
+- **Firmware da `HTC-03` atualizado remotamente, pela própria RPi**, sem
+  mover a placa: `esptool` instalado no RPi, binário enviado por `rsync`,
+  gravado em 0x10000 com hash verificado. Estabelece a capacidade de atualizar
+  o gateway à distância — o que importa quando ele estiver num poste.
+- **Consumo medido** (medidor USB, `HTC-01` em `node_dev`): **81 mA / 423 mW
+  a 5,2 V**, com o acumulado (320 mAh em ~3,9 h) confirmando a leitura
+  instantânea. Registrado em HARDWARE.md com as ressalvas que impedem usar o
+  número direto para autonomia.
+
+### Decidido
+
+- **Ingestor no homeserver, não no RPi.** Assim a credencial do PostgreSQL
+  nunca sai de `localhost`; o que cruza a rede é só MQTT, dentro de túnel SSH.
+- **Chave SSH dedicada e restrita** para o túnel, registrada no RPi com
+  `restrict,port-forwarding,permitopen="127.0.0.1:1883"`: não abre shell nem
+  encaminha outra porta, mesmo se vazar.
+- **Unidades de usuário em vez de sistema**, porque o `sudo` do homeserver
+  pede senha interativa — que eu não digito — e nenhum dos dois serviços
+  precisa de privilégio. `loginctl enable-linger` (sem sudo, via polkit)
+  resolveu a sobrevivência a reboot.
+- **Tabela de telemetria chama `enlace`, não `leitura`.** O que existe hoje é
+  qualidade de enlace, não leitura de sensor; `leitura` fica reservada para a
+  Fase 1. Nomear errado seria mentir sobre o conteúdo.
+
+### Aprendido
+
+- **Capturar parâmetro em banner de boot é frágil.** O `sf` saía nulo porque a
+  bridge, ao reiniciar, conecta-se a uma placa que já está rodando e nunca vê o
+  banner. Corrigido fazendo o firmware **reanunciar o `sf=` no heartbeat** a
+  cada 5 s: o dado passa a se autodescrever independentemente de quem reiniciou
+  primeiro. Isso importa porque o SF define a sensibilidade contra a qual a
+  margem é medida — e a varredura SF7–SF12 vai variá-lo.
+- A medição de consumo confirma **pelo lado empírico** o que o ADR-004
+  sustentava por análise: a 81 mA contínuos uma célula de 2000 mAh dura ~25 h.
+  Sem sono profundo não existe nó de campo autônomo.
+
+### Próximo
+
+1. **Varredura SF7–SF12** é agora o item de maior valor: fecha a Fase 0, e
+   toda amostra já cai no banco marcada com o SF correto. Falta tornar o SF
+   ajustável em execução — hoje é `#define`, e trocar exigiria 12 regravações
+   com o notebook em campo.
+2. `lib/proto/` — o `--no-id` só funciona porque existe um transmissor só.
+3. Painel lendo do banco (histórico) além do MQTT (tempo real).
+
+---
+
 ## 2026-07-31 (14) — Monitoramento da rede em tempo real no painel
 
 **Fase:** 2 · **Duração:** média
