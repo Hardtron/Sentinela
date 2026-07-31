@@ -178,6 +178,46 @@ de devolvê-la a um papel RF-ativo.
 
 ---
 
+### E-008 — Placa "morta" na bateria; só liga pela USB com a bateria removida
+
+**Contexto:** 31/07/2026, logo após instalar as NCR18650B na `HTC-01` e
+`HTC-02` e atualizar o firmware.
+**Sintoma:** com a bateria conectada, a placa não liga — nem na bateria
+sozinha, nem com USB + bateria. Removendo a bateria, liga normal pela USB.
+Funcionava bem antes das baterias entrarem.
+**Investigação:**
+- **Polaridade invertida foi a primeira hipótese e está DESCARTADA** —
+  confirmado pelo usuário, e a `HTC-02` passou a ligar normalmente na
+  bateria depois de carregar, com a mesma fiação.
+- **Firmware novo (página BATERIA / `temperatureRead()`) está DESCARTADO
+  como causa**, com evidência de hardware e não por análise: a `HTC-02`
+  roda exatamente o mesmo `readTempChip()` (mesmo `ui_dev.cpp`, chamada no
+  laço `ROLE_BENCH`, `main.cpp:408`) e liga na bateria sem problema.
+  Revisão do código confirma ainda: nenhuma chamada de `deep_sleep`,
+  `light_sleep`, `WiFi`, mudança de clock, e `vextOff()` **nunca é
+  chamada** em lugar nenhum — o firmware não desliga nada.
+**Causa mais provável [E], não confirmada:** célula ainda muito descarregada
+no momento do teste. Isso explica os três sintomas de uma vez: sem carga
+suficiente não liga sozinha; o carregador puxando corrente para uma célula
+vazia disputa o orçamento da porta USB (e o chaveamento automático
+USB/bateria da V2 pode preferir a bateria descarregada); removida a bateria,
+toda a corrente da USB sobra para a placa. A `HTC-02` ter voltado a
+funcionar **depois de carregar** sustenta essa leitura.
+**Hipótese secundária [E]:** *brownout* por pico de transmissão. Vale só
+para `node_dev`/`node_range` (RF-ativos, 17 dBm a cada 3 s), não para
+`bench_*`. Distingue-se da anterior pela página BATERIA: se for brownout,
+ela mostra `reset: brownout`.
+**Solução:** carregar a célula até a corrente cair (fim do CC/CV) antes de
+concluir qualquer coisa. A 0,200 A, célula de 3400 mAh vazia leva ~17 h.
+**Status:** aberto — aguarda carga completa para confirmar ou refutar.
+
+> Antes de diagnosticar "placa com defeito" numa alimentação por bateria
+> nova, **carregar até o fim primeiro**. Célula grande com corrente de carga
+> modesta demora horas, e quase todo sintoma de "morta" desaparece com carga
+> — inclusive os que parecem falha de hardware.
+
+---
+
 ## Armadilhas conhecidas (ainda não encontradas)
 
 Registradas preventivamente. Se alguma se manifestar, promover para a seção

@@ -234,6 +234,31 @@ consumindo dela).
 intermediário sem medir a curva completa até a célula sinalizar carga
 plena (queda de corrente característica do perfil CC/CV do Li-ion).
 
+### Compatibilidade da NCR18650B com a Heltec V2 **[L]**
+
+**Compatível quanto à química e à tensão.** A NCR18650B é célula Li-ion
+única, 3,6–3,7 V nominal, carga até 4,2 V — exatamente a faixa do
+gerenciamento de bateria embarcado da V2, que a documentação da Heltec
+descreve como *"Li-Po battery management system"* com carga/descarga,
+proteção de sobrecarga, detecção de nível e **chaveamento automático
+USB/bateria**. O circuito não distingue formato cilíndrico 18650 de pouch
+LiPo: o que importa é a curva de tensão de célula única, e ela é a mesma.
+
+**A capacidade é que muda a conta:** ~3400 mAh da NCR18650B contra as
+poucas centenas de mAh típicas de pouch pequena. Isso favorece autonomia,
+mas **alonga muito o tempo de carga** — a 0,200 A observados, uma célula
+vazia levaria da ordem de **17 h** para encher (3400/200). Não é defeito; é
+consequência de carregar célula grande com corrente modesta.
+
+**Ponto de atenção — corrente de pico em transmissão.** O papel `node_dev`
+(PINGER) transmite a 17 dBm a cada 3 s; o pico do PA soma-se ao consumo do
+resto da placa. Com célula ainda pouco carregada, ou com resistência de
+contato no suporte 18650, esse pico pode derrubar a tensão abaixo do limiar
+do detector de *brownout* do ESP32 e reiniciar a placa em laço — sintoma que
+de fora parece "placa morta". A página **BATERIA** exibe justamente o motivo
+do último reinício (`esp_reset_reason()`): se for esse o caso, ela mostra
+`reset: brownout`. É o diagnóstico direto, sem precisar de serial.
+
 ## Consumo
 
 ### Medido em operação — 31/07/2026 **[M]**

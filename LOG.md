@@ -97,11 +97,37 @@ apenas o apontamento.
   software: se o PA da `HTC-02` sofreu dano nos ~20 minutos transmitindo sem
   carga.
 
+### Investigação: placa "morta" na bateria (E-008)
+
+Sintoma relatado: com bateria conectada a placa não liga (nem na bateria,
+nem com USB+bateria); removendo a bateria, liga pela USB.
+
+- **Polaridade invertida** foi minha primeira hipótese — **errada**,
+  descartada pelo usuário. Eu tinha pesado demais um tópico de fórum da
+  Heltec sobre confusão de conector sem ter evidência de que era o caso
+  aqui; o usuário confirmou fiação correta e a `HTC-02` passou a ligar
+  normalmente na bateria depois de carregar, com a mesma fiação.
+- **Firmware novo descartado como causa, por evidência de hardware**: a
+  `HTC-02` roda o mesmo `readTempChip()`/`temperatureRead()` (mesmo
+  `ui_dev.cpp`, chamada no laço `ROLE_BENCH`, `main.cpp:408`) e liga na
+  bateria sem problema. Revisão de código confirmou também que o firmware
+  **não tem nenhuma chamada de sono, WiFi, mudança de clock**, e que
+  `vextOff()` está definida mas **nunca é chamada** — nada é desligado.
+  `board_heltec_v2.h` não foi tocado desde antes das baterias.
+- **Causa mais provável agora**: célula ainda muito descarregada. Explica os
+  três sintomas de uma vez, inclusive o mais estranho (USB+bateria também
+  morto) — carregador puxando corrente para célula vazia disputa o orçamento
+  da porta USB. A 0,200 A, encher 3400 mAh do zero leva ~17 h.
+- Registrado em ERROS.md como **E-008, status aberto** — aguarda carga
+  completa para confirmar. Não fechei como resolvido porque não foi
+  confirmado.
+
 ### Próximo
 
-1. **Confirmar onde está a `HTC-01` de verdade** e, quando ela voltar à USB
-   do Mac, checar o MAC antes de qualquer gravação (agora automático em
-   `varredura_sf.py`, mas gravações manuais continuam exigindo o hábito).
+1. ~~**Confirmar onde está a `HTC-01` de verdade**~~ — **feito**: MAC
+   `3c:71:bf:8c:2c:d0` confirmado na USB do Mac, gravada com `node_dev`
+   atualizado (com checagem de MAC guardando a gravação, desta vez de
+   verdade). Enlace fechando com a `HTC-03`, 2/2 pacotes.
 2. **Inspecionar/medir a `HTC-02` antes de devolvê-la a um papel RF-ativo**
    no futuro — ela segue sem antena própria (a antena que tinha foi para a
    `HTC-03`, entrada 10), então não há urgência de papel RF-ativo para ela
