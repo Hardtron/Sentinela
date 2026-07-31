@@ -61,7 +61,7 @@ como `/dev/cu.usbserial-0001`. O que identifica cada placa é o **MAC do ESP32**
 |---|---|---|
 | `HTC-01` | `3c:71:bf:8c:2c:d0` | 4 MB |
 | `HTC-02` | `3c:71:bf:8c:2f:9c` | 4 MB |
-| `HTC-03` | **[?]** a identificar na primeira gravação | — |
+| `HTC-03` | `3c:71:bf:8c:31:70` | 4 MB |
 | `HTC-04` | `3c:71:bf:8c:2f:a4` | 4 MB |
 | `HTC-05` | **[?]** a identificar na primeira gravação | — |
 | `HTC-06` | **[?]** a identificar na primeira gravação | — |

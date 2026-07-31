@@ -21,6 +21,61 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (8) — HTC-03 gravada; Raspberry Pi vivo na rede
+
+**Fase:** 0 → 2 · **Duração:** curta
+
+### Feito
+
+- **`HTC-03` gravada com `bench_03`** e verificada por hash. MAC confirmado:
+  `3c:71:bf:8c:31:70`. Sem antena conectada — segue em modo bancada até uma
+  antena ser destinada a ela (RF-ativa, papel `bridge`, exige confirmação
+  física antes de regravar).
+- **Raspberry Pi 4 gravado e confirmado vivo na rede**, via a porta `eth1` do
+  roteador — apareceu como `sentinelapi` em dois IPs (Ethernet + Wi-Fi, mesma
+  placa), com MAC `b8:27:eb:...` (prefixo genuíno da Raspberry Pi Foundation).
+  A gravação da imagem havia terminado com **falha de verificação no
+  Raspberry Pi Imager**, mas o sistema subiu e chegou a anunciar hostname via
+  mDNS — sinal de que ao menos parte da customização (hostname) persistiu.
+- **SSH ainda não estabelecido** — porta 22 recusando conexão nos dois IPs no
+  momento da checagem. Hipótese mais provável: o script de primeiro boot
+  (`firstrun.sh`, usado pelo Raspberry Pi OS Trixie para aplicar usuário/SSH
+  da customização do Imager) não terminou de rodar, ou foi parcialmente afetado
+  pela mesma falha de verificação — o hostname pegou, o SSH pode não ter
+  pegado.
+- Usuário do Pi esquecido pelo usuário; senha (`fordf7572`) foi informada no
+  chat, mas **não foi usada por mim** — política do projeto proíbe eu digitar
+  senha em qualquer campo, mesmo de sistema próprio. Orientado o usuário a
+  rodar `ssh-copy-id` no próprio terminal para estabelecer acesso por chave,
+  mesmo padrão do homeserver.
+
+### Aprendido
+
+- **Diagnóstico anterior de "cartão com defeito de hardware" ficou parcialmente
+  refutado pelo resultado real**: a mesma combinação cartão+leitor que falhou
+  em três testes diretos (Imager, `diskutil` partição, `diskutil` montagem)
+  ACABOU produzindo um Raspberry Pi que boota e aparece na rede. Isso não
+  invalida os testes — mostra que a falha de verificação pode ser parcial
+  (afeta alguns blocos/arquivos, não a imagem inteira) e que **"verificação
+  falhou" não é sinônimo de "sistema não vai funcionar"**, mas também não
+  garante que tudo funcionará (o SSH não estabelecido é candidato a ser
+  exatamente esse dano parcial).
+- Luz de link no roteador/switch não prova que o Linux terminou de bootar —
+  pode vir de negociação de PHY em estágio bem anterior ao SO. mDNS respondendo
+  com hostname correto é evidência bem mais forte de que o userspace subiu.
+- Duas entradas ARP com mesmo hostname e MACs diferentes, ambas respondendo
+  ping, é o padrão esperado quando o mesmo Pi tem Ethernet e Wi-Fi ativos
+  simultaneamente — não é dois dispositivos.
+
+### Próximo
+
+Usuário vai rodar `ssh-copy-id` no terminal local para estabelecer acesso por
+chave ao Pi. Depois disso: confirmar se SSH realmente não vinha funcionando por
+falta de serviço (pode precisar reiniciar o Pi ou aguardar o firstrun.sh
+terminar) e seguir para instalação de Mosquitto + `bridge.py` (ADR-007).
+
+---
+
 ## 2026-07-31 (7) — HTC-04 gravada: primeira placa em modo bancada
 
 **Fase:** 0 · **Duração:** curta
