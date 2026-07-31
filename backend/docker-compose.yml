@@ -1,0 +1,40 @@
+# Sentinela — banco de séries temporais + geoespacial.
+#
+# Imagem `timescaledb-ha` porque ela já traz TimescaleDB **e** PostGIS na mesma
+# instância. Os dois juntos são o ponto do projeto (ADR-005): série temporal
+# sem geometria não vira informação de risco, e geometria sem série não vira
+# alerta.
+#
+# A porta fica presa em 127.0.0.1: o banco **não é exposto na LAN**. O ingestor
+# roda no mesmo host e fala por localhost; quem precisar consultar de fora
+# (QGIS, painel) usa túnel SSH, mesmo padrão adotado para o broker.
+#
+# Uso:
+#   cd backend && docker compose up -d
+#   docker compose logs -f banco
+#
+# Autoria: Matheus Marassi
+
+services:
+  banco:
+    image: timescale/timescaledb-ha:pg16
+    container_name: sentinela-banco
+    restart: unless-stopped
+    shm_size: 256mb
+    environment:
+      POSTGRES_DB: sentinela
+      POSTGRES_USER: sentinela
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD em backend/.env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/home/postgres/pgdata
+      - ./esquema.sql:/docker-entrypoint-initdb.d/10-esquema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinela -d sentinela"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

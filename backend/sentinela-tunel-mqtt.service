@@ -1,0 +1,33 @@
+# Sentinela — túnel SSH até o broker MQTT do Raspberry Pi.
+#
+# Por que existe: o Mosquitto do RPi escuta só em 127.0.0.1 e assim deve
+# continuar enquanto não houver autenticação e TLS — broker anônimo aberto na
+# rede aceita publicação de qualquer um, e telemetria forjada num sistema de
+# alerta é pior do que telemetria nenhuma. O túnel dá acesso ao ingestor sem
+# expor nada.
+#
+# A chave `id_sentinela_rpi` está registrada no RPi com
+# `restrict,port-forwarding,permitopen="127.0.0.1:1883"`: serve só para
+# encaminhar essa porta. Não abre shell nem pty mesmo se vazar.
+#
+# Instalação no homeserver:
+#   sudo cp backend/sentinela-tunel-mqtt.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now sentinela-tunel-mqtt
+#
+# Autoria: Matheus Marassi
+
+[Unit]
+Description=Sentinela — túnel SSH para o broker MQTT do Raspberry Pi
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=matheus
+ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i /home/matheus/.ssh/id_sentinela_rpi -L 127.0.0.1:1883:127.0.0.1:1883 sentinelapi@192.168.15.73
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -43,6 +43,9 @@ except ImportError:
 RE_CSV = re.compile(
     r"^(\d+),([\-\d.]*),([\-\d.]*),([\-\d.]*),([\-\d.]*),(\d+),(\d+)$")
 
+# O firmware imprime `# freq=916.8MHz sf=9 bw=125kHz ...` ao subir.
+RE_SF = re.compile(r"\bsf=(\d+)")
+
 TOPICO_TELEMETRIA = "sentinela/no/{node_id}/telemetria"
 TOPICO_SAUDE = "sentinela/bridge/{bridge_id}/saude"
 
@@ -108,9 +111,24 @@ def parse_linha(linha):
     }
 
 
-def monta_mensagem(dados, node_id):
+def anota_parametros(linha, estado):
+    """Captura o SF anunciado pelo firmware nos comentários de boot.
+
+    Faz a telemetria se autodescrever: quando a varredura SF7–SF12 trocar o
+    fator de espalhamento, o dado gravado já sai com o valor correto, sem
+    depender de alguém lembrar de ajustar um parâmetro na linha de comando —
+    e o SF é o que define a sensibilidade contra a qual a margem é medida.
+    """
+    achado = RE_SF.search(linha)
+    if achado:
+        estado["sf"] = int(achado.group(1))
+
+
+def monta_mensagem(dados, node_id, estado):
     return {
         "node_id": node_id,
+        "bridge_id": estado.get("bridge_id"),
+        "sf": estado.get("sf"),
         "recebido_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         **dados,
     }
@@ -190,12 +208,15 @@ def tenta_esvaziar_fila(cliente, node_id, fila):
 # ---------------------------------------------------------------- principal --
 
 def processa_linha(linha, fila, cliente, node_id_padrao, estado):
-    if linha.startswith("#") or not linha:
+    if not linha:
+        return
+    if linha.startswith("#"):
+        anota_parametros(linha, estado)
         return
     dados = parse_linha(linha)
     if dados is None:
         return
-    msg = monta_mensagem(dados, node_id_padrao)
+    msg = monta_mensagem(dados, node_id_padrao, estado)
     if publica(cliente, node_id_padrao, msg):
         estado["publicados"] += 1
     else:
@@ -224,7 +245,8 @@ def main():
         sys.exit("pyserial nao encontrado. Instale com: pip install pyserial")
 
     args = parse_args()
-    estado = {"inicio": time.time(), "publicados": 0}
+    estado = {"inicio": time.time(), "publicados": 0,
+              "bridge_id": args.bridge_id, "sf": None}
     fila = buffer_carrega(BUFFER_PATH)
     cliente = cria_cliente_mqtt(args)
     origem = (linhas_de_arquivo(args.simular, args.veloz) if args.simular
