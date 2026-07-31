@@ -117,7 +117,7 @@ sensor, sem estrutura, sem vento e sem captor de raio sobre o talude.
 | SF7 | -123,0 dBm | 41 ms | 1,0x |
 | SF9 | -129,0 dBm | 169 ms | 4,1x |
 | SF10 | -132,0 dBm | 289 ms | 7,0x |
-| SF12 | -137,0 dBm | 1155 ms | 28,2x |
+| SF12 | -136,0 dBm | 1155 ms | 28,2x |
 
 SF7 → SF12 rende 14 dB ao custo de 28x mais tempo de rádio ligado.
 Uma haste rende 9 dB ao custo de ZERO energia.

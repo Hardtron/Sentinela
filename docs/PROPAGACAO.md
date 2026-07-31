@@ -199,20 +199,32 @@ número de vegetação isolado sugere.
 
 ## 7. Spreading factor: alcance contra autonomia
 
+Sensibilidade conforme o datasheet oficial **[N]** (SX1276/77/78/79 Rev. 7,
+maio/2020, tabela `RFS_L125_HF` — 125 kHz, Band 1, maior ganho de LNA):
+
 | SF | Sensibilidade | Ganho sobre SF7 | Tempo no ar (11 B) | Custo relativo |
 |---|---|---|---|---|
 | SF7 | −123,0 dBm | — | 41 ms | 1,0× |
 | SF9 | −129,0 dBm | +6 dB | 169 ms | 4,1× |
 | SF10 | −132,0 dBm | +9 dB | 289 ms | 7,0× |
-| **SF12** | **−137,0 dBm** | **+14 dB** | 1.155 ms | **28,2×** |
+| **SF12** | **−136,0 dBm** | **+13 dB** | 1.155 ms | **28,2×** |
 
-SF12 acrescenta 14 dB sobre SF7 — pelo modelo com n = 3,28, isso **multiplica o
-alcance por 2,7**. Mas custa **28× mais tempo de rádio ligado**, o que ataca
+SF12 acrescenta 13 dB sobre SF7 — pelo modelo com n = 3,28, isso **multiplica o
+alcance por 2,5**. Mas custa **28× mais tempo de rádio ligado**, o que ataca
 diretamente os dois recursos escassos do projeto: bateria e ocupação de canal.
 
-**Comparação que decide o desenho:** subir de SF7 para SF12 rende 14 dB ao custo
+**Comparação que decide o desenho:** subir de SF7 para SF12 rende 13 dB ao custo
 de 28× de energia de transmissão. Uma haste de 4 m rende 9 dB ao custo de **zero
 energia**. Elevar a antena é quase sempre a troca melhor — e as duas se somam.
+
+> **Correção de 31/07/2026 (B-01).** Esta tabela trazia SF11 = −134,5 dBm e
+> SF12 = −137,0 dBm, valores **sem fonte** que não conferem com o datasheet:
+> os corretos são −133,0 e −136,0. SF7 a SF10 estavam certos. O erro tornava a
+> margem em SF11/SF12 otimista em 1,5 e 1,0 dB, e inflava o ganho de SF12 de
+> 13 para 14 dB (alcance 2,5× virava 2,7×). É exatamente o tipo de desvio que
+> a política de proveniência existe para pegar — quatro dos seis valores
+> estavam certos por acaso, o que é pior do que estarem todos errados, porque
+> não chamava atenção.
 
 Regra de projeto: **primeiro resolva altura e posicionamento; use SF alto só
 para o que sobrar.** ADR futuro deve fixar SF9 ou SF10 como padrão, com SF12

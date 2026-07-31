@@ -248,14 +248,119 @@ componente explicitamente rotulado (só V3/V4, mesmo fabricante e convenção).
 
 | ID | Item | Situação |
 |---|---|---|
-| B-01 | Datasheet oficial Semtech SX1276 — sensibilidade por SF | **[?]** citar documento |
-| B-02 | Isopleta da NBR 6123 para o litoral paulista — V₀ exato | **[CONFIRMAR]** |
-| B-03 | Atenuação por vegetação — buscar recomendação ITU-R P.833 | **[?]** |
-| B-04 | Atenuação por chuva em 900 MHz — ITU-R P.838 | **[?]** |
-| B-05 | Coeficiente de arrasto de cilindro (Cd = 1,2) — citar norma ou referência | **[?]** |
-| B-06 | Deriva térmica de acelerômetros MEMS — citar datasheet ou publicação | **[?]** |
-| B-07 | Custos de materiais — substituir estimativa por cotação formal | **[E]** → cotar |
-| B-08 | Desastre de Caraguatatuba de 1967 — citar fonte ao mencionar | **[?]** |
+| ~~B-01~~ | ~~Datasheet oficial Semtech SX1276 — sensibilidade por SF~~ | **Resolvida em 31/07/2026** — §5.1 abaixo. **Corrigiu erro real** em SF11/SF12 |
+| B-02 | Isopleta da NBR 6123 para o litoral paulista — V₀ exato | **[CONFIRMAR]** — norma paga, exige acesso à ABNT |
+| ~~B-03~~ | ~~Atenuação por vegetação — buscar recomendação ITU-R P.833~~ | **Resolvida em 31/07/2026** — §5.2 |
+| ~~B-04~~ | ~~Atenuação por chuva em 900 MHz — ITU-R P.838~~ | **Resolvida em 31/07/2026** — §5.3. **Conclusão inverteu a premissa** |
+| B-05 | Coeficiente de arrasto de cilindro (Cd = 1,2) — citar norma ou referência | **[?]** — depende da NBR 6123, mesma barreira do B-02 |
+| B-06 | Deriva térmica de acelerômetros MEMS — citar datasheet ou publicação | **[?]** — só faz sentido citar o datasheet do sensor escolhido (P-013) |
+| B-07 | Custos de materiais — substituir estimativa por cotação formal | **[E]** → cotar (não é pesquisa: exige fornecedor) |
+| ~~B-08~~ | ~~Desastre de Caraguatatuba de 1967 — citar fonte ao mencionar~~ | **Resolvida em 31/07/2026** — §5.4 |
 
 Itens **[?]** não podem ir para proposta comercial nem para pedido de patente
 sem resolução.
+
+---
+
+### 5.1 B-01 — Sensibilidade do SX1276 por spreading factor **[N]**
+
+**Fonte:** Semtech, *SX1276/77/78/79 — Low Power Long Range Transceiver*,
+**Rev. 7, maio de 2020**, tabela `RFS_L125_HF` ("RF sensitivity, Long-Range
+Mode, highest LNA gain, LnaBoost for Band 1, using split Rx/Tx path,
+125 kHz bandwidth"). PDF público em
+[cdn.sparkfun.com](https://cdn.sparkfun.com/assets/7/7/3/2/2/SX1276_Datasheet.pdf).
+
+Band 1 é a faixa alta do SX1276, onde ficam os 916,8 MHz do projeto (ADR-003).
+
+| SF | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|
+| Sensibilidade (dBm) | −118 | −123 | −126 | −129 | −132 | **−133** | **−136** |
+
+**Erro encontrado e corrigido.** O projeto usava −134,5 (SF11) e −137,0 (SF12),
+valores sem fonte. SF7 a SF10 conferiam. A correção foi aplicada em
+`firmware/src/ui_dev.cpp`, `backend/esquema.sql`, `tools/alcance.py`,
+`tools/coleta.py`, `tools/importar_fotos.py`, `docs/PROPAGACAO.md` e
+`docs/PROMPT_PAINEL.md` — e mudou o ganho SF7→SF12 de 14 para 13 dB.
+
+**SF6 não deve ser usado** sem mudança de firmware: exige modo de cabeçalho
+implícito, não é só trocar o parâmetro.
+
+### 5.2 B-03 — Atenuação por vegetação **[N]**
+
+**Fonte:** [Recomendação ITU-R P.833-10 (09/2021), *Attenuation in
+vegetation*](https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.833-10-202109-I!!PDF-E.pdf).
+Faixa de validade declarada: **30 MHz a 100 GHz** — cobre os 916,8 MHz.
+
+Modelo para terminal dentro de mata (§2.1):
+
+```
+Aev = Am · [1 − exp(−d·γ / Am)]
+```
+
+com `d` o comprimento do percurso dentro da vegetação (m), `γ` a atenuação
+específica (dB/m) e `Am` a atenuação máxima para o tipo e profundidade de
+vegetação (dB). Os valores de `γ` estão na Figura 2 da recomendação (forma
+gráfica, 30 MHz–30 GHz), e **dependem de espécie e densidade** — não há
+número único a citar.
+
+**Achado que interessa diretamente ao projeto**, citação literal da §2.1:
+
+> "Below about 1 GHz there is a tendency for vertically polarized signals to
+> experience higher attenuation than horizontally, this being thought due to
+> scattering from tree-trunks."
+
+O Sentinela opera **abaixo de 1 GHz** (916,8 MHz), com **polarização
+vertical**, e o destino é **encosta com mata**. Ou seja: a combinação do
+projeto cai exatamente no caso que a ITU aponta como o pior dos dois. Isso
+não invalida a escolha — polarização vertical é o padrão de antena chicote e
+a alternativa traz outros problemas —, mas **precisa entrar no
+dimensionamento** e reabre, com fundamento documental, a discussão que a
+P-009 havia encerrado por outro motivo (confinamento por muros).
+
+### 5.3 B-04 — Atenuação por chuva em 900 MHz **[N]**
+
+**Fonte:** [Recomendação ITU-R P.838-3 (2005), *Specific attenuation model
+for rain for use in prediction
+methods*](https://www.itu.int/dms_pubrec/itu-r/rec/p/r-rec-p.838-3-200503-i!!pdf-e.pdf).
+
+**A recomendação não se aplica à frequência do projeto.** Texto literal:
+
+> "Values for the coefficients k and α are determined as functions of
+> frequency, f (GHz), **in the range from 1 to 1 000 GHz**"
+
+916,8 MHz = 0,9168 GHz, **abaixo do piso de validade**. Não há coeficiente
+tabelado a aplicar.
+
+**Consequência — a premissa do projeto estava invertida.** A documentação
+tratava a chuva como ameaça direta ao enlace ("abaixo de 10 dB o enlace cai
+na primeira chuva forte"). Extrapolando P.838 para o limite inferior de
+1 GHz (k_H ≈ 2,59×10⁻⁵, α_H ≈ 0,9691) e chuva forte de 50 mm/h, a atenuação
+específica sai da ordem de **0,001 dB/km** — sobre 200 m, ~0,0002 dB.
+Desprezível **[E]**, derivado de [N].
+
+Portanto **a perda de margem sob chuva não vem da atenuação pelas gotas.**
+Vem de vegetação molhada (B-03), superfícies encharcadas e mudança nas
+condições de percurso. O limiar de margem mínima continua justificado — mas
+o mecanismo declarado precisa mudar, ou o projeto estará defendendo o número
+certo pela razão errada.
+
+### 5.4 B-08 — Desastre de Caraguatatuba, 1967 **[L]**
+
+**Evento:** 18 de março de 1967, escorregamentos e corridas de detritos em
+massa na escarpa da Serra do Mar, em Caraguatatuba (SP), após chuva
+excepcional acumulada em cerca de 72 h. **436 mortes** pelos números
+oficiais.
+
+**Fontes acadêmicas para citar** (não usar enciclopédia colaborativa nem
+imprensa, conforme §1 — afirmação geomorfológica exige [L], [N] ou [G]):
+
+- **CRUZ, O. (1974).** *A Serra do Mar e o Litoral na Área de Caraguatatuba:
+  contribuição à geomorfologia litorânea tropical.* São Paulo: Instituto de
+  Geografia, USP. — mapeamento e análise do evento de 1967.
+- **FÚLFARO, V. J. et al. (1976).** Levantamento de **640 cicatrizes** de
+  escorregamento do evento de 1967, base de trabalhos posteriores de
+  retroanálise na região.
+
+**[?]** Confirmar paginação e ISBN/série de Cruz (1974) antes de citar em
+peça formal — a referência foi obtida por busca bibliográfica, não com o
+documento em mãos.

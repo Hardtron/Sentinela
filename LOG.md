@@ -21,6 +21,60 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (18) — Pendências de literatura: um erro numérico real encontrado
+
+**Fase:** transversal · **Duração:** média
+
+### Feito
+
+- **B-01 resolvida — e encontrou erro de 1,5 dB no projeto.** A sensibilidade
+  por SF vinha sem fonte. Baixei o datasheet oficial (Semtech
+  SX1276/77/78/79, **Rev. 7, maio/2020**) e extraí a tabela `RFS_L125_HF`
+  (125 kHz, Band 1). SF7–SF10 conferiam; **SF11 e SF12 estavam errados**:
+  o projeto usava −134,5 e −137,0, os corretos são **−133,0 e −136,0**.
+  Corrigido em 7 arquivos (`ui_dev.cpp`, `esquema.sql`, `alcance.py`,
+  `coleta.py`, `importar_fotos.py`, `PROPAGACAO.md`, `PROMPT_PAINEL.md`) **e
+  na função do banco em produção** — `enlace_analise` calculava margem com o
+  valor velho. Efeito: o ganho SF7→SF12 cai de 14 para 13 dB, e o
+  multiplicador de alcance de 2,7× para 2,5×.
+- **B-04 resolvida — e inverteu uma premissa.** ITU-R P.838-3 declara
+  validade "in the range from 1 to 1 000 GHz": **não se aplica** a 916,8 MHz.
+  Extrapolando ao piso de 1 GHz com chuva de 50 mm/h, a atenuação sai da
+  ordem de 0,001 dB/km — desprezível. Logo **a perda de margem sob chuva não
+  vem das gotas**; vem de vegetação molhada e superfícies encharcadas. O
+  limiar de 10 dB continua justificado, mas pelo mecanismo certo.
+- **B-03 resolvida.** ITU-R P.833-10 (09/2021), válida de 30 MHz a 100 GHz.
+  Trouxe um achado que toca o projeto de frente: abaixo de ~1 GHz a
+  **polarização vertical sofre mais atenuação que a horizontal**, por
+  espalhamento nos troncos. O Sentinela é 916,8 MHz + vertical + encosta com
+  mata — exatamente a pior combinação apontada pela ITU.
+- **B-08 resolvida** com fontes acadêmicas (Cruz 1974, USP; Fúlfaro et al.
+  1976), descartando enciclopédia colaborativa e imprensa: afirmação
+  geomorfológica exige [L]/[N]/[G] pela §1 da própria política.
+
+### Aprendido
+
+- **Quatro dos seis valores estarem certos era pior do que todos errados.**
+  SF7–SF10 conferiam com o datasheet, o que fazia a tabela parecer confiável
+  e desviava a atenção justamente dos dois que não conferiam. É o argumento
+  mais concreto que apareceu até agora a favor da política de proveniência:
+  não se trata de formalidade bibliográfica, e sim de achar número errado.
+- **Corrigir o `.sql` versionado não corrige o banco.** `esquema.sql` só roda
+  na criação do container; a função `sensibilidade_dbm` em produção seguia
+  com os valores velhos até eu rodar `CREATE OR REPLACE` explicitamente.
+  Vale para qualquer mudança futura de esquema.
+
+### Próximo
+
+1. B-02 e B-05 dependem da **NBR 6123**, que é paga — não são resolvíveis por
+   busca pública, precisam de acesso à ABNT.
+2. B-06 só faz sentido com o sensor escolhido (P-013): citar datasheet de
+   acelerômetro que ainda não foi comprado seria inventar requisito.
+3. Reavaliar o dimensionamento à luz do achado de polarização vertical
+   (B-03) — não é urgente, mas entra na Fase 4.
+
+---
+
 ## 2026-07-31 (17) — Baterias reais, correção do ensaio 03a e página BATERIA no OLED
 
 **Fase:** 0 · **Duração:** média

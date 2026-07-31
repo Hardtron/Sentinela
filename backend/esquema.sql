@@ -108,8 +108,8 @@ RETURNS REAL AS $$
         WHEN 8  THEN -126.0
         WHEN 9  THEN -129.0
         WHEN 10 THEN -132.0
-        WHEN 11 THEN -134.5
-        WHEN 12 THEN -137.0
+        WHEN 11 THEN -133.0
+        WHEN 12 THEN -136.0
         ELSE -129.0
     END::REAL;
 $$ LANGUAGE SQL IMMUTABLE;

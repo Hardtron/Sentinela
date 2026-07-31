@@ -40,7 +40,7 @@ MARGEM_MIN_DB = 10
 PERDA_MAX_PCT = 5.0
 ASSIMETRIA_MAX_DB = 10
 
-SENSIBILIDADE = {7: -123.0, 8: -126.0, 9: -129.0, 10: -132.0, 11: -134.5, 12: -137.0}
+SENSIBILIDADE = {7: -123.0, 8: -126.0, 9: -129.0, 10: -132.0, 11: -133.0, 12: -136.0}
 
 RE_PONTO = re.compile(r"=+\s*PONTO\s+(\d+)\s*=+")
 RE_SF = re.compile(r"sf=(\d+)")

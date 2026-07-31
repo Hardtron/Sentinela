@@ -49,8 +49,8 @@ float uiSensitivityDbm(uint8_t sf) {
     case 8: return -126.0f;
     case 9: return -129.0f;
     case 10: return -132.0f;
-    case 11: return -134.5f;
-    case 12: return -137.0f;
+    case 11: return -133.0f;
+    case 12: return -136.0f;
     default: return -129.0f;
   }
 }

@@ -32,7 +32,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SENSIBILIDADE = {7: -123.0, 8: -126.0, 9: -129.0, 10: -132.0, 11: -134.5, 12: -137.0}
+SENSIBILIDADE = {7: -123.0, 8: -126.0, 9: -129.0, 10: -132.0, 11: -133.0, 12: -136.0}
 
 CORES_KML = {
     "APROVADO": "ff00ff00",
