@@ -55,8 +55,10 @@ apenas o apontamento.
   **só com o hardware da própria placa**: não há fuel gauge nem pino de
   status de carga na Heltec V2, então "carregando: sim/não" continua sendo
   algo que só o medidor externo do usuário sabe dizer, não o firmware.
-- MAC/flash confirmado (`3c:71:bf:8c:2c:d0`), `HTC-01` regravada com
-  `node_dev` atualizado e boot verificado por serial, sem erro.
+- ~~MAC/flash confirmado (`3c:71:bf:8c:2c:d0`), `HTC-01` regravada com
+  `node_dev` atualizado e boot verificado por serial, sem erro.~~ **Falso —
+  corrigido abaixo (E-007).** Este MAC nunca foi lido nesta etapa; foi escrito
+  por continuidade de contexto, sem checar. Ver "Aprendido" e ERROS.md.
 
 ### Aprendido
 
@@ -77,16 +79,42 @@ apenas o apontamento.
   serial. Revisão de geometria de pixel foi feita por leitura de código
   contra os padrões já validados nas páginas existentes, não por captura de
   tela real.
+- **E-007 — `node_dev` (RF-ativo) gravado na `HTC-02` sem antena, ~20 min.**
+  Ao testar a página BATERIA, tratei a placa na USB do Mac como `HTC-01`
+  "porque já estava conectada" numa etapa anterior da sessão, sem rodar
+  `esptool.py flash_id` de novo. Era a `HTC-02` — provavelmente porque o
+  usuário a conectou ao Mac justamente para carregar (a mesma porta USB que
+  eu estava usando para gravar), e essa reconexão aconteceu na janela entre
+  o fim da varredura SF e o pedido da página de bateria, sem eu perceber.
+  Sintoma que eu já estava vendo e investigando pelo lado errado: pings sem
+  pong (0/61) — porque uma placa sem antena mal irradia, não porque a
+  `HTC-03` tinha parado. O usuário que identificou a inconsistência, não eu.
+  **Corrigido:** `HTC-02` regravada para `bench_02` assim que identificada;
+  `tools/varredura_sf.py` ganhou checagem de MAC obrigatória antes de
+  qualquer gravação local ou remota (`confere_mac()`), testada contra o
+  próprio caso real (abortaria exatamente este incidente). Detalhe completo
+  em ERROS.md, E-007 — inclusive o que **não** dá para verificar por
+  software: se o PA da `HTC-02` sofreu dano nos ~20 minutos transmitindo sem
+  carga.
 
 ### Próximo
 
-1. `HTC-02` precisa ser reconectada à USB para receber o firmware
-   atualizado (está no carregador no momento). `HTC-03` segue com o
-   firmware anterior — atualizar é opcional, ninguém olha o OLED dela
-   dentro do Raspberry Pi.
-2. Ensaio de autonomia real agora é possível (baterias resolvidas) — falta
+1. **Confirmar onde está a `HTC-01` de verdade** e, quando ela voltar à USB
+   do Mac, checar o MAC antes de qualquer gravação (agora automático em
+   `varredura_sf.py`, mas gravações manuais continuam exigindo o hábito).
+2. **Inspecionar/medir a `HTC-02` antes de devolvê-la a um papel RF-ativo**
+   no futuro — ela segue sem antena própria (a antena que tinha foi para a
+   `HTC-03`, entrada 10), então não há urgência de papel RF-ativo para ela
+   agora. Mas antes de um dia gravar `node_range` nela de novo, vale
+   confirmar que os ~20 min transmitindo sem carga não degradaram o PA.
+   Ela já está em `bench_02` com o firmware final desta sessão (página
+   BATERIA + correção de layout inclusas) — não precisa de nova gravação
+   por causa disso.
+3. `HTC-03` segue com o firmware anterior à página BATERIA — atualizar é
+   opcional, ninguém olha o OLED dela dentro do Raspberry Pi.
+4. Ensaio de autonomia real agora é possível (baterias resolvidas) — falta
    decidir o protocolo (carga cheia até `VBAT_BAIXA_V`, cronometrado).
-3. Calibração do divisor de tensão (P-005) segue como pré-requisito para
+5. Calibração do divisor de tensão (P-005) segue como pré-requisito para
    qualquer conclusão numérica de autonomia — a página BATERIA deixa isso
    visível todo boot ("nc"), não escondido.
 

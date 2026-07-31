@@ -23,6 +23,7 @@ Autoria: Matheus Marassi
 """
 
 import argparse
+import re
 import subprocess
 import sys
 import time
@@ -34,16 +35,55 @@ FIRMWARE = RAIZ / "firmware"
 
 PORTA_LOCAL = "/dev/cu.usbserial-0001"
 PIO = str(Path.home() / ".venvs/platformio/bin/pio")
+ESPTOOL_LOCAL = [str(Path.home() / ".venvs/platformio/bin/python"),
+                 str(Path.home() / ".platformio/packages/tool-esptoolpy/esptool.py")]
+ESPTOOL_REMOTO = "/home/sentinelapi/sentinela/tools/venv/bin/python -m esptool"
 RPI_HOST = "sentinelapi@192.168.15.73"
 RPI_PORTA_SERIAL = "/dev/ttyUSB0"
 HOMESERVER = "192.168.15.66"
 
 SF_PADRAO = [7, 8, 9, 10, 11, 12]
 
+# HARDWARE.md — checado antes de qualquer gravação RF-ativa. Não é opcional:
+# E-007 foi exatamente gravar node_dev (RF-ativo) na HTC-02 (sem antena) por
+# assumir identidade da placa sem checar o MAC primeiro.
+MAC_HTC01 = "3c:71:bf:8c:2c:d0"
+MAC_HTC03 = "3c:71:bf:8c:31:70"
+
+RE_MAC = re.compile(r"MAC:\s*([0-9a-f:]{17})", re.I)
+
 
 def executa(cmd, **kw):
     print(f"$ {' '.join(cmd)}", flush=True)
     return subprocess.run(cmd, check=True, **kw)
+
+
+def _mac_local(porta):
+    r = subprocess.run([*ESPTOOL_LOCAL, "--port", porta, "flash_id"],
+                       capture_output=True, text=True, check=True)
+    achado = RE_MAC.search(r.stdout)
+    return achado.group(1).lower() if achado else None
+
+
+def _mac_remoto():
+    r = subprocess.run(
+        ["ssh", RPI_HOST,
+         f"{ESPTOOL_REMOTO} --port {RPI_PORTA_SERIAL} flash_id"],
+        capture_output=True, text=True, check=True)
+    achado = RE_MAC.search(r.stdout)
+    return achado.group(1).lower() if achado else None
+
+
+def confere_mac(mac_lido, mac_esperado, placa):
+    """Aborta a campanha inteira em vez de arriscar RF-ativo na placa errada
+    (E-007) — regravar sem antena degrada o PA, e isso já aconteceu uma vez."""
+    if mac_lido is None:
+        sys.exit(f"não foi possível ler o MAC de {placa} — abortando por segurança")
+    if mac_lido != mac_esperado.lower():
+        sys.exit(f"MAC inesperado em {placa}: lido {mac_lido}, esperado "
+                 f"{mac_esperado}. A placa fisicamente conectada não é a que "
+                 f"a varredura espera — confira HARDWARE.md antes de continuar.")
+    print(f"  MAC confere: {placa} = {mac_lido}", flush=True)
 
 
 # ------------------------------------------------------------------ flash --
@@ -53,15 +93,21 @@ def compila(env):
 
 
 def grava_local(env, porta):
-    """HTC-01: PlatformIO já sabe compilar e gravar em um único comando."""
+    """HTC-01: confere o MAC antes de qualquer coisa — é RF-ativo, e a porta
+    USB não distingue placas (mesmo número de série CP2102 em todas, E-005).
+    Só então PlatformIO compila e grava num único comando."""
+    confere_mac(_mac_local(porta), MAC_HTC01, "HTC-01")
     executa([PIO, "run", "-e", env, "-t", "upload",
              "--upload-port", porta, "-d", str(FIRMWARE)])
 
 
 def grava_remota(env):
-    """HTC-03: o binário é compilado aqui (cross-compile local é rápido) e
-    enviado por rsync — evita instalar PlatformIO inteiro no Raspberry Pi só
-    para gravar uma placa que já está conectada nele."""
+    """HTC-03: mesma checagem de MAC, feita remotamente antes de parar o
+    serviço da bridge. O binário é compilado aqui (cross-compile local é
+    rápido) e enviado por rsync — evita instalar PlatformIO inteiro no
+    Raspberry Pi só para gravar uma placa que já está conectada nele."""
+    confere_mac(_mac_remoto(), MAC_HTC03, "HTC-03")
+
     binario = FIRMWARE / ".pio" / "build" / env / "firmware.bin"
     if not binario.exists():
         sys.exit(f"binário não encontrado: {binario} (build falhou?)")

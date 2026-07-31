@@ -137,6 +137,47 @@ como bug corrigido — não force uma causa sem evidência.
 
 ---
 
+### E-007 — `node_dev` (RF-ativo) gravado na `HTC-02` sem antena, por assumir identidade da placa sem checar
+
+**Contexto:** sessão de 31/07/2026, implementando a página BATERIA no OLED.
+**Sintoma:** a placa conectada na USB do MacBook foi tratada como `HTC-01`
+por continuidade de contexto ("já estava conectada" numa etapa anterior da
+mesma sessão), sem rodar `esptool.py flash_id` para confirmar o MAC antes de
+gravar. Era na verdade a `HTC-02` — **sem antena**, remanejada para a
+`HTC-03` mais cedo na mesma sessão (LOG.md, entrada 10). `node_dev`
+(`ROLE_PINGER`, RF-ativo) ficou rodando nela por aproximadamente 20 minutos,
+transmitindo a cada ~3,7 s a 17 dBm sem carga de antena — violação direta de
+A-003/A-010.
+**Como foi descoberto:** o usuário notou a inconsistência e perguntou
+diretamente ("quem está conectado na USB do Mac é a HTC-02"). Não foi
+autodetecção — o sintoma indireto (pings sem pong, 0/61 pacotes) já estava
+visível antes disso, mas eu o estava investigando pelo lado errado (suspeitei
+da `HTC-03`/bridge primeiro, não da identidade da própria placa local).
+**Causa:** quebra do protocolo já estabelecido neste mesmo projeto — "conferir
+MAC antes de gravar" foi seguido consistentemente em gravações anteriores da
+sessão (HTC-01, HTC-02, HTC-03), mas pulado nesta, por assumir que nada havia
+mudado desde a verificação anterior. Card also `tools/varredura_sf.py`
+(escrito na mesma sessão) tem a mesma lacuna: `grava_local()` grava direto na
+porta configurada, sem checar MAC antes.
+**Solução:**
+1. `HTC-02` regravada imediatamente para `bench_02` (seguro, sem TX) assim
+   que identificada — risco cessado, mas exposição real já ocorreu.
+2. `tools/varredura_sf.py` deveria ganhar uma checagem de MAC antes de
+   `grava_local()` (pendente — anotar como dívida técnica).
+**Status:** aberto quanto à integridade física da `HTC-02` — **não há como
+confirmar por software se o PA sofreu dano** sem um teste de potência de
+saída depois que ela voltar a ter antena. Anotar para inspecionar/medir antes
+de devolvê-la a um papel RF-ativo.
+
+> **Regra reforçada, não nova:** "confirmar MAC via `esptool.py flash_id`
+> antes de qualquer gravação" vale **mesmo quando a placa "já estava
+> conectada"** momentos atrás na mesma sessão — inclusive, e principalmente,
+> depois de qualquer intervalo em que outra atividade (trocar foto, discutir
+> hardware, etc.) tornou plausível que alguém trocou o cabo. Continuidade de
+> contexto não é confirmação.
+
+---
+
 ## Armadilhas conhecidas (ainda não encontradas)
 
 Registradas preventivamente. Se alguma se manifestar, promover para a seção
@@ -210,4 +251,7 @@ bateria, testa o OLED — tudo isso não precisa de antena nem de peça que aind
 não chegou.
 
 **Regra antes de gravar qualquer placa:** confirmar fisicamente se há antena
-parafusada. Se não houver, o ambiente é `bench_*`, nunca `node_dev`/`node_range`.
+parafusada **e** confirmar o MAC via `esptool.py flash_id` — as duas, sempre,
+mesmo quando parece óbvio qual placa está na porta. Isso não é teórico: foi
+o que aconteceu no E-007, gravando `node_dev` na `HTC-02` sem antena por
+assumir identidade sem checar.
