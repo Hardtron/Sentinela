@@ -94,6 +94,7 @@ static void pollButton() {
     anterior = agora;
     if (agora == LOW) {
       instantePressao = millis();
+      uiRegistrarAtividade();
     } else {
       uint32_t duracao = millis() - instantePressao;
       if (duracao >= 1000) {
@@ -133,6 +134,7 @@ static void idleWithUi(uint32_t ms) {
   uint32_t proximoDesenho = 0;
   while ((int32_t)(millis() - fim) < 0) {
     pollButton();
+    uiChecaInatividade();
     if ((int32_t)(millis() - proximoDesenho) >= 0) {
       ui.vbat = readBattery();
       uiDraw(ui);
@@ -248,6 +250,7 @@ void setup() {
 #endif
 
   ui.vbat = readBattery();
+  uiRegistrarAtividade();
   uiDraw(ui);
 }
 
@@ -270,6 +273,7 @@ void loop() {
 
   while ((int32_t)(millis() - limite) < 0) {
     pollButton();
+    uiChecaInatividade();
     if (packetReady) {
       packetReady = false;
       Packet pkt;
@@ -310,6 +314,7 @@ void loop() {
   static uint32_t proximoHeartbeat = 0;
 
   pollButton();
+  uiChecaInatividade();
 
   // Silêncio no receptor é ambíguo: pode ser transmissor desligado, pode ser
   // rádio que não entrou em recepção. O piso de ruído do canal desfaz a
@@ -363,6 +368,7 @@ void loop() {
   static uint32_t proximoDesenho = 0;
 
   pollButton();
+  uiChecaInatividade();
 
   if (packetReady) {
     packetReady = false;

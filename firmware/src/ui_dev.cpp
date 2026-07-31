@@ -34,6 +34,10 @@ enum Page : uint8_t {
 
 static uint8_t page = PAGE_LINK;
 
+// --- economia de energia ---
+static bool telaLigada = true;
+static uint32_t ultimaAtividade = 0;
+
 // -------------------------------------------------------------- auxiliares --
 
 float uiSensitivityDbm(uint8_t sf) {
@@ -419,12 +423,29 @@ void uiPushRssi(float rssi) {
 
 void uiNextPage() { page = (uint8_t)((page + 1) % PAGE_COUNT); }
 
+void uiRegistrarAtividade() {
+  ultimaAtividade = millis();
+  if (!telaLigada) {
+    oled.setPowerSave(0);  // 0 = liga o painel; conteudo da GDDRAM preservado
+    telaLigada = true;
+  }
+}
+
+void uiChecaInatividade() {
+  if (telaLigada && (millis() - ultimaAtividade) >= TELA_INATIVIDADE_MS) {
+    oled.setPowerSave(1);  // 1 = desliga o painel, mantem I2C respondendo
+    telaLigada = false;
+  }
+}
+
 void uiResetHist() {
   histCount = 0;
   histHead = 0;
 }
 
 void uiDraw(const UiState &s) {
+  if (!telaLigada) return;  // painel apagado: nao gasta I2C desenhando a toa
+
   oled.clearBuffer();
   switch (page) {
     case PAGE_LINK: pagLink(s); break;

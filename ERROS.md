@@ -114,6 +114,29 @@ Homebrew e recriar o venv.
 
 ---
 
+### E-006 — Abrir a porta serial às vezes reseta o ESP32, mesmo com DTR/RTS pré-configurados
+
+**Contexto:** `gateway/bridge.py` conectando na `HTC-03` (`bench_03`), 31/07/2026.
+**Sintoma:** ao abrir a porta serial, a placa reinicia e emite o banner de
+boot completo — mesmo usando o padrão "configurar DTR/RTS antes de abrir a
+porta", que numa sessão anterior havia se mostrado livre de reset com outras
+placas/firmware.
+**Causa:** não determinada. O circuito de auto-reset do CP2102 (EN pino
+comandado por transições de DTR/RTS) explica o mecanismo, mas por que o mesmo
+padrão de mitigação funcionou antes e não desta vez — se é a placa, o
+firmware, a porta USB usada, ou o próprio driver do macOS — não ficou claro
+com os testes feitos.
+**Solução:** nenhuma aplicada. Reportado como comportamento observado, não
+como bug corrigido — não force uma causa sem evidência.
+**Status:** aberto.
+
+> Não depender de "abrir a porta não reseta a placa" como premissa em nenhum
+> código novo (bridge, scripts de teste). Se a bridge precisar preservar
+> estado através de reconexões, assumir que um reset pode acontecer a
+> qualquer abertura de porta.
+
+---
+
 ## Armadilhas conhecidas (ainda não encontradas)
 
 Registradas preventivamente. Se alguma se manifestar, promover para a seção

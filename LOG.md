@@ -21,6 +21,59 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (9) — Economia de tela e teste serial da HTC-03
+
+**Fase:** 0 · **Duração:** curta
+
+### Feito
+
+- **Economia de energia do OLED**: `ui_dev.h`/`ui_dev.cpp` ganharam
+  `uiRegistrarAtividade()` e `uiChecaInatividade()`. A tela apaga via
+  `oled.setPowerSave(1)` após `TELA_INATIVIDADE_MS` (60 s) sem toque no botão
+  PRG, e liga de volta (`setPowerSave(0)`) no primeiro toque, sem perder o
+  conteúdo da GDDRAM. `uiDraw()` agora retorna cedo se a tela está apagada,
+  evitando tráfego I2C à toa. Ligado em `main.cpp`: `pollButton()` registra
+  atividade ao detectar o botão pressionado, e todo laço que redesenha a tela
+  (`idleWithUi` do PINGER, espera de pong, `loop()` do PONGER e do BENCH)
+  chama `uiChecaInatividade()` a cada iteração. Compilado com sucesso nos 7
+  ambientes (`node_dev`, `node_range`, `bridge`, `bench_03` a `bench_06`);
+  complexidade ciclomática máxima no firmware segue em 8 (`tools/complexidade.py
+  --limite 10`).
+- **`gateway/bridge.py` testado contra a `HTC-03` real** (não mais
+  `--simular`): conectou normalmente (`serial conectada:
+  /dev/cu.usbserial-0001`), sem publicar telemetria — esperado, pois
+  `bench_03` só escuta e nunca imprime linha CSV de pacote recebido (esse
+  comportamento é exclusivo do papel PONGER/`bridge`).
+
+### Aprendido
+
+- **Reset do ESP32 ao abrir a porta serial permanece inconsistente entre
+  sessões/placas.** Repeti o padrão "configurar DTR/RTS antes de abrir a
+  porta", já validado como livre de reset numa sessão anterior com outras
+  placas/firmware, e desta vez a HTC-03 mesmo assim mostrou o banner completo
+  de reset ao abrir. Não há evidência suficiente para apontar causa única
+  (parece característica do driver CP210x/macOS por combinação específica de
+  placa, não bug isolado do `bridge.py`) — registrado aqui sem forçar uma
+  conclusão que os dados não sustentam.
+- Buffering padrão do Python esconde a saída do `bridge.py` quando o stdout
+  vai para arquivo em vez de TTY; `python -u` resolve. Vale considerar
+  `PYTHONUNBUFFERED=1` na unidade systemd de produção (`gateway/sentinela-bridge.service`)
+  para não repetir a confusão em campo.
+
+### Próximo
+
+1. HTC-03 segue em `bench_03` (sem antena) — decidir com o usuário se ela é
+   reflashada para `bridge` (RF-ativo, exige antena) antes de ligar na USB
+   do Raspberry Pi, ou se fica em modo bancada só para validar a conexão
+   física por enquanto.
+2. Retomar acesso SSH ao Raspberry Pi assim que o usuário rodar
+   `ssh-copy-id` — não usar senha em nenhuma hipótese (ver decisão registrada
+   na entrada anterior).
+3. Gravar `HTC-05`/`HTC-06` com `bench_05`/`bench_06` quando conectadas,
+   seguindo o mesmo protocolo de identificação por MAC.
+
+---
+
 ## 2026-07-31 (8) — HTC-03 gravada; Raspberry Pi vivo na rede
 
 **Fase:** 0 → 2 · **Duração:** curta

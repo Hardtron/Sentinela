@@ -104,3 +104,22 @@ enum VereditoPonto : uint8_t {
 /// preenchendo `motivo` com o fator dominante. Permite ao operador decidir em
 /// campo, sem interpretar números.
 VereditoPonto uiAvaliarPonto(const UiState &s, char *motivo, size_t tam);
+
+// --- Economia de energia ---------------------------------------------------
+// Em campo, o painel OLED é o maior consumidor de corrente do circuito de
+// diagnóstico. Ele apaga sozinho após inatividade e liga de novo a qualquer
+// toque no botão — ver docs/ROTEIRO_CAMPO.md.
+//
+// 60 s cobre a folga entre pontos de medição sem interromper uma coleta em
+// andamento na maioria dos casos (ROTEIRO_CAMPO.md §5: ~20 pacotes a 3 s).
+// Se apagar no meio de uma coleta, um toque reacende com o estado real —
+// nada é perdido, só deixa de ser mostrado por alguns segundos.
+#define TELA_INATIVIDADE_MS 60000
+
+/// Chamar a cada iteração do laço principal. Apaga a tela se passou o tempo
+/// de inatividade; não faz nada se ela já estiver apagada.
+void uiChecaInatividade();
+
+/// Chamar sempre que houver interação do usuário (botão). Liga a tela se
+/// estava apagada e reinicia a contagem de inatividade.
+void uiRegistrarAtividade();
