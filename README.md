@@ -33,6 +33,7 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/ANCORAGEM.md](docs/ANCORAGEM.md) | Projeto de fixação do nó no talude |
 | [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md) | Normas aplicáveis — Anatel, defesa civil, geotecnia, LGPD |
 | [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
+| [docs/PROMPT_PAINEL.md](docs/PROMPT_PAINEL.md) | Prompt autocontido para gerar o painel de resultados |
 | [LOG.md](LOG.md) | Diário de andamento |
 | [ERROS.md](ERROS.md) | Registro de erros e soluções |
 
