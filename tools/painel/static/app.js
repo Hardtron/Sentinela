@@ -264,6 +264,63 @@ rotas["rede"] = async () => {
     ], pts);
 };
 
+const CORES_SEV = { CRITICO: "erro", URGENTE: "atencao", ATENCAO: "acento", INFO: "neutro" };
+
+rotas["frota"] = async () => {
+  const f = await dados("/api/frota");
+  const sev = f.por_severidade;
+  const grupos = [...new Set(f.alarmes.map((a) => a.grupo))];
+
+  return cabecalho("Frota e alarmes",
+    `Saúde das <strong>Atalaias</strong> em campo. Nenhuma operando ainda —
+     o catálogo existe para ser revisado antes da implantação.`)
+    + `<div class="grade g4">
+      ${metrica("Atalaias operando", f.operando, `${f.previstos} previstas`)}
+      ${metrica("Alarmes críticos", sev.CRITICO || 0, "lacuna de cobertura", "erro")}
+      ${metrica("Alarmes urgentes", sev.URGENTE || 0, "dias de margem", "atencao")}
+      ${metrica("Alarmes de atenção", sev.ATENCAO || 0, "semanas de margem")}
+    </div>
+    <p class="nota"><strong>Atalaia fora do ar é talude sem monitoramento</strong>
+    — lacuna de cobertura num sistema de alerta, não indisponibilidade de
+    serviço. É isso que põe o silêncio como CRÍTICO.</p>`
+
+    + secao("Assinaturas de energia — o que a curva de carga revela")
+    + tabela([
+      { rot: "Padrão observado", val: (a) => esc(a.padrao), classe: "livre" },
+      { rot: "Diagnóstico provável", val: (a) => `<strong>${esc(a.diagnostico)}</strong>`, classe: "livre" },
+      { rot: "Ação", val: (a) => esc(a.acao) },
+    ], f.assinaturas)
+    + `<p class="nota">Sujeira reduz a captação de forma uniforme ao longo do dia;
+       sombra atua em janela horária específica. É a <em>forma</em> da curva que
+       separa as duas — por isso a janela de carga é registrada junto com a
+       energia. A comparação é feita contra a mediana das Atalaias vizinhas, o
+       que elimina a variável climática sem sensor de referência.</p>`
+
+    + secao("Catálogo de alarmes")
+    + `<div class="filtros">
+        <button class="filtro ativo" data-g="todos">Todos (${f.alarmes.length})</button>
+        ${grupos.map((g) => `<button class="filtro" data-g="${g}">${g}</button>`).join("")}
+      </div><div id="lista-alarmes"></div>`
+
+    + secao("Composição do índice de saúde")
+    + `<div class="cartao">${grafBarras(f.pesos_saude.map((p) => ({
+        rot: `${p.componente} — ${p.entra_com}`, valor: p.peso })))}
+      <p class="nota">Faixas: 90–100 saudável · 70–89 observar · 50–69 agendar ·
+      abaixo de 50 intervir. <strong>Qualquer alarme crítico zera o índice</strong>
+      — Atalaia muda com bateria cheia não é 70% saudável, é inútil.</p>
+    </div>`;
+};
+
+function renderAlarmes(itens) {
+  el("lista-alarmes").innerHTML = tabela([
+    { rot: "Severidade", val: (a) =>
+      `<span class="tag ${CORES_SEV[a.severidade]}">${a.severidade}</span>` },
+    { rot: "Alarme", val: (a) => `<strong>${esc(a.nome)}</strong>` },
+    { rot: "Gatilho", val: (a) => esc(a.gatilho), classe: "livre" },
+    { rot: "Ação de manutenção", val: (a) => esc(a.acao), classe: "livre" },
+  ], itens);
+}
+
 rotas["firmware"] = async () => {
   const [f, c] = await Promise.all([dados("/api/firmware"), dados("/api/complexidade")]);
   const arqs = c.arquivos.filter((a) => a.arquivo.startsWith("firmware/"));
@@ -423,6 +480,19 @@ async function navega() {
 async function depoisDeRenderizar(nome, params) {
   if (nome === "pendencias") return ligaPendencias();
   if (nome === "documentos") return ligaDocumentos(params);
+  if (nome === "frota") return ligaFrota();
+}
+
+async function ligaFrota() {
+  const f = await dados("/api/frota");
+  const aplica = (g) => renderAlarmes(
+    g === "todos" ? f.alarmes : f.alarmes.filter((a) => a.grupo === g));
+  aplica("todos");
+  document.querySelectorAll(".filtro").forEach((b) => b.onclick = () => {
+    document.querySelectorAll(".filtro").forEach((x) => x.classList.remove("ativo"));
+    b.classList.add("ativo");
+    aplica(b.dataset.g);
+  });
 }
 
 async function ligaPendencias() {

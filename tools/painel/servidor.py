@@ -29,6 +29,7 @@ ROTAS = {
     "/api/firmware": lambda q: coletor.firmware(),
     "/api/ensaios": lambda q: coletor.ensaios(),
     "/api/git": lambda q: coletor.git(),
+    "/api/frota": lambda q: coletor.frota(),
     "/api/complexidade": lambda q: coletor.complexidade(),
 }
 
@@ -67,9 +68,14 @@ class Manipulador(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(corpo)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
+        self.end_headers()   # o cabeçalho de cache é adicionado em end_headers
         self.wfile.write(corpo)
+
+    def end_headers(self):
+        """Desliga o cache de estáticos: o painel é ferramenta de
+        desenvolvimento e precisa refletir a edição no recarregamento."""
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        super().end_headers()
 
     def log_message(self, formato, *args):
         """Silencia o log de acesso — o terminal fica para mensagens úteis."""

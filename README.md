@@ -3,8 +3,9 @@
 Rede de sensores LoRa para monitoramento de áreas de risco geológico-hidrológico
 em múltiplos municípios.
 
-O sistema mede chuva acumulada, saturação do solo, inclinação de talude e
-condições atmosféricas, correlaciona essas grandezas com a base geoespacial de
+Cada dispositivo de campo é uma **Atalaia**; o gateway que congrega uma área é
+um **Farol**. O sistema mede chuva acumulada, saturação do solo, inclinação de
+talude e condições atmosféricas, correlaciona essas grandezas com a base geoespacial de
 suscetibilidade e população exposta, e entrega à Defesa Civil informação
 acionável sobre risco iminente de deslizamento.
 
@@ -30,7 +31,8 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/ROTEIRO_CAMPO.md](docs/ROTEIRO_CAMPO.md) | Como conduzir o ensaio de alcance |
 | [docs/CAMPO.md](docs/CAMPO.md) | Resultados dos ensaios de enlace |
 | [docs/PROPAGACAO.md](docs/PROPAGACAO.md) | Modelo de propagação calibrado e dimensionamento |
-| [docs/ANCORAGEM.md](docs/ANCORAGEM.md) | Projeto de fixação do nó no talude |
+| [docs/ANCORAGEM.md](docs/ANCORAGEM.md) | Projeto de fixação da Atalaia no talude |
+| [docs/MANUTENCAO.md](docs/MANUTENCAO.md) | Saúde da frota, alarmes e manutenção preditiva |
 | [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md) | Normas aplicáveis — Anatel, defesa civil, geotecnia, LGPD |
 | [docs/RESPONSABILIDADE_TECNICA.md](docs/RESPONSABILIDADE_TECNICA.md) | Habilitação profissional e camadas de responsabilidade |
 | [docs/REFERENCIAS.md](docs/REFERENCIAS.md) | **Política de proveniência** e bibliografia central |

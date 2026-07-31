@@ -21,6 +21,70 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (3) — Atalaia: nome, saúde da frota e manutenção preditiva
+
+**Fase:** transversal (projeto para as fases 1–3) · **Duração:** ~1 sessão
+
+### Feito
+
+- **Nomenclatura definida:** o dispositivo de campo passa a ser a **Atalaia**;
+  o gateway que congrega uma área, o **Farol**; uma campanha ativa sobre um
+  conjunto de taludes, uma **Vigília**. Identificação `ATL-<município>-<seq>`.
+- **`docs/MANUTENCAO.md`** — engenharia de saúde da frota: a curva de carga
+  solar como instrumento de diagnóstico, sete assinaturas de falha, catálogo de
+  22 alarmes com severidade e ação, índice de saúde e roteirização.
+- **Sete requisitos novos**, RC-12 a RC-18, em `docs/REQUISITOS.md`.
+- **Aba "Frota e alarmes"** no painel, com as assinaturas de energia, o
+  catálogo filtrável por grupo e a composição do índice de saúde.
+- Corrigido cache de estáticos no servidor do painel — impedia ver edição sem
+  limpar o navegador.
+
+### Aprendido
+
+- **A curva de carga solar é uma assinatura, não só um número.** Sujeira reduz a
+  captação de forma aproximadamente uniforme ao longo do dia; sombra atua em
+  janela horária específica que se desloca com a estação. É a **forma** da
+  curva que separa as duas — daí registrar `t_ini` e `t_fim` importar tanto
+  quanto registrar `E_dia`.
+- Sombreamento **parcial** derruba a corrente de forma desproporcional à área
+  sombreada, porque as células estão em série. Isso facilita a detecção.
+- A indústria fotovoltaica detecta sujeira com **painel de referência limpo** ou
+  sensor óptico dedicado **[L]** — ambos caros por ponto, e o projeto tem
+  dezenas de pontos.
+- **Referência distribuída:** comparar cada Atalaia com a **mediana das vizinhas
+  do mesmo Farol** elimina a variável climática sem sensor adicional. Se todas
+  caem juntas, foi o tempo; se uma cai sozinha, o problema é local. Custo
+  marginal zero e melhora conforme a rede cresce.
+- **Umidade dentro do invólucro é o alarme de melhor retorno do catálogo**:
+  custa um sensor barato e detecta falha de vedação antes de a água destruir a
+  eletrônica — transforma perda total em troca de anel de vedação.
+- O custo de operação é dominado por **deslocamento**, não por intervenção.
+  Então a saída útil do sistema é uma **rota agrupada**, não uma lista de
+  alarmes — e uma visita programada deve arrastar as pendências de baixa
+  prioridade das Atalaias próximas.
+
+### Decidido
+
+- **RC-17 — referência distribuída em vez de limiar absoluto.** Limiar absoluto
+  gera alarme falso em semana nublada, que é o modo de falha que faz sistemas de
+  alarme perderem credibilidade.
+- **RC-16 — alarme crítico zera o índice de saúde.** Atalaia muda com bateria
+  cheia não é 70% saudável; é inútil.
+- **RC-18 — sugestão antes de ordem de serviço.** As assinaturas são derivadas
+  de princípio físico e da literatura fotovoltaica, **ainda não validadas em
+  campo neste projeto**. Os limiares numéricos (0,75 de razão, 7 e 14 dias) são
+  ponto de partida e precisam de calibração com operação real antes de virarem
+  despacho automático de equipe.
+- **Nota de propriedade intelectual registrada:** o uso da mediana da própria
+  frota como referência de irradiância, dispensando painel de referência, é
+  candidato a reivindicação. Não divulgar antes de consultar o INPI.
+
+### Próximo
+
+Ensaio 03 — varredura de spreading factor.
+
+---
+
 ## 2026-07-31 (2) — Painel de controle e complexidade ciclomática como política
 
 **Fase:** transversal · **Duração:** ~1 sessão

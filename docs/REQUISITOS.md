@@ -63,6 +63,43 @@ pública.
 reservar espaço para autenticação desde o início, mesmo que ainda não
 implementada — ver `lib/proto/`.
 
+## Saúde da frota e manutenção
+
+Derivados de [MANUTENCAO.md](MANUTENCAO.md). A premissa que os organiza:
+**Atalaia fora do ar é talude sem monitoramento** — lacuna de cobertura num
+sistema de alerta, não indisponibilidade de serviço.
+
+**RC-12 — Telemetria de energia agregada.** Cada Atalaia registra e transmite
+resumo diário de captação solar: energia colhida, janela de carga, corrente de
+pico, tensão mínima e profundidade de descarga. Agregação no dispositivo, nunca
+amostra bruta — o orçamento de rádio não comporta.
+
+**RC-13 — Histórico local de 30 dias.** O resumo diário persiste em NVS, para
+que a tendência sobreviva a período sem enlace. Diagnóstico depende de série,
+não de amostra.
+
+**RC-14 — Detecção de falha de vedação.** Umidade no interior do invólucro é
+monitorada e alarmada. Detectar a falha antes da água transforma perda total em
+troca de vedação.
+
+**RC-15 — Alarme com ação definida.** Todo alarme tem severidade, gatilho e
+ação correspondente. Alarme sem ação vira ruído, e ruído faz a equipe ignorar o
+painel.
+
+**RC-16 — Alarme CRÍTICO zera o índice de saúde.** Atalaia muda com bateria
+cheia não é 70% saudável; é inútil. O índice ordena, o alarme decide.
+
+**RC-17 — Referência distribuída, não limiar absoluto.** A avaliação de
+captação compara cada Atalaia com a mediana das vizinhas do mesmo Farol. Limiar
+absoluto gera alarme falso em semana nublada — que é o modo de falha que faz
+sistemas de alarme perderem credibilidade.
+
+**RC-18 — Sugestão antes de ordem de serviço.** Enquanto as assinaturas de
+falha não forem validadas em campo, os alarmes de degradação lenta produzem
+sugestão ao operador, não despacho automático de equipe.
+
+---
+
 ## Fora de escopo declarado
 
 - Previsão meteorológica própria (consumir dados públicos, não gerar).

@@ -192,6 +192,101 @@ MODELO = {
 }
 
 
+# ------------------------------------------------------------------ frota --
+# Catálogo espelhado de docs/MANUTENCAO.md §5. Vive aqui para o painel exibir
+# antes de existir backend; migra para o banco na fase 2.
+
+ALARMES = [
+    ("Atalaia silenciosa", "comunicacao", "CRITICO",
+     "Sem pacote além de 3 heartbeats", "Verificar energia e enlace no local"),
+    ("Farol fora do ar", "comunicacao", "CRITICO",
+     "Gateway sem contato", "Afeta todas as Atalaias da área"),
+    ("Enlace degradando", "comunicacao", "ATENCAO",
+     "Margem média < 10 dB por 7 dias", "Avaliar obstrução nova ou antena"),
+    ("Perda crescente", "comunicacao", "ATENCAO",
+     "Perda > 5% em média móvel de 24 h", "Investigar interferência"),
+    ("Bateria crítica", "energia", "URGENTE",
+     "Autonomia projetada < 48 h", "Trocar bateria"),
+    ("Sem captação", "energia", "URGENTE",
+     "E_dia ~ 0 com vizinhas normais", "Painel desconectado ou coberto"),
+    ("Captação reduzida", "energia", "ATENCAO",
+     "Razão < 0,75 por 7 dias, janela normal", "Limpar painel"),
+    ("Sombreamento crescente", "energia", "ATENCAO",
+     "Janela de carga encurta por 14 dias", "Podar vegetação"),
+    ("Bateria em fim de vida", "energia", "ATENCAO",
+     "V_min em queda com E_dia estável", "Programar troca"),
+    ("Consumo anômalo", "energia", "URGENTE",
+     "DoD acima do histórico com E_dia estável", "Diagnóstico remoto"),
+    ("Sensor sem resposta", "sensores", "URGENTE",
+     "Sem leitura válida em 3 ciclos", "Verificar cabo e conector"),
+    ("Leitura travada", "sensores", "URGENTE",
+     "Valor idêntico além do plausível", "Substituir sensor"),
+    ("Fora de faixa", "sensores", "URGENTE",
+     "Além do intervalo físico", "Substituir ou recalibrar"),
+    ("Deriva suspeita", "sensores", "ATENCAO",
+     "Divergência de sensor redundante", "Recalibrar"),
+    ("Pluviômetro mudo", "sensores", "URGENTE",
+     "Sem pulso com chuva nas vizinhas", "Desobstruir báscula"),
+    ("Umidade interna", "integridade", "URGENTE",
+     "Umidade no invólucro acima do limiar", "Trocar vedação — antes da água"),
+    ("Impacto", "integridade", "URGENTE",
+     "Aceleração alta sem chuva associada", "Inspeção — vandalismo ou galho"),
+    ("Inclinação sem chuva", "integridade", "URGENTE",
+     "Variação sem precipitação nas vizinhas", "Verificar antes de tratar como movimento"),
+    ("Temperatura interna alta", "integridade", "ATENCAO",
+     "Acima do limite dos componentes", "Avaliar sombreamento do invólucro"),
+    ("Reinícios frequentes", "sistema", "URGENTE",
+     "Mais de 3 em 24 h", "Diagnóstico de firmware"),
+    ("Watchdog disparado", "sistema", "ATENCAO", "Qualquer ocorrência",
+     "Registrar e investigar padrão"),
+    ("Memória degradando", "sistema", "ATENCAO",
+     "Heap livre em queda monotônica", "Investigar vazamento"),
+]
+
+ASSINATURAS_ENERGIA = [
+    ("E_dia cai gradualmente, janela inalterada", "Sujeira acumulada no painel",
+     "Limpeza"),
+    ("Janela encurta progressivamente, mesmo horário", "Vegetação sombreando",
+     "Poda"),
+    ("E_dia cai abruptamente para ~zero", "Painel desconectado ou coberto",
+     "Visita urgente"),
+    ("Queda de um dia só, com recuperação", "Evento pontual — folha, ave",
+     "Registrar, não agir"),
+    ("E_dia normal, V_min cai a cada noite", "Bateria degradando",
+     "Trocar bateria"),
+    ("DoD aumenta com E_dia estável", "Consumo anômalo no dispositivo",
+     "Diagnóstico remoto"),
+    ("V_fim sobe rápido com E_dia baixa", "Resistência interna alta",
+     "Trocar bateria"),
+]
+
+PESOS_SAUDE = [
+    ("Comunicação", 30, "Heartbeat, margem de enlace, perda"),
+    ("Energia", 30, "Razão de captação, autonomia, saúde da bateria"),
+    ("Sensores", 25, "Fração de sensores válidos, deriva"),
+    ("Integridade", 15, "Umidade interna, temperatura, reinícios"),
+]
+
+
+def frota():
+    """Modelo de saúde da frota. Sem dispositivos em campo ainda: expõe o
+    catálogo e os pesos para que a operação seja revisável antes de existir."""
+    por_severidade = {}
+    for _, _, sev, _, _ in ALARMES:
+        por_severidade[sev] = por_severidade.get(sev, 0) + 1
+    return {
+        "operando": 0,
+        "previstos": len(PLACAS),
+        "alarmes": [{"nome": n, "grupo": g, "severidade": s,
+                     "gatilho": t, "acao": a} for n, g, s, t, a in ALARMES],
+        "por_severidade": por_severidade,
+        "assinaturas": [{"padrao": p, "diagnostico": d, "acao": a}
+                        for p, d, a in ASSINATURAS_ENERGIA],
+        "pesos_saude": [{"componente": c, "peso": p, "entra_com": e}
+                        for c, p, e in PESOS_SAUDE],
+    }
+
+
 # -------------------------------------------------------------------- git --
 
 def git():
