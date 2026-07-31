@@ -17,8 +17,10 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
 
-RE_PENDENCIA = re.compile(r"^\|\s*(?:~~)?\*{0,2}(P-\d+|C-\d+|A-\d+|R-\d+|B-\d+)"
-                          r"\*{0,2}(?:~~)?\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|", re.M)
+RE_PENDENCIA = re.compile(
+    r"^\|\s*(?:~~)?\*{0,2}"
+    r"(PT-\d+|P-\d+|C-\d+|A-\d+|R-\d+|B-\d+|M-\d+|N-\d+|V-\d+)"
+    r"\*{0,2}(?:~~)?\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|", re.M)
 RE_MARCA = re.compile(r"\*\*\[([MNLGE?])\]\*\*")
 
 
@@ -89,24 +91,35 @@ ORIGEM_PENDENCIA = {
     "A": ("docs/ANCORAGEM.md", "ancoragem"),
     "R": ("docs/RESPONSABILIDADE_TECNICA.md", "responsabilidade"),
     "B": ("docs/REFERENCIAS.md", "referencias"),
+    "M": ("docs/MERCADO_MUNICIPIOS.md", "mercado municipal"),
+    "N": ("docs/MERCADO_MINERACAO.md", "mineração"),
+    "V": ("docs/VALUATION.md", "valuation"),
 }
+
+# PT-xx colide com P-xx na primeira letra; tratado à parte.
+ORIGEM_ESPECIAL = {"PT": ("docs/PATENTES.md", "patentes")}
 
 
 def pendencias():
     itens = []
     vistos = set()
-    for arquivo in {v[0] for v in ORIGEM_PENDENCIA.values()}:
+    fontes = {v[0] for v in ORIGEM_PENDENCIA.values()}
+    fontes |= {v[0] for v in ORIGEM_ESPECIAL.values()}
+    fontes |= {"docs/CONCORRENCIA.md"}
+    for arquivo in sorted(fontes):
         texto = _texto(RAIZ / arquivo)
         for ident, descricao, bloqueia in RE_PENDENCIA.findall(texto):
             if ident in vistos:
                 continue
             vistos.add(ident)
             resolvida = "Resolvida" in bloqueia or "Encerrada" in bloqueia
+            prefixo = ident.split("-")[0]
+            origem = ORIGEM_ESPECIAL.get(prefixo) or ORIGEM_PENDENCIA.get(prefixo)
             itens.append({
                 "id": ident,
                 "descricao": re.sub(r"[*~`]", "", descricao),
                 "situacao": re.sub(r"[*~`]", "", bloqueia),
-                "grupo": ORIGEM_PENDENCIA.get(ident[0], ("", "outro"))[1],
+                "grupo": (origem or ("", "outro"))[1],
                 "resolvida": resolvida,
                 "origem": arquivo,
             })

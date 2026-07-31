@@ -21,6 +21,79 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (4) — Cinco frentes de negócio: mercado, concorrência, patente e valor
+
+**Fase:** transversal · **Duração:** ~1 sessão
+
+### Feito
+
+- **`docs/NEGOCIO.md`** — índice que amarra as cinco frentes, com as conclusões
+  consolidadas e a sequência recomendada.
+- **`docs/MERCADO_MUNICIPIOS.md`** — dimensionamento do mercado de prefeituras,
+  com dados oficiais do CEMADEN, IBGE e CPRM.
+- **`docs/MERCADO_MINERACAO.md`** — barragens de mineração, obrigação legal e
+  por que este mercado é mais difícil que o municipal.
+- **`docs/CONCORRENCIA.md`** — o que já existe e é sólido, onde não somos
+  originais e onde há originalidade defensável.
+- **`docs/PATENTES.md`** — escala de três níveis contra as exigências do INPI.
+- **`docs/VALUATION.md`** — três métodos de avaliação e faixa consolidada.
+- Coletor do painel estendido para reconhecer as pendências das novas frentes
+  (M, N, PT, V) — 54 pendências consolidadas, 51 abertas.
+
+### Aprendido
+
+- **O universo de clientes está contado pelo Estado.** 1.295 municípios
+  monitorados pelo CEMADEN com meta de 2.095; **958 com áreas de risco
+  mapeadas**; 8.270.127 pessoas em 2.471.349 domicílios expostos, em 872
+  municípios **[G]**. Não é preciso estimar demanda por analogia.
+- A base de população em risco ainda é do **Censo 2010** — deve ser tratada como
+  piso, não como estimativa corrente.
+- **Na mineração, monitorar é obrigação legal.** A Lei 14.066/2020 exige
+  armazenar dados de instrumentação e fornecê-los em tempo real quando requerido
+  **[N]**. São 911 barragens, 461 sob PNSB, **118 em alerta ou emergência** —
+  recorde histórico, resultado de endurecimento regulatório **[G]**.
+- **O hardware não é original.** Worldsensing e Senceive fazem sensor de
+  inclinação sem fio com **10 a 15 anos de bateria** — melhor que o nosso — e a
+  Senceive posiciona explicitamente para barragens de rejeito **[L]**. Se a
+  proposta fosse construir esse sensor, o certo seria comprar deles.
+- **Preços do setor não são públicos** — venda consultiva. Obter cotação real
+  virou a pendência mais crítica da frente comercial (C-01).
+- A originalidade defensável está na **referência distribuída** de manutenção,
+  na **integração geoespacial** e no **custo por ponto** que permite adensar
+  malha. O concorrente premium está na barragem crítica; o Sentinela concorre
+  com o *nada* que existe no talude municipal.
+- **Para patente, o INPI exige novidade, atividade inventiva e aplicação
+  industrial**, mais suficiência descritiva **[N]**. Modelo de Utilidade tem
+  exigência menor (ato inventivo) e vigência de 15 anos contra 20 da invenção.
+
+### Decidido
+
+- **Sequência: municipal primeiro, mineração depois.** Consolidar onde há canal,
+  piloto e menor barreira de credibilidade; entrar na mineração por
+  **adensamento de malha**, não por substituição de instrumento crítico, e com
+  histórico operacional em mãos.
+- **Reposicionamento do produto:** não é "mais um sensor de inclinação", é uma
+  malha densa e barata integrada a base geoespacial, com manutenção
+  autodiagnosticada.
+- **O sistema deve ingerir dados de instrumentos de terceiros** — cliente com
+  Worldsensing instalado não deve ser obrigado a substituir. Transforma
+  concorrente em complemento e reforça ADR-005.
+- **Patente: nível 1–2 de 3.** Não atinge o mínimo para depósito. Falta busca de
+  anterioridade (PT-01) e implementação do candidato mais forte. A distância até
+  o nível 3 é menor do que parece.
+- **Valuation: piso defensável de R$ 130–260 mil** (custo de reposição do que
+  existe). Cenários acima são condicionais. O valor está **dentro da Geopixel**,
+  não fora — o canal já resolvido elimina o maior risco de um projeto de
+  hardware.
+
+### Próximo
+
+Três pendências críticas antes de qualquer exposição pública: cotação de
+concorrentes (C-01), busca de anterioridade (PT-01) e definição de titularidade
+(PT-03). Divulgar antes do depósito compromete a novidade.
+
+---
+
 ## 2026-07-31 (3) — Atalaia: nome, saúde da frota e manutenção preditiva
 
 **Fase:** transversal (projeto para as fases 1–3) · **Duração:** ~1 sessão

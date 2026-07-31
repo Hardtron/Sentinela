@@ -38,6 +38,12 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/REFERENCIAS.md](docs/REFERENCIAS.md) | **Política de proveniência** e bibliografia central |
 | [docs/QUALIDADE_CODIGO.md](docs/QUALIDADE_CODIGO.md) | **Complexidade ciclomática** e padrões de código |
 | [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
+| **[docs/NEGOCIO.md](docs/NEGOCIO.md)** | **Índice das cinco frentes de negócio** |
+| [docs/MERCADO_MUNICIPIOS.md](docs/MERCADO_MUNICIPIOS.md) | Frente 1 — mercado municipal |
+| [docs/MERCADO_MINERACAO.md](docs/MERCADO_MINERACAO.md) | Frente 2 — barragens de mineração |
+| [docs/CONCORRENCIA.md](docs/CONCORRENCIA.md) | Frente 3 — concorrência e originalidade |
+| [docs/PATENTES.md](docs/PATENTES.md) | Frente 4 — maturidade para depósito |
+| [docs/VALUATION.md](docs/VALUATION.md) | Frente 5 — valor de mercado estimado |
 | [docs/PROMPT_PAINEL.md](docs/PROMPT_PAINEL.md) | Prompt autocontido para gerar o painel de resultados |
 | [LOG.md](LOG.md) | Diário de andamento |
 | [ERROS.md](ERROS.md) | Registro de erros e soluções |
