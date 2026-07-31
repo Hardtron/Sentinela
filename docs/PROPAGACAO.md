@@ -6,6 +6,11 @@ publicados para os cenários que o projeto vai encontrar.
 
 Ferramenta: `tools/alcance.py`. Dados do ensaio: [CAMPO.md](CAMPO.md).
 
+> **Proveniência.** Números e afirmações neste documento seguem a política de
+> [REFERENCIAS.md](REFERENCIAS.md): **[M]** medido em ensaio próprio, **[N]**
+> norma, **[L]** literatura revisada, **[G]** fonte governamental, **[E]**
+> estimativa própria derivada, **[?]** pendente de referência.
+
 ---
 
 ## 1. Por que o cenário do projeto não é urbano

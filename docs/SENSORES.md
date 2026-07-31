@@ -1,5 +1,10 @@
 # Grandezas monitoradas
 
+> **Proveniência.** Números e afirmações neste documento seguem a política de
+> [REFERENCIAS.md](REFERENCIAS.md): **[M]** medido em ensaio próprio, **[N]**
+> norma, **[L]** literatura revisada, **[G]** fonte governamental, **[E]**
+> estimativa própria derivada, **[?]** pendente de referência.
+
 ## Premissa que orienta a escolha
 
 Encosta não avisa com vibração — avisa com **deslocamento lento**.
@@ -18,9 +23,19 @@ Duas consequências diretas para a instrumentação:
    brasileira é baixa. "Monitoramento sísmico" não é objetivo do sistema; o que
    o acelerômetro faz é detectar movimento **local** do talude instrumentado.
 
-O preditor de maior peso, consolidado na literatura e a base operacional do
-CEMADEN no Brasil, é **chuva acumulada** — limiares do tipo
-intensidade-duração, tipicamente sobre acumulados de 24 h, 72 h e 96 h.
+O preditor de maior peso é **chuva acumulada**. A referência fundacional
+brasileira é a curva de **Tatizana et al. (1987)**, que correlaciona chuva
+acumulada em 24 h e em 72 h com a ocorrência de escorregamentos na Serra do Mar
+([discussão e aplicação](https://www.researchgate.net/profile/Rodolfo-Mendes-2/publication/349413120_Proposicao_de_limiares_criticos_ambientais_para_uso_em_sistema_de_alertas_de_deslizamentos/links/602ed1b34585158939b4703a/Proposicao-de-limiares-criticos-ambientais-para-uso-em-sistema-de-alertas-de-deslizamentos.pdf)) **[L]**.
+
+Operacionalmente, o **CEMADEN** baseia sua atuação em previsão meteorológica,
+**limiares de chuva acumulada em 24 h e 72 h por município** e vistorias de
+campo, monitorando também **umidade do solo até 3,0 m de profundidade**
+([Cemaden/MCTI](https://www.gov.br/cemaden/pt-br)) **[G]**.
+
+O mecanismo físico que liga chuva a ruptura está descrito em ANCORAGEM.md §3:
+poropressão positiva com fluxo paralelo à encosta sobre horizonte menos
+permeável **[L]**.
 
 ## Prioridade de instrumentação
 
@@ -28,7 +43,7 @@ intensidade-duração, tipicamente sobre acumulados de 24 h, 72 h e 96 h.
 |---|---|---|---|---|
 | 1 | Chuva acumulada | Báscula (tipping bucket) | Pulso/IRQ | Maior poder preditivo; consumo desprezível |
 | 2 | Umidade do solo (2–3 profundidades) | Capacitivo industrial ou TDR | ADC / SDI-12 | Saturação = perda de coesão |
-| 3 | Inclinação do talude | ADXL355 (crítico) / ADXL345 (triagem) | SPI / I2C | Detecta *creep* pré-ruptura |
+| 3 | Inclinação do talude | ADXL355 (crítico) / ADXL345 (triagem) | SPI / I2C | Detecta movimento precursor |
 | 4 | Evento de ruptura | Mesmo acelerômetro, modo interrupção | I2C | Confirma e dispara alerta imediato |
 | 5 | Temperatura e umidade do ar | SHT41 ou BME280 | I2C | Contexto; evapotranspiração e secagem |
 | 6 | Pressão barométrica | BME280 (mesmo encapsulamento) | I2C | Entrada de frente / tempestade |
@@ -38,19 +53,31 @@ intensidade-duração, tipicamente sobre acumulados de 24 h, 72 h e 96 h.
 
 ## Estratégia de custo no acelerômetro
 
-O ADXL345 (~R$ 20) resolve cerca de 0,2° — suficiente para detectar movimento
-grosseiro e para triar quais taludes merecem instrumentação fina. O ADXL355
-(~R$ 400) resolve milésimos de grau e é o que efetivamente enxerga *creep*.
+Instrumentos MEMS dedicados a inclinometria geotécnica apresentam resolução da
+ordem de **0,0025°**
+([Sisgeo](https://sisgeo.com/products/ipi-in-place-inclinometers/mems-in-place-inclinometers/),
+[ESS](https://www.essearth.com/product/geostring-in-place-mems-inclinometer/))
+**[L]**. Acelerômetros de uso geral, como o ADXL345, ficam ordens de grandeza
+acima disso; o ADXL355, de baixo ruído, se aproxima.
 
-Regra de alocação: **ADXL355 apenas nos taludes classificados como críticos**;
-ADXL345 na malha ampla. Isso mantém o custo por ponto baixo sem abrir mão da
-sensibilidade onde ela decide.
+Regra de alocação **[E]**: sensor de baixo ruído nos taludes classificados como
+críticos, sensor de triagem na malha ampla. **A definição de qual resolução é
+suficiente depende do limiar adotado para o sítio, que é definição geotécnica**
+(RESPONSABILIDADE_TECNICA.md §5) — não do projeto.
+
+Valores de preço citados anteriormente foram removidos por não terem cotação
+(B-07 em REFERENCIAS.md).
 
 ## Nota de calibração
 
 Inclinômetro de campo mede **variação**, não valor absoluto. A referência é
 estabelecida na instalação e o que importa é a deriva em relação a ela.
-Compensação térmica é obrigatória: MEMS deriva com temperatura, e um talude
-exposto ao sol varia dezenas de graus ao longo do dia. Sem compensar, o ciclo
-térmico diário vira falso movimento — esta é a principal fonte de falso
-positivo esperada no sistema.
+Compensação térmica é obrigatória: MEMS apresenta deriva com temperatura, e um
+talude exposto ao sol varia sensivelmente ao longo do dia. Sem compensar, o
+ciclo térmico diário tende a aparecer como movimento aparente — esta é a
+principal fonte de falso positivo esperada no sistema **[E]**.
+
+Que a instrumentação MEMS de referência declare **baixa dependência térmica**
+como característica de projeto **[L]** confirma que o efeito é reconhecido e
+precisa ser tratado. **[?]** Quantificar a deriva do sensor escolhido a partir
+do datasheet — item B-06 em REFERENCIAS.md.

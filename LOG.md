@@ -21,6 +21,64 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 — Política de proveniência e auditoria retroativa
+
+**Fase:** transversal · **Duração:** ~1 sessão
+
+### Feito
+
+- **`docs/REFERENCIAS.md`** — política de proveniência com marcação obrigatória
+  (**[M]** medido, **[N]** norma, **[L]** literatura, **[G]** governamental,
+  **[E]** estimativa, **[?]** pendente), bibliografia central por área e
+  registro de revisões.
+- **Auditoria retroativa** de toda a documentação, com quatro correções
+  aplicadas (R1 a R4).
+- `tools/haste.py` refeito sobre a **ABNT NBR 6123**, com fatores S1/S2 e
+  velocidade característica por altura.
+- Notas de proveniência inseridas nos documentos técnicos.
+
+### Aprendido
+
+- **Erro próprio encontrado na auditoria:** os cálculos de vento usavam 20 m/s,
+  valor arbitrário e **não normativo**. A NBR 6123 dá isopletas de 30 a 48 m/s;
+  com V₀ = 40 m/s, categoria III e S₁ = 1,15, a velocidade característica a
+  1,5 m é **35,8 m/s**. Como a força varia com o quadrado, as deflexões
+  publicadas estavam **subestimadas em ~3×**.
+  A conclusão qualitativa não mudou — **ficou mais forte**. Mas o eletroduto
+  3/4", antes aceitável a 1,5 m, saiu da recomendação (0,08° → 0,27°).
+- **O limiar de "0,1 a 0,5°" não tinha origem.** A literatura é explícita em que
+  limiares de inclinação são **específicos do sítio**. O projeto passou a
+  especificar **capacidade de medição** (resolução e ruído estrutural), não
+  limiar — que é definição geotécnica.
+- **Referência fundacional brasileira localizada:** curva de **Tatizana et al.
+  (1987)**, correlacionando chuva acumulada em 24 h e 72 h com escorregamentos
+  na Serra do Mar. É a base dos sistemas operacionais de alerta.
+- **Mecanismo de ruptura agora referenciado:** escorregamentos translacionais
+  rasos mobilizam quase só o horizonte superior do solo, com ruptura no
+  **contato solo residual/saprolítico**, por poropressão positiva com fluxo
+  paralelo à encosta. O CEMADEN monitora umidade **até 3,0 m**.
+- Documentação rigorosa serve simultaneamente a três funções: defesa em
+  responsabilidade civil, demonstração de estado da técnica para patente e
+  suficiência descritiva. Convém separar com clareza **o que é nosso** do que é
+  estado da técnica.
+
+### Decidido
+
+- **Regra dura:** afirmação de domínio geológico, geotécnico ou geográfico
+  **nunca** recebe marcação [E]. Só [L], [N] ou [G]. Sem fonte, sai do documento.
+- Preços de materiais e sensores rebaixados a **[E]**, com cotação formal
+  pendente (B-07). Valores sem cotação foram removidos de SENSORES.md.
+- **[VERIFICAR]** com agente do INPI antes de qualquer divulgação pública ampla
+  — publicar antes de depositar pode comprometer a novidade. O repositório é
+  privado, o que preserva a opção.
+
+### Próximo
+
+Resolver os itens B-01 a B-08 de REFERENCIAS.md §5 antes de proposta comercial
+ou pedido de patente. Ensaio 03 segue pendente.
+
+---
+
 ## 2026-07-30 (9) — Projeto de ancoragem: o inclinômetro decide a altura
 
 **Fase:** 0 → 4 (projeto) · **Duração:** ~1 sessão

@@ -6,6 +6,11 @@ que material usar e como manter a instalação simples sem comprometer a leitura
 
 Dimensionamento: `tools/haste.py`. Propagação: [PROPAGACAO.md](PROPAGACAO.md).
 
+> **Proveniência.** Números e afirmações neste documento seguem a política de
+> [REFERENCIAS.md](REFERENCIAS.md): **[M]** medido em ensaio próprio, **[N]**
+> norma, **[L]** literatura revisada, **[G]** fonte governamental, **[E]**
+> estimativa própria derivada, **[?]** pendente de referência.
+
 ---
 
 ## 1. O conflito central
@@ -21,25 +26,50 @@ Uma haste alta balança. E se o inclinômetro estiver nela, o balanço vira leit
 de movimento — falso positivo no sensor que existe justamente para detectar
 movimento.
 
-**Quanto isso pesa, em número.** Vento de 72 km/h, deflexão angular no topo:
+**Quanto isso pesa, em número.** Vento conforme **ABNT NBR 6123** **[N]**:
+velocidade básica V₀ = 40 m/s (estimativa para o litoral paulista,
+**[CONFIRMAR]** na isopleta — a norma dá de 30 a 48 m/s no país), categoria III
+e fator topográfico S₁ = 1,15 para encosta. A velocidade característica resulta
+em **35,8 m/s a 1,5 m** e 39,5 m/s a 4 m.
+
+Deflexão angular no topo **[E]** — viga engastada, pressão dinâmica uniforme:
 
 | Perfil | 1,5 m | 3 m | 4 m |
 |---|---|---|---|
-| Eletroduto 3/4" galv. | 0,08° | 0,68° | **1,61°** |
-| Eletroduto 1" galv. | 0,04° | 0,35° | **0,83°** |
-| Tubo 1.1/2" galv. | **0,02°** | 0,17° | 0,39° |
-| Tubo 2" galv. | **0,01°** | 0,09° | 0,21° |
-| PVC 50 mm | 1,19° | 9,52° | 22,58° |
+| Eletroduto 3/4" galv. | 0,27° | 2,49° | **6,26°** |
+| Eletroduto 1" galv. | 0,14° | 1,29° | **3,23°** |
+| Tubo 1.1/2" galv. | **0,07°** | 0,61° | 1,54° |
+| Tubo 2" galv. | **0,04°** | 0,33° | 0,83° |
+| PVC 50 mm | 3,81° | 34,99° | 87,86° |
 
-O *creep* que se quer detectar é da ordem de **0,1 a 0,5°**. Ou seja:
+> **Correção registrada.** A versão anterior deste documento usava 20 m/s, valor
+> arbitrário e não normativo, e subestimava as deflexões em cerca de 3×. Ver
+> [REFERENCIAS.md](REFERENCIAS.md) §3, revisão R1.
 
-- **haste de 4 m com inclinômetro no topo é inviável** — o vento sozinho produz
-  de 0,2° a 1,6°, encobrindo ou imitando o sinal;
-- **a 1,5 m, qualquer tubo metálico fica em 0,01–0,08°** — uma ordem de grandeza
-  abaixo do sinal, aceitável;
-- **PVC está descartado como elemento estrutural.** Mesmo a 1,5 m dá 1,19°, pior
-  que o próprio fenômeno medido. Serve como eletroduto ou proteção, nunca como
-  haste.
+**Sobre o que se compara.** O projeto **não define limiar de alerta por
+inclinação** — a literatura é explícita em que esses limiares são **específicos
+do sítio**, definidos a partir da geologia e das condições locais
+([Natural Hazards, 2022](https://link.springer.com/article/10.1007/s11069-022-05383-y))
+**[L]**, e sua definição é atribuição de engenheiro geotécnico
+(RESPONSABILIDADE_TECNICA.md §5).
+
+O que cabe ao projeto especificar é **capacidade de medição**: instrumentos MEMS
+de instrumentação geotécnica apresentam resolução da ordem de **0,0025°**
+([Sisgeo](https://sisgeo.com/products/ipi-in-place-inclinometers/mems-in-place-inclinometers/),
+[ESS](https://www.essearth.com/product/geostring-in-place-mems-inclinometer/))
+**[L]**. O **ruído estrutural precisa ficar muito abaixo de qualquer limiar
+plausível** — e é isso que a tabela avalia.
+
+Conclusões:
+
+- **Haste de 3 a 4 m com inclinômetro no topo é inviável.** Deflexões de 0,8° a
+  6,3° são ordens de grandeza acima da resolução do instrumento e comprometem
+  qualquer limiar razoável.
+- **A 1,5 m, tubo de 1.1/2" ou 2" fica em 0,04–0,07°** — margem aceitável, ainda
+  que não desprezível. O eletroduto 3/4" **sai da recomendação**: 0,27° a 1,5 m
+  é alto demais.
+- **PVC está descartado como elemento estrutural.** 3,81° já a 1,5 m. Serve como
+  conduíte ou proteção, nunca como haste.
 
 ---
 
@@ -77,25 +107,40 @@ balançar à vontade sem contaminar a leitura.
 
 ## 3. Profundidade de ancoragem — e um contra-senso importante
 
-A intuição diz "quanto mais fundo, mais firme, melhor". **Aqui é o contrário.**
+A intuição diz "quanto mais fundo, mais firme, melhor". **Aqui é o contrário** —
+e a razão está no mecanismo descrito na literatura.
 
-Deslizamentos rasos — os predominantes em encosta da Serra do Mar — rompem numa
-superfície entre **1 e 3 m** de profundidade, tipicamente no contato solo-rocha
-ou no saprólito. O que se move é a camada acima dela.
+**O que a literatura estabelece [L]:** o tipo predominante de escorregamento
+natural na Serra do Mar, por distribuição e frequência, é o **translacional
+raso**. Esses movimentos **mobilizam quase exclusivamente o horizonte superior
+do solo superficial**, e a ruptura ocorre predominantemente no **contato entre
+solo residual e solo saprolítico**, onde há descontinuidade pedológica marcada.
+A mobilização de material saprolítico ocorre sobretudo na "raiz" — a zona de
+início —, onde a profundidade atingida é maior que no corpo do escorregamento
+([SIGESP, 2023](https://www.sigesp.org.br/images/SIGESP/conteudo/documentos/Artigos/2023/OS%20DESLIZAMENTOS%20TRANSLACIONAIS%20RASOS%20NATURAIS%20NAS%20ENCOSTAS%20DA%20SERRA%20DO%20MAR%20%20DIAGNSTICO%20DO%20FENMENO.pdf)).
 
-Se a estaca for cravada **abaixo** da superfície de ruptura, ela fica ancorada
-no material estável e **não acompanha o movimento** — o sensor não mede nada
-justamente quando o talude se desloca.
+O mecanismo: a ruptura se dá por **poropressão positiva**, com fluxo de água
+paralelo à encosta sobre um horizonte menos permeável
+([SINAGEO](https://sinageo.org.br/2012/trabalhos/1/1-477-58.html)) **[L]**. Como
+referência operacional, o **CEMADEN monitora umidade do solo até 3,0 m de
+profundidade** **[G]**.
 
-**Regra:** a estaca deve estar ancorada **dentro da camada que se quer medir**.
-Profundidade cravada de **0,8 a 1,2 m** atende: fica acima da superfície de
-ruptura típica, dá estabilidade suficiente para o tubo curto, e acompanha o
-bloco superficial.
+**Consequência para a instrumentação [E]:** se a estaca for cravada **abaixo** da
+superfície de ruptura, fica ancorada no material que não se move — e o sensor
+deixa de registrar o deslocamento justamente quando ele ocorre. A estaca precisa
+estar **dentro do horizonte superficial mobilizável**.
 
-> Esta é decisão **geotécnica**, não de instrumentação. A profundidade correta
-> depende do perfil do talude e deve ser definida por engenheiro habilitado, com
-> ART, para cada sítio (CONFORMIDADE.md §3). O valor acima é ponto de partida de
-> projeto, não prescrição universal.
+Profundidade cravada de **0,8 a 1,2 m** é o ponto de partida adotado: fica no
+horizonte superficial descrito pela literatura, dá estabilidade ao tubo curto e
+coincide com a faixa validada em campo pelo SitkaNet, que crava até ~0,95 m ou
+até a interface solo-rocha **[L]**.
+
+> **Esta é decisão geotécnica, não de instrumentação.** A profundidade correta
+> depende do perfil pedológico do talude — em particular da posição do contato
+> solo residual/saprolítico — e **deve ser definida por engenheiro geotécnico ou
+> geólogo habilitado, com ART, para cada sítio**
+> (RESPONSABILIDADE_TECNICA.md §5). O valor acima é ponto de partida de projeto
+> ancorado em literatura, **não prescrição de engenharia**.
 
 Corolário de leitura: com essa geometria, o nó mede **rotação do bloco
 superficial**. Movimento profundo exige inclinômetro em furo revestido, que é
@@ -144,8 +189,8 @@ parede 3 mm, comprimento total 2,5 m** — cerca de 1 m cravado e 1,5 m livre.
 
 | Critério | Avaliação |
 |---|---|
-| Deflexão a 1,5 m, 72 km/h | **0,02°** — 25× menor que o sinal medido |
-| Custo | ~R$ 45/m → **~R$ 110 por nó** |
+| Deflexão a 1,5 m, Vk = 35,8 m/s (NBR 6123) | **0,07°** **[E]** |
+| Custo | ~R$ 45/m → **~R$ 110 por nó** **[E]** — cotar (B-07) |
 | Massa (2,5 m) | ~8,4 kg — carregável por uma pessoa em trilha |
 | Disponibilidade | Qualquer depósito de construção ou serralheria |
 | Durabilidade | Galvanização a fogo: décadas em exposição externa |
@@ -153,7 +198,9 @@ parede 3 mm, comprimento total 2,5 m** — cerca de 1 m cravado e 1,5 m livre.
 
 Descartados e por quê:
 
-- **PVC** — 1,19° de deflexão a 1,5 m, degrada com UV. Só como conduíte interno.
+- **PVC** — 3,81° de deflexão a 1,5 m, degrada com UV. Só como conduíte interno.
+- **Eletroduto 3/4"** — 0,27° a 1,5 m. Foi cogitado pelo custo, mas sai da
+  recomendação após a correção da velocidade normativa (REFERENCIAS.md R1).
 - **Alumínio** — leve, mas 3× menos rígido que o aço e mais caro.
 - **Fibra de vidro** — não conduz (bom para raio), mas custo e disponibilidade
   ruins no Brasil. Reavaliar se SPDA se tornar problema crítico.
@@ -281,7 +328,10 @@ Materiais por nó:
 | Abraçadeiras | Tipo U, 2 unidades | R$ 15 |
 | Invólucro | Caixa IP67 com prensa-cabos | R$ 80–150 |
 | Aterramento | Cabo de cobre + haste (NBR 5419) | R$ 60 |
-| **Total estrutura** | | **~R$ 300** |
+| **Total estrutura** | | **~R$ 300** **[E]** |
+
+Todos os valores acima são **estimativa de mercado sem cotação formal** — item
+B-07 em REFERENCIAS.md. Não usar em proposta comercial antes de cotar.
 
 Ferramenta compartilhada pela equipe: marreta, capacete de cravação (reutilizável),
 trado manual, nível de bolha, trena, GPS.

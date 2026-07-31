@@ -23,6 +23,29 @@ LAMBDA_M = 299.792458 / FREQ_MHZ
 RHO_AR = 1.225      # kg/m³
 CD_CILINDRO = 1.2   # coeficiente de arrasto de tubo cilíndrico
 
+# --- Vento conforme ABNT NBR 6123 -----------------------------------------
+# V0 é a velocidade básica: média sobre 3 s, excedida uma vez a cada 50 anos,
+# a 10 m de altura em terreno aberto e plano. O mapa de isopletas da norma dá
+# de 30 a 48 m/s no território nacional.
+#
+# ATENÇÃO: a versão anterior desta ferramenta usava 20 m/s arbitrários, valor
+# NÃO normativo e otimista. Os resultados de vento publicados antes desta
+# correção subestimavam a deflexão. Ver REFERENCIAS.md, nota de revisão.
+V0_PADRAO_MS = 40.0   # estimativa para o litoral de SP — [CONFIRMAR] na isopleta
+
+# Fator S2: rugosidade do terreno e altura. S2 = b * Fr * (z/10)^p
+# Categorias da NBR 6123, classe A (maior dimensão < 20 m).
+CATEGORIAS_S2 = {
+    "II_aberto":     dict(b=1.00, p=0.085, desc="terreno aberto, poucos obstáculos"),
+    "III_obstaculos": dict(b=0.94, p=0.100, desc="terreno plano com obstáculos, casas"),
+    "IV_suburbano":  dict(b=0.86, p=0.120, desc="suburbano denso"),
+}
+
+# Fator S1: topográfico. Em talude ou morro o vento acelera. A norma dá
+# formulação por inclinação; 1,0 é terreno plano e valores acima de 1,1 são
+# típicos de encosta. [CONFIRMAR] por eng. civil para cada sítio.
+S1_PADRAO = 1.15
+
 # Perfis comuns no comércio brasileiro. E em Pa, dimensões em m.
 PERFIS = {
     "eletroduto_3/4_galv": dict(od=0.0269, par=0.00265, E=200e9, kgm=1.58, custo_m=22),
@@ -38,11 +61,25 @@ def inercia(od, par):
     return math.pi / 64.0 * (od**4 - di**4)
 
 
+def vk_nbr6123(z, v0=V0_PADRAO_MS, categoria="III_obstaculos", s1=S1_PADRAO, s3=1.0):
+    """Velocidade característica do vento na altura z, conforme NBR 6123.
+
+    Vk = V0 * S1 * S2 * S3, com S2 = b * Fr * (z/10)^p.
+    """
+    c = CATEGORIAS_S2[categoria]
+    s2 = c["b"] * 1.0 * (z / 10.0) ** c["p"]
+    return v0 * s1 * s2 * s3
+
+
 def vento_topo(L, od, E, I, v_ms):
     """Viga engastada com carga distribuída. Devolve (flecha_m, angulo_graus).
 
     O ângulo é o que importa: é ele que um inclinômetro montado no topo leria
     como se fosse movimento do talude.
+
+    Simplificação: pressão dinâmica uniforme ao longo da haste, calculada na
+    altura do topo. Conservador para hastes curtas. Verificação estrutural
+    formal é atribuição de eng. civil — aqui serve para decidir arquitetura.
     """
     w = 0.5 * RHO_AR * v_ms**2 * CD_CILINDRO * od   # N/m
     flecha = w * L**4 / (8 * E * I)
@@ -67,8 +104,12 @@ def haste_necessaria(d_m, h_gateway, h_veg, fracao=0.6):
 
 def main():
     ap = argparse.ArgumentParser(description="Dimensionamento de haste e ancoragem")
-    ap.add_argument("--vento", type=float, default=20.0,
-                    help="velocidade do vento em m/s (20 m/s = 72 km/h)")
+    ap.add_argument("--v0", type=float, default=V0_PADRAO_MS,
+                    help="velocidade basica do vento V0 em m/s (NBR 6123)")
+    ap.add_argument("--categoria", default="III_obstaculos",
+                    choices=list(CATEGORIAS_S2), help="rugosidade do terreno")
+    ap.add_argument("--s1", type=float, default=S1_PADRAO,
+                    help="fator topografico (1,0 plano; >1,1 encosta)")
     ap.add_argument("--vao", type=float, default=500.0, help="vao do enlace em m")
     ap.add_argument("--vegetacao", type=float, default=3.0,
                     help="altura da vegetacao no meio do vao, em m")
@@ -77,19 +118,30 @@ def main():
     print("=" * 74)
     print("1. VENTO — quanto a haste entorta, e o que isso vira em falso movimento")
     print("=" * 74)
-    print(f"vento de referencia: {args.vento:.0f} m/s ({args.vento*3.6:.0f} km/h)\n")
-    print(f"{'perfil':<22}{'L':>5}{'flecha':>9}{'angulo':>9}{'massa':>8}{'custo':>8}")
+    cat = CATEGORIAS_S2[args.categoria]
+    print(f"NBR 6123: V0 = {args.v0:.0f} m/s, categoria {args.categoria}")
+    print(f"          ({cat['desc']}), S1 = {args.s1:.2f}")
+    print(f"velocidade caracteristica por altura:")
+    for z in (1.5, 3.0, 4.0):
+        vk = vk_nbr6123(z, args.v0, args.categoria, args.s1)
+        print(f"          z = {z:.1f} m -> Vk = {vk:.1f} m/s ({vk*3.6:.0f} km/h)")
+    print()
+    print(f"{'perfil':<22}{'L':>5}{'Vk':>8}{'flecha':>9}{'angulo':>9}{'custo':>8}")
     print("-" * 74)
     for nome, p in PERFIS.items():
         I = inercia(p["od"], p["par"])
         for L in (1.5, 3.0, 4.0):
-            f, a = vento_topo(L, p["od"], p["E"], I, args.vento)
-            print(f"{nome:<22}{L:>4.1f}m{f*100:>8.1f}cm{a:>8.2f}°"
-                  f"{p['kgm']*L:>7.1f}kg{p['custo_m']*L:>7.0f}R$")
+            vk = vk_nbr6123(L, args.v0, args.categoria, args.s1)
+            f, a = vento_topo(L, p["od"], p["E"], I, vk)
+            print(f"{nome:<22}{L:>4.1f}m{vk:>7.1f}{f*100:>8.1f}cm{a:>8.2f}°"
+                  f"{p['custo_m']*L:>7.0f}R$")
         print()
 
-    print("Referencia: o rastejo que se quer detectar e da ordem de 0,1 a 0,5°.")
-    print("Angulo de vento MAIOR que isso torna a leitura no topo inutilizavel.\n")
+    print("A resolucao tipica de um inclinometro MEMS de instrumentacao e de")
+    print("0,0025° (Sisgeo/ESS). O limiar de alerta NAO e universal: e definido")
+    print("por sitio, por eng. geotecnico. O que o projeto precisa garantir e que")
+    print("o RUIDO ESTRUTURAL fique muito abaixo do limiar que vier a ser adotado.")
+    print("Angulo de vento da ordem de decimos de grau ja compromete essa margem.\n")
 
     print("=" * 74)
     print("2. GEOMETRIA — que altura de antena o enlace exige")

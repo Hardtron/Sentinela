@@ -38,7 +38,7 @@ não entrou em recepção".
 | RSSI remoto (HTC-01 ouvindo) | −78 a −97 dBm |
 | SNR | +8 a +12 dB |
 | Piso de ruído do canal | −98 a −104 dBm |
-| Margem sobre a sensibilidade SF9 (−129 dBm) | **35 a 52 dB** |
+| Margem sobre a sensibilidade SF9 (−129 dBm) **[?]** B-01 | **35 a 52 dB** |
 
 ### Leitura
 
@@ -205,11 +205,16 @@ PROPAGACAO.md §4.
 (−120 dBm) que P4, a 174 m em descampado (−118 dBm). Mais longe, sinal melhor. É
 a alvenaria, não a distância, que condena o ponto.
 
-**As medições são conservadoras.** Sereno e vegetação molhada atenuam. Vale
-distinguir: a chuva em si, em 915 MHz, tem atenuação desprezível — mas **folhagem
-molhada absorve bastante**, e o orvalho tem o mesmo efeito. Como o sistema precisa
-funcionar exatamente durante a chuva, medir nessa condição é uma vantagem: os
-números representam o caso degradado, não o melhor caso.
+**As medições são conservadoras.** Foram feitas sob sereno e chuva fina, com
+vegetação molhada — condição degradada, não o melhor caso. Como o sistema precisa
+funcionar exatamente durante a chuva, medir assim é vantajoso para o
+dimensionamento.
+
+**[?]** A separação quantitativa entre atenuação por chuva e por folhagem molhada
+em 915 MHz ainda não está referenciada — itens B-03 (ITU-R P.833, vegetação) e
+B-04 (ITU-R P.838, chuva) em [REFERENCIAS.md](REFERENCIAS.md). Há evidência
+indireta e independente de que a chuva degrada o enlace: o SitkaNet reporta
+**falhas de transmissão correlacionadas com períodos de chuva intensa** **[L]**.
 
 **A sensibilidade real é melhor que a tabela.** P2 registrou mínimo de
 **−133 dBm**, abaixo da sensibilidade nominal de SF9 (−129 dBm), com o pacote
