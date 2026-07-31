@@ -30,6 +30,7 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/ROTEIRO_CAMPO.md](docs/ROTEIRO_CAMPO.md) | Como conduzir o ensaio de alcance |
 | [docs/CAMPO.md](docs/CAMPO.md) | Resultados dos ensaios de enlace |
 | [docs/PROPAGACAO.md](docs/PROPAGACAO.md) | Modelo de propagação calibrado e dimensionamento |
+| [docs/ANCORAGEM.md](docs/ANCORAGEM.md) | Projeto de fixação do nó no talude |
 | [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md) | Normas aplicáveis — Anatel, defesa civil, geotecnia, LGPD |
 | [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
 | [LOG.md](LOG.md) | Diário de andamento |

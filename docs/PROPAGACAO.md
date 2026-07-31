@@ -21,9 +21,11 @@ frequentemente irregular. Isso inverte a hierarquia dos fatores de propagação:
 | **Vegetação e folhagem** | pouco | **dominante** |
 | Altura de instalação | importante | **crítica** |
 
-E há um efeito favorável: **o relevo que cria o risco também ajuda o rádio.**
-Um talude põe naturalmente o sensor e o gateway em cotas diferentes, o que é
-exatamente a geometria que o enlace quer. O ensaio 02 mediu isso.
+E o relevo tem efeito ambíguo, que vale entender antes de contar com ele: em
+**rampa uniforme o desnível se cancela** — a folga de Fresnel depende da média
+das alturas de antena, não da diferença de cota. Quem ajuda é o perfil
+**côncavo**, comum na base de cicatrizes de deslizamento; o **convexo**
+atrapalha. Derivação e consequências em [ANCORAGEM.md](ANCORAGEM.md) §6.
 
 ---
 
@@ -85,10 +87,16 @@ não é substituível por catálogo.
 
 ## 4. A perda fixa de 33 dB é a maior incerteza — e a maior oportunidade
 
-Os 33,4 dB de perda fixa vêm do ambiente imediato do nó fixo: quintal murado,
-antena baixa e possível polarização cruzada (CAMPO.md). **Um gateway bem
-instalado — poste ou torre, antena vertical, sem obstrução imediata — elimina a
-maior parte disso.**
+Os 33,4 dB de perda fixa vêm do ambiente imediato do nó fixo: **muros de
+alvenaria a ~3 m em todos os lados e antena a 1,5 m do solo**. A antena estava
+vertical, então polarização está descartada (CAMPO.md). **Um gateway bem
+instalado — poste, mastro ou laje, com horizonte livre — elimina a maior parte
+disso.**
+
+O mecanismo importa: obstrução em **campo próximo** é desproporcionalmente
+danosa, porque intercepta a primeira zona de Fresnel logo na origem, onde ela
+ainda é estreita e concentra a energia. Muro a 3 m atenua muito mais que o mesmo
+muro a 100 m.
 
 O efeito no alcance é dramático, porque a perda fixa entra linearmente na
 equação enquanto a distância entra pelo logaritmo:
@@ -105,8 +113,9 @@ Reduzir a perda fixa de 33 para 15 dB multiplica o alcance por ~3,6. É o ganho
 mais barato disponível: depende de escolher o local e orientar a antena, não de
 comprar nada.
 
-**Por isso o P-009 (teste de polarização e altura do nó fixo) é prioritário sobre
-qualquer outro ensaio.** Ele pode reclassificar todo o dimensionamento.
+**Consequência de projeto:** horizonte livre no gateway vale mais que qualquer
+ajuste de rádio. É requisito de instalação, não preferência — e é o que
+transforma os 33 dB medidos nos ~15 dB de uma instalação correta.
 
 ---
 
@@ -136,25 +145,21 @@ risco de raio.
 
 ### Recomendação para o nó de campo
 
-**Haste de 3 a 4 m acima do solo** é o ponto ótimo de custo-benefício:
+**A altura vai no gateway, não no sensor.** A análise estrutural em
+[ANCORAGEM.md](ANCORAGEM.md) mudou esta recomendação: haste de 4 m sob vento de
+72 km/h deflete de 0,2° a 1,6°, o que encobre o *creep* de 0,1 a 0,5° que o
+inclinômetro precisa detectar. Haste alta e inclinômetro são incompatíveis no
+mesmo elemento.
 
-- entrega 6,6 a 9,1 dB — equivalente a dois ou três spreading factors, **de graça
-  em consumo**
-- tira a antena da vegetação rasteira, que é o que mais absorve perto do solo
-- mantém-se dentro do que um poste, estaca reforçada ou varão de aço galvanizado
-  suporta sem estaiamento elaborado
-- permanece acessível para manutenção sem equipamento de altura (relevante para
-  NR-35)
+O sensor fica com **1,5 m de altura livre** — onde a deflexão cai para 0,02° com
+tubo de aço 1.1/2" — e a altura necessária ao enlace é obtida **elevando o
+gateway**, que é um para muitos nós e não carrega instrumentação sensível.
 
-Acima de 4 m, o custo estrutural e o de proteção contra descarga atmosférica
-(NBR 5419) crescem mais rápido que o ganho de rádio.
+Quando o vão exigir mais altura no próprio nó, a saída é **mastro separado e
+estaiado**, mecanicamente independente do tubo de medição.
 
-> Atenção de projeto: haste metálica em encosta exposta é captor de descarga.
-> O SPDA passa a ser obrigatório, não opcional — ver CONFORMIDADE.md §4, item
-> C-07. E a haste **não pode comprometer a medição**: o inclinômetro mede o
-> movimento do talude, então a haste precisa estar solidária ao solo que se quer
-> medir, e ser rígida o suficiente para não oscilar com vento — oscilação de
-> haste vira falso movimento.
+> Haste metálica em encosta exposta é captor de descarga mesmo com 1,5 m: o SPDA
+> é obrigatório, não opcional — CONFORMIDADE.md §4, item C-07.
 
 ---
 

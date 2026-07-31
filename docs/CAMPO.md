@@ -226,22 +226,27 @@ Além do FSPL e do expoente, o ajuste revela **33,4 dB de perda fixa**. É muito
 e a explicação importa: se for do ambiente, o gateway definitivo não a terá, e o
 alcance real será várias vezes maior que o medido.
 
-Candidatas, da mais provável para a menos:
+**Polarização está descartada.** Durante as medições a antena do `HTC-02` estava
+**vertical, apontada para cima, a ~1,5 m do solo** — a foto de registro foi
+tirada depois, apenas para marcar a coordenada. Restam duas causas, e ambas são
+do ambiente:
 
-1. **Muros de alvenaria ao redor do nó fixo.** O `HTC-02` está num quintal
-   cercado — o sinal atravessa alvenaria logo na saída, em todas as direções.
-2. **Antena baixa nas duas pontas.** Nó fixo próximo ao solo e placa na mão a
-   ~1,4 m: a primeira zona de Fresnel fica obstruída desde o início.
-3. **Descasamento de polarização.** Na foto do `HTC-02`, a placa aparece
-   deitada. Se a antena dele estava horizontal e a do `HTC-01` vertical, a
-   polarização cruzada custa tipicamente **20 a 30 dB** — sozinha explicaria a
-   maior parte do desvio.
+1. **Muros de alvenaria a ~3 m em todos os lados.** Esta é a dominante. O nó
+   fixo está dentro de uma caixa de alvenaria aberta só para cima: **toda**
+   direção horizontal atravessa muro em campo próximo, onde a obstrução é mais
+   danosa porque intercepta a zona de Fresnel logo na origem.
+2. **Antenas baixas nas duas pontas.** 1,5 m no nó fixo e ~1,4 m na placa em
+   mão: a primeira zona de Fresnel nasce obstruída e assim permanece.
 
-**Teste que separa as hipóteses (P-009):** repetir a medição de um ponto já
-caracterizado — o P6 serve — com a antena do `HTC-02` comprovadamente **vertical**
-e erguida acima do muro. Se o RSSI saltar 20 dB ou mais, era polarização e/ou
-muro, e todo o alcance previsto sobe na mesma proporção. É meia hora de trabalho
-e pode multiplicar o alcance útil do sistema.
+As duas explicam bem os 33 dB, e as duas **desaparecem num gateway instalado
+como gateway** — em poste, mastro ou laje, com horizonte livre. Não há
+necessidade de repetir os pontos: o efeito está identificado e a literatura o
+sustenta (PROPAGACAO.md §4).
+
+**Consequência de projeto, não de ensaio:** o número medido descreve o pior caso
+de instalação, não o limite do rádio. O dimensionamento da rede deve usar a
+perda fixa do gateway real — e é por isso que a altura e o horizonte livre do
+gateway passam a ser requisito, não preferência.
 
 ### Conclusão
 
@@ -251,8 +256,8 @@ foto. Sete pontos classificados sem nenhuma anotação manual de coordenada.
 
 Três números orientam a fase 4: **n = 3,28** para o modelo de cobertura,
 **+9 dB por 11 m de elevação** (confirmado por dois raios) para o dimensionamento
-das hastes, e **33,4 dB de perda fixa a investigar**, que é a maior incerteza
-aberta e a de maior potencial de ganho.
+das alturas, e **33,4 dB de perda fixa** atribuída ao confinamento do nó fixo —
+que o gateway definitivo não terá.
 
 ---
 

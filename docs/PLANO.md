@@ -81,7 +81,8 @@ sensores comum: o cruzamento com a base geoespacial é o que produz decisão, e
 
 - [ ] Porte de `hal/` para STM32WLE5 (RAK3172) — ADR-004
 - [ ] Migração para LoRaWAN + ChirpStack; concentrador SX1302/SX1303
-- [ ] Haste de 3 a 4 m para o sensor — PROPAGACAO.md §5
+- [ ] Ancoragem por ponteira cravada, tubo galv. 1.1/2" — ANCORAGEM.md
+- [ ] Elevar o gateway em vez do sensor; avaliar Yagi 9 dBi — ANCORAGEM.md §7
 - [ ] Caixa IP67, alimentação solar, aterramento e proteção contra surto
 - [ ] Ensaio de campo prolongado com medição de autonomia
 
@@ -113,4 +114,5 @@ e alimentação.
 | P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
 | ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
-| **P-009** | **Testar polarização e altura do nó fixo** — pode reclassificar todo o alcance (CAMPO.md) | **Dimensionamento da rede** |
+| ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
+| A-01 a A-05 | Pendências do projeto de ancoragem | Ver ANCORAGEM.md §10 |

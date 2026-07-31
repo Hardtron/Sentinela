@@ -21,6 +21,70 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (9) — Projeto de ancoragem: o inclinômetro decide a altura
+
+**Fase:** 0 → 4 (projeto) · **Duração:** ~1 sessão
+
+### Feito
+
+- **`docs/ANCORAGEM.md`** — projeto padronizado de fixação do nó no talude:
+  método, profundidade, material, procedimento e kit, com custo estimado.
+- **`tools/haste.py`** — calcula deflexão por vento, altura de antena exigida
+  pela geometria de Fresnel e o trade-off de investir altura no sensor ou no
+  gateway.
+- Análise da perda fixa **corrigida**: com a informação de que a antena do
+  `HTC-02` estava vertical a 1,5 m, a hipótese de polarização caiu. A causa são
+  os **muros a ~3 m em todos os lados** — obstrução em campo próximo, que é
+  desproporcionalmente danosa — somada à antena baixa nas duas pontas.
+  Não é necessário repetir os pontos; P-009 encerrada.
+
+### Aprendido
+
+- **Haste alta e inclinômetro são incompatíveis no mesmo elemento.** Sob vento
+  de 72 km/h, uma haste de 4 m deflete de 0,2° (tubo 2") a 1,6° (eletroduto
+  3/4"). O *creep* a detectar é de 0,1 a 0,5° — o vento encobre o sinal. A
+  1,5 m, a deflexão cai para 0,01–0,08°, uma ordem de grandeza abaixo.
+  **Isso reverteu a recomendação anterior de haste de 3–4 m.**
+- **PVC está descartado como elemento estrutural**: 1,19° já a 1,5 m, pior que o
+  fenômeno medido.
+- **Contra-senso da profundidade:** cravar *abaixo* da superfície de ruptura
+  ancora o sensor no material estável e ele **deixa de medir** o movimento. A
+  estaca precisa estar **dentro da camada que se move** — 0,8 a 1,2 m para
+  deslizamentos rasos.
+- **O desnível do terreno se cancela** em rampa uniforme: a folga de Fresnel no
+  meio do vão vale (h_sensor + h_gateway)/2 − h_vegetação. Quem ajuda é o perfil
+  **côncavo**; o **convexo** atrapalha e nenhuma haste resolve. Corrige a
+  afirmação anterior de que "declive ajuda" — depende do formato, não da
+  inclinação.
+- **Elevar o gateway é N vezes mais eficiente** que elevar N sensores, já que as
+  duas alturas entram com o mesmo peso na folga. Com gateway a 15 m, o sensor
+  dispensa haste em vãos de até 1 km.
+- **Yagi de 9 dBi no gateway rende o mesmo que haste de 4 m no sensor** — sem
+  estrutura, sem vento, sem captor de raio no nó. A direcionalidade não é
+  problema: encosta monitorada ocupa setor angular estreito.
+- Do SitkaNet: **falhas de transmissão correlacionaram com chuva intensa** —
+  confirma que o enlace degrada durante o evento que o sistema monitora, e
+  sustenta a margem de 20 dB. Acelerômetro por limiar de vibração deu falsos
+  alarmes e foi desativado. Bateria durou 2–3 meses contra >6 previstos. Apenas
+  12 de 18 sensores de umidade deram dado confiável.
+
+### Decidido
+
+- **Arquitetura de duas funções separadas:** inclinômetro na **base engastada**
+  (deflexão nula por definição), antena no topo a **1,5 m**. Mastro estaiado
+  independente só quando o vão exigir.
+- **Tubo de aço galvanizado a fogo 1.1/2", 2,5 m**, ~R$ 110 — 0,02° de deflexão,
+  disponível em qualquer depósito.
+- **Ponteira cravada com marreta, sem concreto**: instala e mede no mesmo dia,
+  é reversível e acopla melhor ao solo superficial que um bloco de concreto.
+- Estrutura de ancoragem estimada em **~R$ 300 por nó**.
+
+### Próximo
+
+Ensaio 03 — varredura de spreading factor.
+
+---
+
 ## 2026-07-30 (8) — Modelo de propagação calibrado contra a literatura
 
 **Fase:** 0 · **Duração:** ~1 sessão
