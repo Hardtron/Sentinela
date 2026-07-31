@@ -10,24 +10,28 @@
 # `restrict,port-forwarding,permitopen="127.0.0.1:1883"`: serve só para
 # encaminhar essa porta. Não abre shell nem pty mesmo se vazar.
 #
-# Instalação no homeserver:
-#   sudo cp backend/sentinela-tunel-mqtt.service /etc/systemd/system/
-#   sudo systemctl daemon-reload
-#   sudo systemctl enable --now sentinela-tunel-mqtt
+# **Unidade de usuário**, não de sistema: o sudo do homeserver exige senha, e
+# o serviço não precisa de privilégio nenhum — só de uma chave SSH do próprio
+# usuário. Instalação sem sudo:
+#   mkdir -p ~/.config/systemd/user
+#   cp backend/sentinela-tunel-mqtt.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now sentinela-tunel-mqtt
+#
+# Para sobreviver a reboot e a logout é preciso habilitar linger **uma vez**
+# (é o único passo que pede sudo):
+#   sudo loginctl enable-linger $USER
 #
 # Autoria: Matheus Marassi
 
 [Unit]
 Description=Sentinela — túnel SSH para o broker MQTT do Raspberry Pi
-After=network-online.target
-Wants=network-online.target
 
 [Service]
 Type=simple
-User=matheus
-ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i /home/matheus/.ssh/id_sentinela_rpi -L 127.0.0.1:1883:127.0.0.1:1883 sentinelapi@192.168.15.73
+ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i %h/.ssh/id_sentinela_rpi -L 127.0.0.1:1883:127.0.0.1:1883 sentinelapi@192.168.15.73
 Restart=always
 RestartSec=10
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

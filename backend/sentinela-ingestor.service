@@ -4,22 +4,21 @@
 # de propósito: se o túnel cair, o ingestor não deve morrer junto — ele
 # reconecta sozinho, e o broker segura as mensagens QoS 1 enquanto isso.
 #
-# Instalação no homeserver:
-#   sudo cp backend/sentinela-ingestor.service /etc/systemd/system/
-#   sudo systemctl daemon-reload
-#   sudo systemctl enable --now sentinela-ingestor
-#   journalctl -u sentinela-ingestor -f
+# **Unidade de usuário** — ver a nota em sentinela-tunel-mqtt.service.
+#   cp backend/sentinela-ingestor.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now sentinela-ingestor
+#   journalctl --user -u sentinela-ingestor -f
 #
 # Autoria: Matheus Marassi
 
 [Unit]
 Description=Sentinela — ingestor MQTT para PostgreSQL/TimescaleDB
-After=network-online.target docker.service sentinela-tunel-mqtt.service
-Wants=network-online.target sentinela-tunel-mqtt.service
+After=sentinela-tunel-mqtt.service
+Wants=sentinela-tunel-mqtt.service
 
 [Service]
 Type=simple
-User=matheus
 WorkingDirectory=/DATA/Projects/Sentinela/backend
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/DATA/Projects/Sentinela/backend/venv/bin/python /DATA/Projects/Sentinela/backend/ingestor.py
@@ -29,4 +28,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
