@@ -199,6 +199,30 @@ rotas["visao-geral"] = async () => {
       ${metrica("Documentação", v.linhas_doc.toLocaleString("pt-BR"),
         `${v.documentos} documentos`)}
     </div>`
+    + secao("Progresso por fase")
+    + `<div class="cartao">${(v.fases || []).map((f) => {
+        const tot = f.feitos + f.parciais + f.abertos || 1;
+        const pctF = (f.feitos / tot * 100).toFixed(1);
+        const pctP = (f.parciais / tot * 100).toFixed(1);
+        const encerrada = !f.abertos && !f.parciais;
+        return `
+        <div style="margin-bottom:11px">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">
+            <span>${esc(f.fase)} — ${esc(f.titulo)}</span>
+            <span style="font-family:var(--mono);color:var(--texto-3)">
+              ${f.feitos}/${tot}${encerrada ? " ✓" : ""}</span>
+          </div>
+          <div class="barra-fina" title="${f.feitos} feitos · ${f.parciais} parciais · ${f.abertos} abertos">
+            <i style="width:${pctF}%;background:var(--ok)"></i>
+            <i style="width:${pctP}%;background:var(--atencao);margin-top:-6px;margin-left:${pctF}%"></i>
+          </div>
+        </div>`;
+      }).join("")}
+      <p class="nota">Contado das caixas do <code>PLANO.md</code>, não escrito à
+      mão — verde é concluído, âmbar é parcial. O trabalho corre em mais de uma
+      fase ao mesmo tempo: a Fase 2 fechou enquanto a Fase 0 ainda tem o ensaio
+      de campo de SF em aberto.</p>
+    </div>`
     + secao("Modelo de propagação medido")
     + `<div class="grade g4">
       ${metrica("Expoente n", m.expoente_n, `RMS ${m.rms_db} dB`, "ok")}

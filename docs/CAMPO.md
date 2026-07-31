@@ -38,7 +38,7 @@ não entrou em recepção".
 | RSSI remoto (HTC-01 ouvindo) | −78 a −97 dBm |
 | SNR | +8 a +12 dB |
 | Piso de ruído do canal | −98 a −104 dBm |
-| Margem sobre a sensibilidade SF9 (−129 dBm) **[?]** B-01 | **35 a 52 dB** |
+| Margem sobre a sensibilidade SF9 (−129 dBm) **[N]** | **35 a 52 dB** |
 
 ### Leitura
 
@@ -210,11 +210,25 @@ vegetação molhada — condição degradada, não o melhor caso. Como o sistema
 funcionar exatamente durante a chuva, medir assim é vantajoso para o
 dimensionamento.
 
-**[?]** A separação quantitativa entre atenuação por chuva e por folhagem molhada
-em 915 MHz ainda não está referenciada — itens B-03 (ITU-R P.833, vegetação) e
-B-04 (ITU-R P.838, chuva) em [REFERENCIAS.md](REFERENCIAS.md). Há evidência
-indireta e independente de que a chuva degrada o enlace: o SitkaNet reporta
-**falhas de transmissão correlacionadas com períodos de chuva intensa** **[L]**.
+**Resolvido em 31/07/2026 (B-03 e B-04) — e a resposta é assimétrica.** A
+separação entre chuva e folhagem molhada em 915 MHz agora tem fonte, e ela
+atribui o efeito quase inteiramente à vegetação:
+
+- **Chuva, praticamente nada.** A ITU-R P.838-3 vale só de 1 a 1 000 GHz e
+  **não se aplica** a 916,8 MHz. Extrapolando ao piso de 1 GHz com 50 mm/h,
+  a atenuação específica sai da ordem de **0,001 dB/km** — sobre os ~200 m
+  deste ensaio, ~0,0002 dB. **[N]**/**[E]**
+- **Vegetação molhada, sim.** A ITU-R P.833-10 cobre 30 MHz–100 GHz e trata
+  o caso; além disso, aponta que **abaixo de ~1 GHz a polarização vertical
+  sofre mais atenuação que a horizontal**, por espalhamento em troncos — e
+  este ensaio foi feito em 916,8 MHz com polarização vertical. **[N]**
+
+Ou seja: a degradação observada sob sereno/chuva fina **não vem das gotas no
+caminho**, vem da água na vegetação e nas superfícies. Continua havendo
+evidência independente de que chuva degrada enlace nessa faixa — o SitkaNet
+reporta **falhas de transmissão correlacionadas com chuva intensa** **[L]** —
+mas o mecanismo a citar é vegetação/superfície molhada, não atenuação por
+hidrometeoros. Detalhamento em [REFERENCIAS.md](REFERENCIAS.md) §5.2 e §5.3.
 
 **A sensibilidade real é melhor que a tabela.** P2 registrou mínimo de
 **−133 dBm**, abaixo da sensibilidade nominal de SF9 (−129 dBm), com o pacote
@@ -364,7 +378,7 @@ substituir — o ensaio de alcance de campo, que segue como item prioritário.
 Procedimento detalhado em [ROTEIRO_CAMPO.md](ROTEIRO_CAMPO.md).
 
 - [x] **02** — Percurso urbano, 7 pontos até ~205 m. Modelo ajustado com
-      n = 2,57; altura demonstrou valer ~8 dB por 11 m.
+      n = 3,28; altura demonstrou valer +9 dB por 11 m.
 - [x] **03a** — Varredura SF7–SF12 automatizada em bancada — valida o método
       (`tools/varredura_sf.py`), não substitui o ensaio de campo abaixo.
 - [ ] **03** — **Prioritário.** Varredura SF7–SF12 no P6 (ponto alto, já

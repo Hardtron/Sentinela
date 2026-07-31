@@ -168,14 +168,27 @@ PLACAS = [
 ]
 
 
+# Datasheet Semtech SX1276/77/78/79 Rev. 7 (05/2020), tabela RFS_L125_HF —
+# 125 kHz, Band 1, maior ganho de LNA. Ver REFERENCIAS.md §5.1: SF11 e SF12
+# estavam errados no projeto até 31/07/2026, então este número não pode voltar
+# a ser digitado solto em lugar nenhum.
+SENSIBILIDADE_DBM = {6: -118.0, 7: -123.0, 8: -126.0, 9: -129.0,
+                     10: -132.0, 11: -133.0, 12: -136.0}
+
+SF_OPERACIONAL = 9  # board_heltec_v2.h, padrão quando -D LORA_SF não é passado
+
+
 def hardware():
     return {
         "placas": PLACAS,
         "portas": portas_seriais(),
         "radio": {
-            "frequencia_mhz": 916.8, "sf": 9, "bw_khz": 125, "cr": "4/7",
-            "potencia_dbm": 17, "toa_ms": 169,
-            "sensibilidade_dbm": -129.0,
+            "frequencia_mhz": 916.8, "sf": SF_OPERACIONAL, "bw_khz": 125,
+            "cr": "4/7", "potencia_dbm": 17, "toa_ms": 169,
+            # Derivado do SF em uso, não digitado à parte: assim a aba não
+            # passa a mentir se o SF operacional mudar.
+            "sensibilidade_dbm": SENSIBILIDADE_DBM[SF_OPERACIONAL],
+            "potencia_max_dbm": 20,  # PA_BOOST, mesmo datasheet
         },
     }
 
@@ -363,13 +376,50 @@ def complexidade():
 
 # -------------------------------------------------------------- visão geral --
 
+RE_FASE = re.compile(r"^## (Fase \d+) — (.+)$", re.M)
+
+
+def fases():
+    """Progresso por fase, contado direto das caixas do PLANO.md.
+
+    Era um texto fixo ("0 — bring-up do rádio") que ficou errado assim que o
+    trabalho passou a correr em várias fases ao mesmo tempo: a Fase 2 fechou e
+    a 3 começou enquanto a 0 ainda tinha item aberto. Contar da fonte evita
+    que o painel volte a afirmar uma fase que não corresponde ao estado real.
+    """
+    texto = _texto(RAIZ / "docs" / "PLANO.md")
+    marcas = list(RE_FASE.finditer(texto))
+    itens = []
+    for i, m in enumerate(marcas):
+        fim = marcas[i + 1].start() if i + 1 < len(marcas) else len(texto)
+        corpo = texto[m.start():fim]
+        itens.append({
+            "fase": m.group(1),
+            "titulo": m.group(2).strip(),
+            "feitos": corpo.count("- [x]"),
+            "parciais": corpo.count("- [~]"),
+            "abertos": corpo.count("- [ ]"),
+        })
+    return itens
+
+
+def _fase_corrente(lista):
+    """A primeira fase que ainda tem item aberto ou parcial."""
+    for f in lista:
+        if f["abertos"] or f["parciais"]:
+            return f"{f['fase'].replace('Fase ', '')} — {f['titulo']}"
+    return lista[-1]["titulo"] if lista else "—"
+
+
 def visao_geral():
     docs = documentos()
     pend = pendencias()
     cx = complexidade()
+    lista_fases = fases()
     return {
         "projeto": "Sentinela",
-        "fase": "0 — bring-up do rádio",
+        "fase": _fase_corrente(lista_fases),
+        "fases": lista_fases,
         "documentos": len(docs),
         "linhas_doc": sum(d["linhas"] for d in docs),
         "pendencias_abertas": sum(1 for p in pend if not p["resolvida"]),

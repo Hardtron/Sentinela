@@ -69,7 +69,7 @@ máxima — a diferença tem que ser devolvida em potência.
 | Atual (2 dBi, sem redução) | 17 dBm | 2 dBi | nenhuma | **19 dBm** (~79 mW) |
 | **Alvo — 6 dBi, sem redução** | 17 dBm | 6 dBi | nenhuma | **23 dBm** (~200 mW) |
 | Hipotético 9 dBi | 14 dBm (17−3) | 9 dBi | 3 dB | 23 dBm — **igual ao de 6 dBi** |
-| Máximo do chip [?] B-01 | ~20 dBm | 6 dBi | nenhuma | ~26 dBm — ainda dentro do teto de 30 dBm (item 10.3.2) |
+| Máximo do chip **[N]** | +20 dBm | 6 dBi | nenhuma | ~26 dBm — ainda dentro do teto de 30 dBm (item 10.3.2) |
 
 **Resposta prática:** subir de 2 para 6 dBi dá **+4 dB de EIRP de graça**, só
 trocando a antena, sem tocar no firmware — ganho equivalente a mais que dobrar

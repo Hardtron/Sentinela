@@ -18,7 +18,7 @@ Nenhuma compra é necessária antes da fase 4.
       31/07/2026, ver HARDWARE.md); baterias adquiridas (P-012 resolvida),
       libera ensaio de autonomia real; **deep sleep pendente**, o firmware
       ainda não dorme
-- [x] **Teste de alcance em campo** — ensaio 02, 7 pontos, modelo n = 2,57
+- [x] **Teste de alcance em campo** — ensaio 02, 7 pontos, modelo n = 3,28
 - [~] Levantamento de alcance por spreading factor (SF7 a SF12) —
       **prioritário**. Método pronto e validado em bancada 31/07/2026
       (`tools/varredura_sf.py`, ensaio 03a em CAMPO.md: 0% de perda em todo
