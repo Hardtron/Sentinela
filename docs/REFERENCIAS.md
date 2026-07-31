@@ -115,6 +115,12 @@ acima não admite [E].
 
 Substituída por descrição referenciada do mecanismo, em ANCORAGEM.md §3.
 
+### R4 — Custos de materiais são estimativa, e passam a ser marcados **[corrigido]**
+
+Valores em reais de tubos, sensores e caixas eram estimativas de mercado sem
+cotação. Passam a ser marcados **[E]**, com a ressalva de que precisam de cotação
+formal antes de compor proposta comercial.
+
 ### R5 — Tabela I e regra de ganho de antena, antes `[VERIFICAR]` **[resolvido]**
 
 CONFORMIDADE.md §1.1 marcava como `[VERIFICAR]` os valores numéricos da
@@ -127,11 +133,14 @@ disso — o que implica EIRP de transmissão constante além de 6 dBi,
 independente do ganho usado. Verificação laboratorial formal para homologação
 continua pendente, mas o dimensionamento de engenharia deixa de ser suposição.
 
-### R4 — Custos de materiais são estimativa, e passam a ser marcados **[corrigido]**
+### R6 — Bobina identificada como antena WiFi/BT, não LoRa **[novo]**
 
-Valores em reais de tubos, sensores e caixas eram estimativas de mercado sem
-cotação. Passam a ser marcados **[E]**, com a ressalva de que precisam de cotação
-formal antes de compor proposta comercial.
+Fotos reais de uma das placas mostraram uma bobina de cobre soldada perto do
+PRG. Identificada como a antena de 2,4 GHz do WiFi/Bluetooth do ESP32, com
+base na documentação oficial da Heltec para a mesma família de placas e no
+dimensionamento físico incompatível com 915 MHz. Sem relação com o rádio LoRa
+— ver HARDWARE.md. Marcada **[E]** por não haver datasheet da V2 com o
+componente explicitamente rotulado (só V3/V4, mesmo fabricante e convenção).
 
 ---
 
@@ -219,6 +228,10 @@ formal antes de compor proposta comercial.
 - **Semtech SX1276 datasheet** — sensibilidade por spreading factor. **[?]**
   Ainda não citado formalmente; os valores em uso vêm de tabela do fabricante e
   precisam do link do documento oficial. · **[?]**
+- **Heltec — documentação oficial WiFi LoRa 32.**
+  [Pinout V2 (PDF)](https://resource.heltec.cn/download/WiFi_LoRa_32/WIFI_LoRa_32_V2.pdf) ·
+  [docs.heltec.org (V3/V4)](https://docs.heltec.org/en/node/esp32/wifi_lora_32/index.html) —
+  usado para identificar a bobina de antena WiFi/BT (HARDWARE.md). · **[L]**
 
 ### 4.6 Legislação e habilitação
 

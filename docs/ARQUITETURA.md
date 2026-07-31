@@ -163,3 +163,58 @@ Defesa Civil — mas o nó permanece capaz de decidir sozinho.
 exatamente o cenário de um evento extremo — quando queda de energia e de enlace
 são mais prováveis. Limiares são parametrizáveis por downlink, mas com valores
 padrão persistidos em NVS.
+
+---
+
+## ADR-007 — Raspberry Pi OS Lite oficial; nada de sistema próprio
+
+**Status:** aceito · 31/07/2026
+
+**Contexto.** O Raspberry Pi 4 precisa rodar `gateway/bridge.py`, Mosquitto e,
+mais adiante, parte do ingestor. Surgiu a pergunta: instalar o sistema oficial
+do Raspberry Pi ou construir uma imagem própria (Buildroot, Yocto, ou um
+Debian minimalista montado à mão)?
+
+**Decisão.** **Raspberry Pi OS Lite (64-bit), imagem oficial, sem ambiente
+gráfico.** Acesso por SSH com chave, mesmo padrão já usado no homeserver
+CasaOS do projeto. Nenhuma imagem customizada.
+
+**Justificativa.**
+
+- **O RPi não é o produto — é infraestrutura de bancada.** O que importa é
+  `bridge.py`, o systemd e o Mosquitto rodando de forma confiável; o sistema
+  operacional por baixo é *commodity*. Investir engenharia em construir uma
+  imagem própria seria otimizar a parte errada.
+- **Driver e pacote de graça.** CP2102 (USB-serial), Wi-Fi/Ethernet, GPIO e
+  Mosquitto via `apt` já vêm prontos e mantidos pela Raspberry Pi Foundation.
+  Uma imagem própria exigiria portar e manter cada um desses componentes.
+- **Consistência operacional com o homeserver.** Mesmo padrão já validado:
+  distribuição Debian-based, boring-by-design, acesso SSH por chave, systemd
+  para supervisionar processo. Reduz a quantidade de convenções diferentes
+  que o projeto precisa sustentar.
+- **Atualização de segurança sem custo.** Ficaria por nossa conta numa imagem
+  própria; na oficial, é mantida pela Raspberry Pi Foundation.
+- **Onboarding.** Qualquer pessoa que precisar mexer no RPi depois — inclusive
+  um parceiro geotécnico ou de TI da Geopixel — já conhece Raspberry Pi OS.
+  Sistema próprio é fricção que não se paga neste estágio.
+
+**O que reverteria esta decisão.** Se o Raspberry Pi 4 de bancada virar
+produto final de campo (não é o plano — ADR-002 trata o RPi como solução de
+custo zero até o concentrador chegar), aí sim entra em jogo imagem enxuta para
+inicialização rápida e superfície de ataque reduzida. Não é o cenário atual.
+
+**Passo a passo de instalação:**
+
+1. Raspberry Pi Imager (app oficial) → **Raspberry Pi OS Lite (64-bit)**.
+2. Nas opções avançadas do Imager (⚙️ ou Ctrl+Shift+X): habilitar SSH **por
+   chave pública** (não senha), definir hostname (sugestão: `sentinela-far01`),
+   configurar Wi-Fi se não houver Ethernet disponível na bancada.
+3. Gravar no cartão microSD, inicializar o RPi.
+4. Confirmar acesso: `ssh pi@sentinela-far01.local` (ou pelo IP).
+5. `sudo apt update && sudo apt install -y mosquitto mosquitto-clients python3-venv`
+6. Clonar o repositório em `/home/pi/sentinela` (mesmo caminho assumido em
+   `gateway/sentinela-bridge.service`), criar o venv, instalar
+   `tools/requirements.txt`.
+7. Instalar e habilitar a unidade systemd — ver `gateway/README.md`.
+
+Fecha a pendência P-010 quando executado.

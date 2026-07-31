@@ -42,7 +42,7 @@ disponível para um teste específico (ex.: varredura de SF, segundo Farol). Ver
 | `HTC-01` | Nó de desenvolvimento — PINGER | `node_dev` | Bancada, USB do MacBook, **com antena** |
 | `HTC-02` | Nó par de alcance — PONGER | `node_range` | Campo/bancada, **com antena** |
 | `HTC-03` | Bridge do Raspberry Pi 4 (fase 2) | `bench_03` até antena disponível, depois `bridge` | USB do RPi 4 |
-| `HTC-04` | Futuro nó de sensores (fase 1) | `bench_04` até sensor disponível | Bancada, protoboard |
+| `HTC-04` | **Display defeituoso** — firmware headless (`lib/app`/`lib/hal`) | `bench_04` até sensor disponível | Bancada, protoboard |
 | `HTC-05` | Reserva / par de varredura de SF | `bench_05` até antena disponível | — |
 | `HTC-06` **novo** | Segundo Farol (diversidade multi-gateway, ADR-001) / spare | `bench_06` até antena disponível | — |
 
@@ -136,6 +136,58 @@ Armadilhas conhecidas:
 - O barramento I2C do OLED (4/15) é compartilhável, mas sensores externos devem
   usar um segundo barramento (`Wire1`, sugerido 22/23) para que um sensor
   travado em campo não derrube o display de diagnóstico.
+
+## A bobina de cobre soldada perto do PRG — não é antena de LoRa
+
+Fotos reais de uma das 6 placas (31/07/2026) mostram uma pequena bobina de
+cobre (mola, ~4 voltas, ~3 mm de diâmetro) soldada diretamente na PCB perto do
+botão PRG, separada do conector u.FL/SMA usado pela antena externa.
+
+**Identificação: é a antena de WiFi/Bluetooth do ESP32 — não tem relação com o
+rádio LoRa.** **[E]**, apoiada em duas evidências:
+
+1. A documentação oficial da Heltec para a mesma família de placas (V3/V4)
+   descreve exatamente esse tipo de componente como *"metal spring antenna"*
+   para **2,4 GHz** — o WiFi/BT embutido no ESP32
+   ([docs.heltec.org](https://docs.heltec.org/en/node/esp32/wifi_lora_32/index.html))
+   **[L]**. O diagrama de pinagem oficial da própria V2
+   ([PDF](https://resource.heltec.cn/download/WiFi_LoRa_32/WIFI_LoRa_32_V2.pdf))
+   mostra a foto de uma placa genuína com a mesma bobina na mesma posição —
+   confirma que é componente de fábrica, não modificação de terceiro.
+2. **Fisicamente não caberia em 915 MHz.** Um quarto de onda em 915 MHz mede
+   ~8,2 cm; a bobina tem só ~1,5–2 cm de fio total, dimensão plausível para
+   ressonância em 2,4 GHz (WiFi/BT), não em 915 MHz.
+
+**Consequência prática — respondendo à pergunta que motivou a checagem:** essa
+bobina **não traz ganho nenhum para o enlace LoRa atual**, com ou sem as
+antenas de 6 dBi. Ela está ligada a uma trilha de RF completamente separada,
+que vai até o pino de rádio do ESP32, não até o SX1276. Reaproveitá-la para
+915 MHz exigiria dessoldar, reencaminhar trilha de RF e casar impedância para
+outra frequência — trabalho de retrabalho de placa, não algo acionável agora.
+
+**[?]** Não localizei datasheet específico da V2 com esse componente
+explicitamente rotulado (só o da V3/V4, mesma linguagem). Se aparecer dúvida
+que justifique confirmação absoluta, abrir a placa com defeito de display
+(abaixo) para inspecionar a trilha sob a bobina é o próximo passo, já que essa
+placa está reservada para intervenção física.
+
+## Placa com display defeituoso — reservada para firmware sem tela
+
+Uma das 6 placas tem o **display OLED com defeito** (identificado em
+31/07/2026 — tela permanece escura/sem imagem). Em vez de ser uma perda,
+resolve um problema real do projeto: **o nó de campo definitivo não tem
+display** (`ui_dev.h`, ADR-004) — o firmware de bring-up depende da tela hoje,
+mas `lib/app/` e `lib/hal/` precisam funcionar sem ela.
+
+**Decisão:** esta placa vira `HTC-04`, dedicada ao desenvolvimento do firmware
+**headless** — `lib/app/` e `lib/hal/esp32/` sem qualquer dependência de
+`ui_dev.h`. Como ela fisicamente não pode mostrar nada, força a validação real
+de que o caminho de campo não depende de tela — em vez de "esquecer" de testar
+sem OLED numa placa saudável.
+
+Diagnóstico só por serial e pelo LED nessa placa; útil também para simular,
+desde já, como o nó de campo vai se comportar quando o display for removido
+por completo no hardware definitivo (STM32WLE5, ADR-004).
 
 ## Rádio
 

@@ -21,6 +21,54 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (6) — Bobina identificada, placa sem display realocada, SO do RPi decidido
+
+**Fase:** transversal · **Duração:** ~1 sessão
+
+### Feito
+
+- **Fotos reais de uma das placas analisadas.** Identificada a bobina de cobre
+  perto do PRG: **antena de WiFi/Bluetooth do ESP32, sem relação com o rádio
+  LoRa.** Cruzada com a documentação oficial da Heltec (V3/V4 chama esse
+  componente de "metal spring antenna" para 2,4 GHz) e com o dimensionamento
+  físico (quarto de onda em 915 MHz mede ~8,2 cm; a bobina tem ~1,5–2 cm de
+  fio, plausível só para 2,4 GHz). Registrado em HARDWARE.md com marca [E] —
+  não há datasheet da V2 com o componente explicitamente rotulado.
+- **Placa com display defeituoso identificada** e realocada para `HTC-04`,
+  dedicada ao firmware **headless** (`lib/app`/`lib/hal` sem `ui_dev.h`) — o nó
+  de campo definitivo não tem tela (ADR-004), então essa placa força a
+  validação real do caminho sem display em vez de depender de disciplina para
+  não "espiar" a tela numa placa saudável.
+- **ADR-007** — Raspberry Pi OS Lite (64-bit) oficial, sem imagem própria.
+  Passo a passo de instalação documentado, fecha P-010 quando executado.
+
+### Aprendido
+
+- **A bobina não resolve a escassez de antena.** Está numa trilha de RF
+  totalmente separada (ESP32 → WiFi, não SX1276 → LoRa); reaproveitá-la para
+  915 MHz exigiria dessoldar e reencaminhar trilha — retrabalho de placa, não
+  algo acionável agora. P-011 (comprar antenas de 6 dBi) continua sendo o
+  caminho.
+- Falha de hardware pode virar ativo de projeto quando o produto final já
+  previa o cenário que a falha força — a placa sem display só antecipa um
+  teste que a fase 4 exigiria de qualquer forma.
+
+### Decidido
+
+- **HTC-04 = protótipo sem display**, não mais "futuro nó de sensores"
+  genérico — mudança na tabela de alocação de HARDWARE.md.
+- **Nenhuma imagem própria para o RPi.** O Raspberry Pi 4 é infraestrutura de
+  bancada (ADR-002), não produto final — imagem customizada só faria sentido
+  se isso mudasse, e não é o plano.
+
+### Próximo
+
+Executar o passo a passo do ADR-007 quando o cartão microSD/Raspberry Pi
+estiver disponível para gravação. Corrigido P-011 para especificar 6 dBi (não
+2 dBi) como alvo de compra.
+
+---
+
 ## 2026-07-31 (5) — Ganho de antena resolvido, modo bancada e bridge do RPi
 
 **Fase:** 0 → 2 · **Duração:** ~1 sessão

@@ -118,8 +118,8 @@ e alimentação.
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
 | ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
 | ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
-| P-010 | Configurar acesso SSH ao Raspberry Pi 4 (mesmo padrão do homeserver) | Instalação real da bridge |
-| P-011 | Comprar 4 antenas adicionais (2 dBi basta; ver CONFORMIDADE.md §1.1.1 para até quantos dBi valem a pena) | Liberar `HTC-03`–`06` do modo bancada |
+| P-010 | Configurar acesso SSH ao Raspberry Pi 4 — **decidido**: Raspberry Pi OS Lite 64-bit oficial, ver ADR-007 para o passo a passo | Instalação real da bridge |
+| P-011 | Comprar 4 antenas adicionais — **6 dBi**, não mais que isso (CONFORMIDADE.md §1.1.1: acima de 6 dBi não há ganho extra de transmissão) | Liberar `HTC-03`–`06` do modo bancada |
 | P-012 | Comprar bateria(s) para ensaio de autonomia | Fase 1/4 |
 | P-013 | Definir e comprar o primeiro sensor (báscula de chuva é o de maior prioridade, ver SENSORES.md) | Fase 1 |
 | A-01 a A-05 | Pendências do projeto de ancoragem | Ver ANCORAGEM.md §10 |
