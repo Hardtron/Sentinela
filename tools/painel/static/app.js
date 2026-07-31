@@ -109,6 +109,76 @@ function grafBarras(itens) {
     </div>`).join("");
 }
 
+const legendaSeries = (series) => `<div class="legenda">${series.map((s) =>
+  `<span><i class="pt" style="background:var(--${s.cor})"></i>${s.rot}</span>`)
+  .join("")}</div>`;
+
+/* Série temporal com várias curvas. Usada no monitoramento: o eixo x é a
+   ordem das amostras (mais recente à direita), não o relógio — o intervalo
+   entre pacotes é regular o bastante para isso e evita buracos visuais quando
+   um ping se perde. */
+function grafLinhas(serie, opc) {
+  const L = 54, D = 14, T = 14, B = 28, larg = 760, alt = 230;
+  const vals = serie.flatMap((p) => opc.series.map((s) => p[s.chave]))
+    .filter((v) => v != null);
+  if (!vals.length) return `<div class="vazio">sem amostras ainda</div>`;
+
+  const refs = (opc.refs || []).map((r) => r.v);
+  let y0 = Math.min(...vals, ...refs), y1 = Math.max(...vals, ...refs);
+  const folga = (y1 - y0) * 0.12 || 1;
+  y0 -= folga; y1 += folga;
+
+  const px = (i) => L + (serie.length < 2 ? 0.5 : i / (serie.length - 1)) * (larg - L - D);
+  const py = (v) => T + (1 - (v - y0) / (y1 - y0 || 1)) * (alt - T - B);
+
+  const grade = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const v = y0 + f * (y1 - y0), y = py(v);
+    return `<line class="grade-l" x1="${L}" y1="${y}" x2="${larg - D}" y2="${y}"/>
+            <text x="${L - 7}" y="${y + 3}" text-anchor="end">${v.toFixed(0)}</text>`;
+  }).join("");
+
+  const ref = (r) => `
+    <line class="ref" x1="${L}" y1="${py(r.v)}" x2="${larg - D}" y2="${py(r.v)}"
+      style="stroke:var(--${r.cor})"/>
+    <text x="${larg - D - 3}" y="${py(r.v) - 4}" text-anchor="end"
+      style="fill:var(--${r.cor})">${r.rot}</text>`;
+
+  const caminho = (chave) => {
+    let d = "", ligado = false;
+    serie.forEach((p, i) => {
+      const v = p[chave];
+      if (v == null) { ligado = false; return; }
+      d += `${ligado ? "L" : "M"}${px(i).toFixed(1)} ${py(v).toFixed(1)} `;
+      ligado = true;
+    });
+    return d;
+  };
+
+  return `<svg class="grafico" viewBox="0 0 ${larg} ${alt}" role="img"
+    aria-label="${opc.aria}">
+    ${grade}${(opc.refs || []).map(ref).join("")}
+    <line class="eixo" x1="${L}" y1="${alt - B}" x2="${larg - D}" y2="${alt - B}"/>
+    <line class="eixo" x1="${L}" y1="${T}" x2="${L}" y2="${alt - B}"/>
+    ${opc.series.map((s) =>
+      `<path class="serie" d="${caminho(s.chave)}" style="stroke:var(--${s.cor})"/>`).join("")}
+    <text x="${larg / 2}" y="${alt - 7}" text-anchor="middle">${opc.eixoX
+      || "amostras — mais recentes à direita"}</text>
+  </svg>` + legendaSeries(opc.series);
+}
+
+/* Tira de perdas: uma haste por amostra, alta quando houve buraco de
+   sequência. Densidade importa mais que valor exato — o que se procura é
+   se as perdas são isoladas ou em rajada. */
+function grafPerdas(serie) {
+  const max = Math.max(1, ...serie.map((p) => p.perdidos || 0));
+  return `<div class="tiras">${serie.map((p) => {
+    const v = p.perdidos || 0;
+    const h = v ? Math.max(18, (v / max) * 100) : 5;
+    return `<i class="${v ? "perda" : ""}" style="height:${h}%"
+      title="seq ${p.seq}: ${v} perdido(s)"></i>`;
+  }).join("")}</div>`;
+}
+
 /* ----------------------------------------------------------------- rotas */
 
 const rotas = {};
@@ -187,6 +257,178 @@ rotas["timeline"] = async () => {
         </div>`).join("")}
     </div></div>`;
 };
+
+/* ------------------------------------------------- monitoramento ao vivo */
+
+const CORES_VEREDITO_ENLACE = {
+  confortavel: "ok", limite: "atencao", critico: "erro", "sem dados": "neutro",
+};
+
+const NOMES_VEREDITO = {
+  confortavel: "confortável", limite: "no limite", critico: "crítico",
+  "sem dados": "sem dados",
+};
+
+rotas["monitor"] = async () => cabecalho("Monitoramento em tempo real",
+  `Telemetria ao vivo da rede LoRa, direto do broker MQTT. Atualiza sozinho a
+   cada 2 s. <strong>Subida</strong> é o nó falando com o gateway;
+   <strong>descida</strong> é o gateway respondendo — medir os dois sentidos é
+   o que revela enlace assimétrico.`)
+  + `<div id="mon-estado"></div>
+     <div id="mon-metricas"></div>
+     <div id="mon-graficos"></div>
+     <div id="mon-frota"></div>`;
+
+function monEstado(t) {
+  const lig = t.ligacao;
+  if (lig.conectado) {
+    return `<div class="ao-vivo"><i></i>conectado a <code>${esc(lig.broker)}</code>
+      · ${t.amostras} amostras na janela · atualizado ${esc(t.gerado_em.slice(11))}</div>`;
+  }
+  const causa = lig.erro
+    ? `<code>${esc(lig.erro)}</code>`
+    : `o broker <code>${esc(lig.broker || "—")}</code> não respondeu`;
+  return `<div class="aviso">
+    <strong>Sem telemetria ao vivo</strong> — ${causa}.
+    <p>O painel busca o broker em <code>localhost:1883</code>. Como o Mosquitto
+    do Raspberry Pi escuta só no próprio host (sem autenticação, não deve ser
+    aberto na rede), abra um túnel SSH antes de subir o painel:</p>
+    <pre><code>ssh -N -L 1883:127.0.0.1:1883 sentinelapi@192.168.15.73</code></pre>
+    <p>O resto do painel funciona normalmente sem isso.</p>
+  </div>`;
+}
+
+function monMetricas(t) {
+  const m = t.metricas, lim = t.limiares;
+  const cor = CORES_VEREDITO_ENLACE[m.veredito] || "neutro";
+  const md = (e, suf = "") => (e ? e.media + suf : "—");
+  return `<div class="grade g4">
+    ${metrica("Estado do enlace", NOMES_VEREDITO[m.veredito] || m.veredito,
+      `margem atual ${m.margem_atual ?? "—"} dB`, cor + " texto")}
+    ${metrica("Margem — subida", md(m.margem_sobe, " dB"),
+      `mín ${m.margem_sobe?.min ?? "—"} · bom ≥ ${lim.margem_boa_db}`,
+      m.margem_sobe && m.margem_sobe.media >= lim.margem_boa_db ? "ok" : "atencao")}
+    ${metrica("Margem — descida", md(m.margem_desce, " dB"),
+      `mín ${m.margem_desce?.min ?? "—"} · piso ${lim.sensibilidade_dbm} dBm`,
+      m.margem_desce && m.margem_desce.media >= lim.margem_boa_db ? "ok" : "atencao")}
+    ${metrica("Perda de pacotes", m.perda_pct + "%",
+      `${m.pacotes_min} pacotes/min`, m.perda_pct > 5 ? "erro" : "ok")}
+    ${metrica("RSSI subida", md(m.rssi_sobe, " dBm"),
+      `${m.rssi_sobe?.min ?? "—"} a ${m.rssi_sobe?.max ?? "—"}`)}
+    ${metrica("RSSI descida", md(m.rssi_desce, " dBm"),
+      `${m.rssi_desce?.min ?? "—"} a ${m.rssi_desce?.max ?? "—"}`)}
+    ${metrica("SNR subida", md(m.snr_sobe, " dB"), `descida ${md(m.snr_desce, " dB")}`)}
+    ${metrica("Assimetria", md(m.assimetria, " dB"),
+      `limite ±${lim.assimetria_max_db} dB`,
+      m.assimetria && Math.abs(m.assimetria.media) > lim.assimetria_max_db
+        ? "atencao" : "ok")}
+  </div>`;
+}
+
+function monGraficos(t) {
+  const s = t.serie, lim = t.limiares;
+  if (!s.length) return `<div class="vazio">aguardando os primeiros pacotes…</div>`;
+
+  return secao("Margem de enlace — quanta folga antes de o enlace sumir")
+    + `<div class="cartao">${grafLinhas(s, {
+        series: [{ chave: "margem_sobe", cor: "acento", rot: "subida (nó → gateway)" },
+                 { chave: "margem_desce", cor: "atencao", rot: "descida (gateway → nó)" }],
+        refs: [{ v: lim.margem_boa_db, cor: "ok", rot: `confortável ${lim.margem_boa_db} dB` },
+               { v: lim.margem_min_db, cor: "erro", rot: `mínimo ${lim.margem_min_db} dB` }],
+        aria: "Margem de enlace ao longo do tempo",
+      })}
+      <p class="nota">Margem é o RSSI acima da sensibilidade do SF em uso
+      (${lim.sensibilidade_dbm} dBm). É o número que importa em campo: abaixo de
+      ${lim.margem_min_db} dB o enlace cai na primeira chuva forte — justamente o
+      evento que o sistema existe para monitorar.</p></div>`
+
+    + secao("RSSI nos dois sentidos")
+    + `<div class="cartao">${grafLinhas(s, {
+        series: [{ chave: "rssi_sobe", cor: "acento", rot: "subida (dBm)" },
+                 { chave: "rssi_desce", cor: "atencao", rot: "descida (dBm)" }],
+        aria: "RSSI ao longo do tempo",
+      })}</div>`
+
+    + secao("Assimetria do enlace")
+    + `<div class="cartao">${grafLinhas(s, {
+        series: [{ chave: "assimetria", cor: "acento", rot: "subida − descida (dB)" }],
+        refs: [{ v: lim.assimetria_max_db, cor: "atencao", rot: `+${lim.assimetria_max_db} dB` },
+               { v: -lim.assimetria_max_db, cor: "atencao", rot: `−${lim.assimetria_max_db} dB` }],
+        aria: "Assimetria entre os sentidos do enlace",
+      })}
+      <p class="nota">Positivo significa que o gateway ouve o nó melhor do que o
+      nó ouve o gateway. Fora da faixa de ±${lim.assimetria_max_db} dB há antena,
+      obstrução próxima ou ruído local em uma das pontas — defeito que só
+      aparece porque cada troca mede os dois sentidos.</p></div>`
+
+    + secao("SNR nos dois sentidos")
+    + `<div class="cartao">${grafLinhas(s, {
+        series: [{ chave: "snr_sobe", cor: "acento", rot: "subida (dB)" },
+                 { chave: "snr_desce", cor: "atencao", rot: "descida (dB)" }],
+        aria: "SNR ao longo do tempo",
+      })}
+      <p class="nota">O SX1276 em SF9 ainda demodula por volta de −12,5 dB de
+      SNR. Valores confortavelmente positivos indicam que o limite atual é
+      distância/obstrução, não ruído.</p></div>`
+
+    + secao("Perdas por amostra")
+    + `<div class="cartao">${grafPerdas(s)}
+      <p class="nota">Cada haste é um pacote recebido; as altas marcam buracos na
+      numeração — pings que não chegaram. Perda isolada é desvanecimento normal;
+      perda em rajada indica interferência ou obstrução intermitente.</p></div>`;
+}
+
+/* O que a placa está fazendo na rede agora. Ausência de telemetria tem três
+   causas bem diferentes, e confundi-las esconde defeito: a bridge não aparece
+   como nó porque ela é quem *recebe*; a placa de bancada não transmite de
+   propósito; e a que nunca foi gravada simplesmente não existe na rede. */
+function selTelemetria(l) {
+  if (l.vivo) {
+    return `<span class="tag ${l.vivo.estado === "ativo" ? "ok" : "erro"}">${l.vivo.estado}</span>`;
+  }
+  if (l.env === "bridge") return `<span class="tag acento">gateway</span>`;
+  if (!l.mac) return `<span class="tag neutro">não gravada</span>`;
+  return `<span class="tag neutro">bancada — só escuta</span>`;
+}
+
+function monFrota(t, placas) {
+  const vivos = Object.fromEntries(t.nos.map((n) => [n.node_id, n]));
+  const linhas = placas.map((p) => ({ ...p, vivo: vivos[p.node_id] || null }));
+
+  return secao("Nós da rede")
+    + tabela([
+      { rot: "Placa", val: (l) => `<strong>${l.id}</strong>` },
+      { rot: "Papel", val: (l) => esc(l.papel), classe: "livre" },
+      { rot: "Antena", val: (l) => l.antena
+        ? `<span class="tag ok">sim</span>` : `<span class="tag neutro">não</span>` },
+      { rot: "Telemetria", val: selTelemetria },
+      { rot: "Pacotes", val: (l) => l.vivo ? l.vivo.pacotes : "—", classe: "num" },
+      { rot: "Perda", val: (l) => l.vivo ? l.vivo.perda_pct + "%" : "—", classe: "num" },
+      { rot: "Último seq", val: (l) => l.vivo ? l.vivo.ultimo_seq : "—", classe: "num" },
+      { rot: "Silêncio", val: (l) => l.vivo ? l.vivo.silencio_s + " s" : "—", classe: "num" },
+    ], linhas)
+    + `<p class="nota"><strong>gateway</strong> é a placa que recebe — ela não
+       aparece como nó porque a telemetria descreve o enlace <em>até</em> ela;
+       o estado dela está na tabela de bridges abaixo.
+       <strong>bancada</strong> (<code>bench_*</code>) escuta mas nunca
+       transmite: sem antena, transmitir degrada o PA (A-003) — é o
+       comportamento correto, não falha. Silêncio acima de
+       ${t.limiares.silencio_s} s numa placa que deveria falar é o gatilho do
+       alarme de nó mudo (RC-02).</p>`
+
+    + secao("Bridges")
+    + (t.bridges.length ? tabela([
+      { rot: "Bridge", val: (b) => `<strong>${esc(b.bridge_id)}</strong>` },
+      { rot: "Estado", val: (b) => `<span class="tag ${b.estado === "ativa" ? "ok" : "erro"}">${b.estado}</span>` },
+      { rot: "Publicados", val: (b) => b.publicados, classe: "num" },
+      { rot: "Fila em disco", val: (b) => b.fila_pendente, classe: "num" },
+      { rot: "No ar há", val: (b) => (b.ativa_ha_s / 60).toFixed(0) + " min", classe: "num" },
+      { rot: "Última saúde", val: (b) => b.silencio_s + " s", classe: "num" },
+    ], t.bridges) : `<div class="vazio">nenhuma bridge publicou saúde ainda</div>`)
+    + `<p class="nota">Fila em disco acima de zero significa que a bridge está
+       recebendo do rádio mas não conseguindo publicar — o dado não se perde,
+       fica em <code>buffer.jsonl</code> até o broker voltar.</p>`;
+}
 
 rotas["hardware"] = async () => {
   const h = await dados("/api/hardware");
@@ -462,6 +704,8 @@ async function navega() {
   const { nome, params } = partesDaRota();
   const render = rotas[nome] || rotas["visao-geral"];
 
+  paraMonitor();   // sair da aba encerra o polling; nada roda em segundo plano
+
   document.querySelectorAll("nav a").forEach((a) =>
     a.classList.toggle("ativo", a.dataset.rota === nome));
 
@@ -481,6 +725,38 @@ async function depoisDeRenderizar(nome, params) {
   if (nome === "pendencias") return ligaPendencias();
   if (nome === "documentos") return ligaDocumentos(params);
   if (nome === "frota") return ligaFrota();
+  if (nome === "monitor") return ligaMonitor();
+}
+
+/* ------------------------------------------------ monitoramento ao vivo */
+
+let timerMonitor = null;
+
+function paraMonitor() {
+  if (timerMonitor) { clearInterval(timerMonitor); timerMonitor = null; }
+}
+
+async function atualizaMonitor(placas) {
+  let t;
+  try {
+    t = await api("/api/telemetria");
+  } catch (e) {
+    el("mon-estado").innerHTML =
+      `<div class="aviso">painel sem resposta: ${esc(e.message)}</div>`;
+    return;
+  }
+  if (!el("mon-estado")) return paraMonitor();   // usuário já mudou de aba
+  el("mon-estado").innerHTML = monEstado(t);
+  el("mon-metricas").innerHTML = monMetricas(t);
+  el("mon-graficos").innerHTML = monGraficos(t);
+  el("mon-frota").innerHTML = monFrota(t, placas);
+}
+
+async function ligaMonitor() {
+  const h = await dados("/api/hardware");
+  await atualizaMonitor(h.placas);
+  paraMonitor();
+  timerMonitor = setInterval(() => atualizaMonitor(h.placas), 2000);
 }
 
 async function ligaFrota() {
@@ -517,7 +793,19 @@ function ligaDocumentos(params) {
 
 /* --------------------------------------------------------------- selos */
 
+async function atualizaSeloVivo() {
+  try {
+    const t = await api("/api/telemetria");
+    const s = el("selo-vivo");
+    const mudos = t.nos.filter((n) => n.estado === "silencioso").length;
+    s.textContent = t.ligacao.conectado ? (mudos ? "!" : "●") : "";
+    s.className = "selo " + (!t.ligacao.conectado ? "" : mudos ? "alerta" : "bom");
+  } catch { /* selo é enfeite: falhar aqui não pode afetar o painel */ }
+}
+
 async function atualizaSelos() {
+  atualizaSeloVivo();
+  setInterval(atualizaSeloVivo, 10000);
   try {
     const [v, g] = await Promise.all([dados("/api/visao-geral"), dados("/api/git")]);
     const sp = el("selo-pend");

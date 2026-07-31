@@ -2,11 +2,19 @@
 """Sentinela — painel de controle do projeto.
 
 Servidor HTTP local que expõe o estado do projeto e serve a interface.
-Sem dependência externa: só a biblioteca padrão.
+Só a biblioteca padrão, com uma exceção isolada: o monitoramento em tempo
+real usa `paho-mqtt` (ver telemetria.py). Sem essa biblioteca — ou sem broker
+no ar — todo o resto do painel continua funcionando normalmente.
 
 Uso:
     python3 tools/painel/servidor.py            # http://localhost:8765
     python3 tools/painel/servidor.py --porta 9000
+    python3 tools/painel/servidor.py --broker 192.168.15.73
+
+O broker padrão é `localhost`, o que cobre os dois casos usuais: painel
+rodando no próprio Raspberry Pi, ou no MacBook com um túnel SSH aberto
+(`ssh -N -L 1883:127.0.0.1:1883 sentinelapi@<ip-do-rpi>`). O túnel evita expor
+o broker sem autenticação na rede — ver gateway/README.md.
 
 Autoria: Matheus Marassi
 """
@@ -18,6 +26,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 import coletor
+import telemetria
 
 ESTATICOS = Path(__file__).resolve().parent / "static"
 
@@ -31,6 +40,7 @@ ROTAS = {
     "/api/git": lambda q: coletor.git(),
     "/api/frota": lambda q: coletor.frota(),
     "/api/complexidade": lambda q: coletor.complexidade(),
+    "/api/telemetria": lambda q: telemetria.estado(),
 }
 
 
@@ -84,10 +94,16 @@ class Manipulador(SimpleHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser(description="Painel de controle do Sentinela")
     ap.add_argument("--porta", type=int, default=8765)
+    ap.add_argument("--broker", default="localhost",
+                    help="broker MQTT do monitoramento em tempo real")
+    ap.add_argument("--porta-mqtt", dest="porta_mqtt", type=int, default=1883)
     args = ap.parse_args()
+
+    telemetria.inicia(args.broker, args.porta_mqtt)
 
     servidor = ThreadingHTTPServer(("127.0.0.1", args.porta), Manipulador)
     print(f"Sentinela — painel em http://localhost:{args.porta}")
+    print(f"telemetria: assinando {args.broker}:{args.porta_mqtt}")
     print("Ctrl+C encerra.")
     try:
         servidor.serve_forever()

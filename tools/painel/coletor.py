@@ -135,17 +135,27 @@ def portas_seriais():
     return itens
 
 
+# Espelha docs/HARDWARE.md. `node_id` é o NODE_ID compilado no firmware
+# (platformio.ini) — é ele que casa a placa física com a telemetria que chega
+# por MQTT. `antena` decide o que é seguro gravar: papel RF-ativo numa placa
+# sem antena degrada o PA (A-003/A-010).
 PLACAS = [
-    {"id": "HTC-01", "mac": "3c:71:bf:8c:2c:d0", "papel": "PINGER",
-     "env": "node_dev", "flash": "4 MB"},
-    {"id": "HTC-02", "mac": "3c:71:bf:8c:2f:9c", "papel": "PONGER",
-     "env": "node_range", "flash": "4 MB"},
-    {"id": "HTC-03", "mac": None, "papel": "bridge (previsto)",
-     "env": "bridge", "flash": "4 MB"},
-    {"id": "HTC-04", "mac": None, "papel": "sensores (previsto)",
-     "env": "—", "flash": "4 MB"},
-    {"id": "HTC-05", "mac": None, "papel": "reserva", "env": "—",
-     "flash": "4 MB"},
+    {"id": "HTC-01", "node_id": 1, "mac": "3c:71:bf:8c:2c:d0",
+     "papel": "PINGER", "env": "node_dev", "flash": "4 MB", "antena": True},
+    {"id": "HTC-02", "node_id": 2, "mac": "3c:71:bf:8c:2f:9c",
+     "papel": "bancada — sem antena", "env": "bench_02", "flash": "4 MB",
+     "antena": False},
+    {"id": "HTC-03", "node_id": 3, "mac": "3c:71:bf:8c:31:70",
+     "papel": "bridge do RPi 4 — PONGER", "env": "bridge", "flash": "4 MB",
+     "antena": True},
+    {"id": "HTC-04", "node_id": 4, "mac": "3c:71:bf:8c:2f:a4",
+     "papel": "display defeituoso — firmware headless", "env": "bench_04",
+     "flash": "4 MB", "antena": False},
+    {"id": "HTC-05", "node_id": 5, "mac": None, "papel": "reserva",
+     "env": "bench_05", "flash": "4 MB", "antena": False},
+    {"id": "HTC-06", "node_id": 6, "mac": None,
+     "papel": "segundo Farol (previsto) / reserva", "env": "bench_06",
+     "flash": "4 MB", "antena": False},
 ]
 
 

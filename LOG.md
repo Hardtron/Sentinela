@@ -21,6 +21,68 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (14) — Monitoramento da rede em tempo real no painel
+
+**Fase:** 2 · **Duração:** média
+
+### Feito
+
+- **Nova aba *Monitoramento*** no painel, alimentada pelo MQTT ao vivo
+  (`tools/painel/telemetria.py` + rota `/api/telemetria`, atualização a cada
+  2 s). Mostra:
+  - **Margem de enlace nos dois sentidos**, com as linhas de 20 dB
+    (confortável) e 10 dB (mínimo) desenhadas no gráfico — é o número que
+    decide se um ponto serve, não o RSSI cru.
+  - **RSSI e SNR de subida e descida** separados. Subida = nó → gateway;
+    descida = gateway → nó. Medir os dois é o que revela enlace assimétrico.
+  - **Assimetria** com faixa de ±10 dB marcada.
+  - **Perda de pacotes** medida por **buraco na numeração de sequência** — a
+    bridge só imprime quando recebe, então o que falta no `seq` é exatamente o
+    que se perdeu no ar, sem precisar de outro contador. Tira de hastes mostra
+    se a perda é isolada (desvanecimento) ou em rajada (interferência).
+  - **Tabela da frota** cruzando as 6 placas com quem está de fato falando, e
+    **tabela de bridges** com fila em disco e tempo no ar.
+- **Limiares vivem no servidor, não no navegador** (`telemetria.py` espelha
+  `firmware/src/ui_dev.h`): sensibilidade −129 dBm em SF9, margem boa 20 dB,
+  mínima 10 dB, assimetria máx. 10 dB, silêncio 15 s. São regra do projeto, não
+  preferência de visualização — mudar o critério muda num lugar só.
+- **`coletor.py` tinha catálogo de placas desatualizado** (HTC-03 sem MAC,
+  HTC-02 ainda como PONGER, HTC-06 ausente). Corrigido contra `HARDWARE.md` e
+  acrescido de `node_id` e `antena` — é o `node_id` que casa placa física com
+  telemetria MQTT.
+
+### Decidido
+
+- **O broker continua fechado em `localhost`; o acesso externo é por túnel
+  SSH** (`ssh -N -L 1883:127.0.0.1:1883 sentinelapi@…`). A alternativa —
+  `listener 1883` + `allow_anonymous true` — foi escrita e descartada: broker
+  anônimo exposto na LAN aceita publicação de qualquer um, e um sistema de
+  alerta que aceita telemetria forjada é pior do que um que não tem
+  telemetria. O túnel usa a chave já estabelecida e não expõe nada.
+  Quando o ingestor virar serviço permanente, decidir entre `autossh` e
+  `password_file` + TLS.
+- A dependência de `paho-mqtt` é **opcional por construção**: sem ela, ou sem
+  broker, a aba explica o que falta e o resto do painel segue funcionando.
+
+### Aprendido
+
+- Regra de CSS que atinge `.serie` vence atributo de apresentação `stroke` no
+  SVG — as duas curvas saíram da mesma cor até trocar para `style="stroke:…"`.
+  Vale para qualquer atributo de apresentação em SVG estilizado por classe.
+- A ausência de telemetria tem **três causas distintas** e confundi-las
+  esconderia defeito real: a bridge não aparece como nó porque é ela quem
+  recebe; a placa de bancada não transmite de propósito (A-003); a placa nunca
+  gravada não existe na rede. A tabela distingue as três.
+
+### Próximo
+
+1. Ingestor MQTT → banco continua sendo o item que falta para fechar a Fase 2.
+2. A telemetria só descreve o par `HTC-01` ↔ `HTC-03`. Quando houver mais de um
+   nó transmitindo, o `--no-id` deixa de bastar — o `node_id` precisa vir
+   dentro do quadro, o que já está previsto para `lib/proto/` na Fase 1.
+
+---
+
 ## 2026-07-31 (13) — Primeira telemetria ponta a ponta: rádio → MQTT
 
 **Fase:** 2 · **Duração:** curta

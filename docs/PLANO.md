@@ -57,6 +57,10 @@ reinício sem perder acumulado (RC-06).
 - [x] **Primeira telemetria real ponta a ponta** — `HTC-01` → LoRa →
       `HTC-03`/bridge → `sentinela/no/1/telemetria` no MQTT, confirmado por
       `mosquitto_sub`, 31/07/2026
+- [x] **Monitoramento em tempo real no painel** — aba *Monitoramento*
+      assinando MQTT: margem de enlace nos dois sentidos, RSSI, SNR,
+      assimetria, perda por buraco de sequência, estado de nós e da bridge
+      (`tools/painel/telemetria.py`), 31/07/2026
 - [ ] Ingestor MQTT → banco, decodificando `proto/`
 - [x] Detecção de nó silencioso (RC-02) — implementada na bridge (saúde
       publicada a cada 30 s); falta o lado do banco/ingestor

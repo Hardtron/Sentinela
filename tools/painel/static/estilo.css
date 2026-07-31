@@ -163,8 +163,10 @@ h2.secao::after { content: ""; flex: 1; height: 1px; background: var(--borda); }
 }
 .metrica .val {
   font-size: 27px; font-weight: 620; letter-spacing: -0.025em;
-  font-family: var(--mono); line-height: 1.1;
+  font-family: var(--mono); line-height: 1.1; overflow-wrap: anywhere;
 }
+/* Valor que é palavra, não número: 27px estoura a largura do cartão. */
+.metrica .val.texto { font-size: 18px; letter-spacing: 0; }
 .metrica .val small { font-size: 13px; color: var(--texto-3); font-weight: 500; margin-left: 3px; }
 .metrica .sub { font-size: 12px; color: var(--texto-3); margin-top: 5px; }
 
@@ -288,6 +290,47 @@ td.livre { white-space: normal; min-width: 250px; }
 .legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--texto-3); margin-top: 10px; }
 .legenda span { display: flex; align-items: center; gap: 6px; }
 .pt { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+/* --------------------------------------------- monitoramento ao vivo --- */
+
+.grafico .ref { stroke-width: 1; stroke-dasharray: 5 4; opacity: .85; }
+
+.ao-vivo {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+  font-size: 12.5px; color: var(--texto-2);
+}
+.ao-vivo i {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
+  box-shadow: 0 0 0 0 #3fb95099; animation: pulso 2s infinite;
+}
+@keyframes pulso {
+  70% { box-shadow: 0 0 0 7px #3fb95000; }
+  100% { box-shadow: 0 0 0 0 #3fb95000; }
+}
+
+.aviso {
+  background: var(--fundo-2); border: 1px solid var(--borda);
+  border-left: 3px solid var(--atencao); border-radius: var(--r);
+  padding: 14px 16px; margin-bottom: 18px; font-size: 13px; color: var(--texto-2);
+}
+.aviso strong { color: var(--texto); }
+.aviso p { margin: 8px 0 0; }
+.aviso pre {
+  background: var(--fundo-3); border-radius: var(--r); padding: 9px 11px;
+  margin: 8px 0 0; overflow-x: auto;
+}
+.aviso pre code { font-family: var(--mono); font-size: 12px; color: var(--acento); }
+
+/* Tira de perdas: uma haste por amostra recebida. */
+.tiras {
+  display: flex; align-items: flex-end; gap: 1px; height: 56px;
+  padding: 4px 0; overflow: hidden;
+}
+.tiras i {
+  flex: 1 1 auto; min-width: 1px; border-radius: 1px;
+  background: var(--borda-forte);
+}
+.tiras i.perda { background: var(--erro); }
 
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }

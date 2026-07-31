@@ -67,6 +67,28 @@ python3 gateway/bridge.py --porta /dev/ttyUSB0 --broker localhost --bridge-id FA
 Tópicos publicados: `sentinela/no/<node_id>/telemetria` (uma mensagem por
 linha CSV recebida) e `sentinela/bridge/<bridge_id>/saude` (a cada 30 s).
 
+O `--no-id` importa: o CSV do firmware de bring-up **não carrega o identificador
+de quem enviou o ping** — só o que o receptor mediu. É esse parâmetro que diz de
+qual nó a telemetria fala. Sem ele, tudo sai como `node_id=0`. Hoje o par ativo
+é `HTC-01` (PINGER), daí `--no-id 1` na unidade systemd.
+
+### Consumir a telemetria de fora do Raspberry Pi
+
+O Mosquitto escuta **apenas em `localhost`**, e assim deve permanecer enquanto
+não houver autenticação e TLS: um broker anônimo aberto na rede aceita comando
+de qualquer um. Para o painel no MacBook (ou o futuro ingestor no homeserver)
+assinar os tópicos, use um túnel SSH sobre a chave já estabelecida:
+
+```bash
+ssh -N -L 1883:127.0.0.1:1883 sentinelapi@192.168.15.73
+```
+
+O cliente passa a encontrar o broker em `localhost:1883` sem que nada seja
+exposto na LAN. Quando o ingestor virar serviço permanente, a decisão a tomar
+é entre túnel gerenciado (systemd + `autossh`) e habilitar
+`password_file` + TLS no broker — a mesma preocupação que o RC-11 levanta para
+o protocolo de rádio.
+
 ## Decisões pendentes
 
 - ~~Mosquitto no RPi 4 ou no homeserver~~ — **decidido e implementado: no RPi

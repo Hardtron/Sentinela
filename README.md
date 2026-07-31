@@ -129,6 +129,21 @@ todos os documentos, hardware, ensaios de rede com gráfico, builds do firmware,
 complexidade ciclomática e a documentação renderizada com navegação entre
 documentos.
 
+**Monitoramento em tempo real.** A aba *Monitoramento* mostra a telemetria ao
+vivo da rede: margem de enlace nos dois sentidos, RSSI, SNR, assimetria, perda
+de pacotes e estado de cada placa e da bridge. Ela assina o broker MQTT do
+Raspberry Pi, que escuta apenas em `localhost` — **sem autenticação, não deve
+ser aberto na rede**. O acesso se faz por túnel SSH, com a chave já
+estabelecida:
+
+```bash
+ssh -N -L 1883:127.0.0.1:1883 sentinelapi@192.168.15.73
+```
+
+Com o túnel aberto, o painel encontra o broker no padrão (`localhost:1883`).
+Sem ele, a aba explica o que falta e **todo o resto do painel continua
+funcionando** — a dependência de `paho-mqtt` é opcional por construção.
+
 ### Verificação de qualidade
 
 ```bash
