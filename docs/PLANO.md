@@ -14,8 +14,8 @@ Nenhuma compra é necessária antes da fase 4.
 - [x] Display de diagnóstico com 4 páginas navegáveis pelo botão PRG
 - [x] Ping-pong entre `HTC-01` e `HTC-02` com RSSI/SNR — ensaio 01, 0% de perda
 - [ ] Medição de consumo em operação e em deep sleep
-- [ ] **Teste de alcance em campo** com relevo e vegetação reais
-- [ ] Levantamento de alcance por spreading factor (SF7 a SF12)
+- [x] **Teste de alcance em campo** — ensaio 02, 7 pontos, modelo n = 2,57
+- [ ] Levantamento de alcance por spreading factor (SF7 a SF12) — **prioritário**
 
 **Critério de saída.** Curva de alcance × SF documentada em `docs/CAMPO.md`.
 
@@ -111,3 +111,4 @@ e alimentação.
 | P-005 | Calibrar o divisor de tensão de bateria da Heltec V2 | Medição de autonomia |
 | P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
+| P-008 | Registrar coordenada e altura do `HTC-02` para fechar a análise absoluta do ensaio 02 | Modelo de cobertura |

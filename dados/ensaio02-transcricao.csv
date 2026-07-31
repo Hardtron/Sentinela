@@ -1,0 +1,8 @@
+foto,ponto,enviados,recebidos,rssi_med,rssi_min,rssi_max,margem_db,assimetria_db,veredito,motivo,ambiente
+IMG_3341.HEIC,0,26,26,-85,-96,-82,44,1,APROVADO,margem 44,partida - proximo a casa
+IMG_3342.HEIC,1,23,23,-102,-111,-99,27,4,APROVADO,margem 27,alvenaria proxima
+IMG_3343.HEIC,2,27,26,-116,-133,-114,13,2,LIMITE,margem 13,rua - alvenaria
+IMG_3345.HEIC,3,27,25,-120,-128,-114,9,2,REPROVADO,perda 7%,rua - alvenaria
+IMG_3347.HEIC,4,25,23,-118,-127,-115,11,1,REPROVADO,perda 8%,descampado com mato
+IMG_3348.HEIC,5,22,21,-114,-124,-111,15,1,LIMITE,margem 15,ponto mais alto
+IMG_3349.HEIC,6,20,20,-114,-117,-112,15,2,LIMITE,margem 15,ponto mais alto

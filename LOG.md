@@ -21,6 +21,58 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-30 (7) — Ensaio 02 em campo: altura vence distância
+
+**Fase:** 0 · **Duração:** ~14 min de percurso, 7 pontos
+
+### Feito
+
+- **Ensaio 02 executado** em percurso urbano noturno, sob sereno e chuva fina,
+  com 7 pontos até ~205 m do ponto de partida.
+- **`tools/importar_fotos.py`** — importa ensaio registrado só por fotos: lê a
+  transcrição das telas, extrai GPS do EXIF (via `mdls`, que abre HEIC) e gera
+  GeoJSON, KML e CSV, mais análise de distância e perda de percurso.
+- Sete pontos georreferenciados **sem nenhuma anotação manual de coordenada**.
+- Fotos originais preservadas em `dados/fotos/ensaio02/` como evidência (RC-10).
+
+### Aprendido
+
+- **Altura vence distância, e por muito.** P5/P6, a 206 m e 17 m de altitude,
+  mediram **5 dB melhor** que P3/P4, a 156 m e 6 m de altitude — apesar de
+  estarem 51 m mais longe. Descontado o custo da distância, a elevação entregou
+  cerca de **8 dB por 11 metros**. Equivale a sextuplicar a potência, ou a subir
+  dois spreading factors. O P6 fechou 20/20 pacotes, zero perda, sendo o ponto
+  mais distante do ensaio.
+- **Modelo de propagação ajustado: n = 2,57, resíduo RMS 2,2 dB.** Ajuste muito
+  bom para 4 pontos em ambiente real com chuva. Fica entre espaço livre (2,0) e
+  urbano denso (3,5–4,0), coerente com área residencial de baixa densidade.
+- **Obstrução domina a distância nesta escala.** P3, a 138 m com alvenaria, mede
+  pior que P4, a 174 m em descampado.
+- **A sensibilidade real supera a tabela**: P2 recebeu pacote a −133 dBm, abaixo
+  da sensibilidade nominal de SF9 (−129 dBm). O LoRa demodula com SNR negativo,
+  então a margem exibida é conservadora — o critério de 20 dB tem folga extra.
+- Chuva fina em 915 MHz atenua de forma desprezível, mas **folhagem molhada
+  absorve bastante**. As medições representam, portanto, o caso degradado — o que
+  é vantajoso, já que o sistema precisa funcionar durante a chuva.
+
+### Decidido
+
+- **O posicionamento do gateway passa a ser a decisão de engenharia de maior
+  impacto do sistema**, acima de potência, antena e spreading factor. Vale para
+  a fase 4 e para a proposta comercial.
+- Ensaio 03 (varredura de SF) vira **prioritário**, e deve ser feito no P6, que
+  já está caracterizado: SF12 acrescenta 8 dB sobre SF9 e, pelo modelo ajustado,
+  isso **dobra o alcance** — ao custo de ~6× mais tempo de rádio ligado, o que
+  impacta autonomia e ocupação de canal.
+
+### Próximo
+
+1. Ensaio 03 — varredura SF7/SF9/SF12 no P6.
+2. Registrar coordenada e altura do `HTC-02` (P-008) para fechar a análise
+   absoluta e permitir calibrar o modelo contra o MDE.
+
+---
+
 ## 2026-07-30 (6) — Ferramentas de coleta e georreferenciamento
 
 **Fase:** 0 · **Duração:** ~1 sessão

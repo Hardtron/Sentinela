@@ -1,0 +1,187 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -45.330475,
+          -23.5753167
+        ]
+      },
+      "properties": {
+        "ponto": 0,
+        "veredito": "APROVADO",
+        "motivo": "margem 44",
+        "rssi_med": -85.0,
+        "rssi_min": -96.0,
+        "rssi_max": -82.0,
+        "margem_db": 44.0,
+        "assimetria_db": 1.0,
+        "perda_pct": 0.0,
+        "pacotes": "26/26",
+        "altitude_m": 6.1,
+        "ambiente": "partida - proximo a casa",
+        "foto": "IMG_3341.HEIC",
+        "quando": "2026-07-31 00:57:30 +0000"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -45.3307217,
+          -23.5750867
+        ]
+      },
+      "properties": {
+        "ponto": 1,
+        "veredito": "APROVADO",
+        "motivo": "margem 27",
+        "rssi_med": -102.0,
+        "rssi_min": -111.0,
+        "rssi_max": -99.0,
+        "margem_db": 27.0,
+        "assimetria_db": 4.0,
+        "perda_pct": 0.0,
+        "pacotes": "23/23",
+        "altitude_m": 9.6,
+        "ambiente": "alvenaria proxima",
+        "foto": "IMG_3342.HEIC",
+        "quando": "2026-07-31 00:59:26 +0000"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -45.331055,
+          -23.5747083
+        ]
+      },
+      "properties": {
+        "ponto": 2,
+        "veredito": "LIMITE",
+        "motivo": "margem 13",
+        "rssi_med": -116.0,
+        "rssi_min": -133.0,
+        "rssi_max": -114.0,
+        "margem_db": 13.0,
+        "assimetria_db": 2.0,
+        "perda_pct": 3.7,
+        "pacotes": "26/27",
+        "altitude_m": 5.2,
+        "ambiente": "rua - alvenaria",
+        "foto": "IMG_3343.HEIC",
+        "quando": "2026-07-31 01:01:48 +0000"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -45.331375,
+          -23.5743917
+        ]
+      },
+      "properties": {
+        "ponto": 3,
+        "veredito": "REPROVADO",
+        "motivo": "perda 7%",
+        "rssi_med": -120.0,
+        "rssi_min": -128.0,
+        "rssi_max": -114.0,
+        "margem_db": 9.0,
+        "assimetria_db": 2.0,
+        "perda_pct": 7.4,
+        "pacotes": "25/27",
+        "altitude_m": 5.6,
+        "ambiente": "rua - alvenaria",
+        "foto": "IMG_3345.HEIC",
+        "quando": "2026-07-31 01:04:14 +0000"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -45.331905,
+          -23.57447
+        ]
+      },
+      "properties": {
+        "ponto": 4,
+        "veredito": "REPROVADO",
+        "motivo": "perda 8%",
+        "rssi_med": -118.0,
+        "rssi_min": -127.0,
+        "rssi_max": -115.0,
+        "margem_db": 11.0,
+        "assimetria_db": 1.0,
+        "perda_pct": 8.0,
+        "pacotes": "23/25",
+        "altitude_m": 6.7,
+        "ambiente": "descampado com mato",
+        "foto": "IMG_3347.HEIC",
+        "quando": "2026-07-31 01:06:47 +0000"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -45.332205,
+          -23.5762917
+        ]
+      },
+      "properties": {
+        "ponto": 5,
+        "veredito": "LIMITE",
+        "motivo": "margem 15",
+        "rssi_med": -114.0,
+        "rssi_min": -124.0,
+        "rssi_max": -111.0,
+        "margem_db": 15.0,
+        "assimetria_db": 1.0,
+        "perda_pct": 4.5,
+        "pacotes": "21/22",
+        "altitude_m": 16.7,
+        "ambiente": "ponto mais alto",
+        "foto": "IMG_3348.HEIC",
+        "quando": "2026-07-31 01:09:41 +0000"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -45.3321833,
+          -23.5762967
+        ]
+      },
+      "properties": {
+        "ponto": 6,
+        "veredito": "LIMITE",
+        "motivo": "margem 15",
+        "rssi_med": -114.0,
+        "rssi_min": -117.0,
+        "rssi_max": -112.0,
+        "margem_db": 15.0,
+        "assimetria_db": 2.0,
+        "perda_pct": 0.0,
+        "pacotes": "20/20",
+        "altitude_m": 17.4,
+        "ambiente": "ponto mais alto",
+        "foto": "IMG_3349.HEIC",
+        "quando": "2026-07-31 01:10:59 +0000"
+      }
+    }
+  ]
+}
