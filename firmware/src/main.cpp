@@ -59,6 +59,16 @@ volatile bool packetReady = false;
 static UiState ui;
 RTC_DATA_ATTR static uint32_t bootCount = 0;
 
+#if defined(ROLE_PINGER)
+// Piso de 1500 ms bastava com o toa medido em SF9 (~170 ms), mas encolhe
+// demais em SF11/12 — la o toa sozinho ja se aproxima do teto, e o pong
+// simplesmente nao cabe na janela. Isso gera "perda" que e do software
+// esperando de menos, nao do radio: contaminaria justamente o dado que a
+// varredura SF7-SF12 existe para medir. Recalculado em setup() a partir do
+// toa real da placa (ver LOG.md).
+static uint32_t timeoutPongMs = 1500;
+#endif
+
 IRAM_ATTR void onPacketEvent() { packetReady = true; }
 
 // -------------------------------------------------------------- auxiliares --
@@ -230,6 +240,11 @@ void setup() {
   }
 
   ui.toaMs = radio.getTimeOnAir(sizeof(Packet)) / 1000;
+#if defined(ROLE_PINGER)
+  // 3x o toa do pong + folga fixa: cobre o tempo no ar mais a incerteza de
+  // deteccao de preambulo, sem exigir que o operador calcule isso por SF.
+  timeoutPongMs = (uint32_t)(ui.toaMs * 3 + 200);
+#endif
 
   Serial.println(F("# radio ok"));
   Serial.printf("# freq=%.1fMHz sf=%d bw=%.0fkHz cr=4/%d pot=%ddBm toa=%lums\n",
@@ -259,7 +274,6 @@ void setup() {
 #if defined(ROLE_PINGER)
 
 static const uint32_t INTERVALO_PING_MS = 3000;
-static const uint32_t TIMEOUT_PONG_MS = 1500;
 
 void loop() {
   ui.seq++;
@@ -268,7 +282,7 @@ void loop() {
   sendPacket(KIND_PING, ui.seq);
 
   bool recebeuPong = false;
-  uint32_t limite = millis() + TIMEOUT_PONG_MS;
+  uint32_t limite = millis() + timeoutPongMs;
   uint32_t proximoDesenho = 0;
 
   while ((int32_t)(millis() - limite) < 0) {

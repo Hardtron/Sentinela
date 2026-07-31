@@ -54,7 +54,12 @@
 // pela Anatel. A janela 907,5-915 MHz NAO e permitida (armadilha A-006).
 #define LORA_FREQ_MHZ 916.8
 #define LORA_BW_KHZ 125.0
+// SF9 e o padrao operacional. Sobrescrito por -D LORA_SF=N no build da
+// varredura SF7-SF12 (platformio.ini, ambientes varredura_sf_*) — o valor
+// aqui e so o default para os ambientes normais, que nao passam a flag.
+#ifndef LORA_SF
 #define LORA_SF 9
+#endif
 #define LORA_CR 7
 #define LORA_SYNC_WORD 0x12  // rede privada
 #define LORA_TX_POWER_DBM 17
