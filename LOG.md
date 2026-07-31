@@ -21,6 +21,28 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (11) — HTC-01 regravada com o firmware atual (economia de tela)
+
+**Fase:** 0 · **Duração:** curta
+
+### Feito
+
+- **`HTC-01` regravada com `node_dev`** (PINGER, `NODE_ID=1`, com antena) —
+  MAC conferido antes (`3c:71:bf:8c:2c:d0`, bate com `HARDWARE.md`). Motivo:
+  o firmware anterior da placa é de antes da economia de energia do OLED
+  (entrada 9 deste log); a regravação traz `HTC-01` para o mesmo binário já
+  validado nas demais placas. Boot confirmado por serial: `no=1 papel=PING`,
+  rádio ok, primeiro ping enviado sem pong (esperado — `HTC-02` está sem
+  antena no momento, ver entrada 10).
+
+### Próximo
+
+1. Raspberry Pi sendo conectado pelo usuário para iniciar os testes de
+   bridge — retomar o acompanhamento do acesso SSH e da instalação do
+   Mosquitto/`gateway/bridge.py` assim que ele estiver na rede.
+
+---
+
 ## 2026-07-31 (10) — HTC-03 vira bridge de verdade; antena remanejada da HTC-02
 
 **Fase:** 2 · **Duração:** curta
