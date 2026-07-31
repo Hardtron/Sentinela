@@ -18,7 +18,12 @@ Nenhuma compra é necessária antes da fase 4.
       31/07/2026, ver HARDWARE.md); **deep sleep pendente**, o firmware ainda
       não dorme
 - [x] **Teste de alcance em campo** — ensaio 02, 7 pontos, modelo n = 2,57
-- [ ] Levantamento de alcance por spreading factor (SF7 a SF12) — **prioritário**
+- [~] Levantamento de alcance por spreading factor (SF7 a SF12) —
+      **prioritário**. Método pronto e validado em bancada 31/07/2026
+      (`tools/varredura_sf.py`, ensaio 03a em CAMPO.md: 0% de perda em todo
+      SF7–SF12, SF ajustável em runtime sem recabear); falta rodar em campo
+      com as placas fixas (ensaio 03) para a curva de verdade — a bancada
+      não isola o efeito do SF da variação ambiental de manuseio
 
 **Critério de saída.** Curva de alcance × SF documentada em `docs/CAMPO.md`.
 

@@ -266,16 +266,101 @@ que o gateway definitivo não terá.
 
 ---
 
+## Ensaio 03a — Bancada, varredura SF7–SF12 automatizada (validação de método)
+
+**Data:** 31/07/2026 · **Nós:** `HTC-01` (PINGER, USB do MacBook) e `HTC-03`
+(bridge/PONGER, USB do Raspberry Pi 4) · **Distância:** bancada, mesma sala
+**Ferramenta:** `tools/varredura_sf.py` — grava as duas placas para cada SF
+(local via cabo, remota via SSH+esptool), espera 20 amostras chegarem ao
+banco e resume o resultado. Ver LOG.md para o desenvolvimento da ferramenta.
+
+### O que este ensaio **não** é
+
+Não é a varredura de campo prevista no item **03** (abaixo) — aquela mede
+alcance real, ponto fixo já caracterizado (P6), célula a pé. Este é um ensaio
+de **bancada**, boards paradas na mesma sala: existe para validar o método
+(SF ajustável em runtime, timeout dinâmico, automação de ponta a ponta) antes
+de gastar uma saída de campo nele.
+
+### Resultado
+
+| SF | Amostras | RSSI subida | RSSI descida | Margem subida | Assimetria | Perdidos |
+|---|---|---|---|---|---|---|
+| 7  | 22 | −97,9 dBm | −110,8 dBm | 25,1 dB | 12,9 dB | 0 |
+| 8  | 23 | −97,6 dBm | −110,1 dBm | 28,4 dB | 12,5 dB | 0 |
+| 9  | 24 | −89,2 dBm | −102,9 dBm | 39,8 dB | 13,7 dB | 0 |
+| 10 | 25 | −86,8 dBm | −100,7 dBm | 45,2 dB | 13,9 dB | 0 |
+| 11 | 24 | −94,7 dBm | −108,3 dBm | 39,8 dB | 13,6 dB | 0 |
+| 12 | 37 | −92,8 dBm | −107,9 dBm | 44,2 dB | 14,1 dB | 0 |
+
+**[M]** Números direto do banco (`enlace_analise`), isolados por rodada a
+partir dos intervalos de tempo entre gravações (cada regravação gera um
+buraco de 30–90 s sem pacote, que delimita a rodada seguinte).
+
+### O que ficou validado
+
+- **Zero perda em todo SF, inclusive SF12.** Isso não era garantido: o
+  timeout de espera do pong era fixo em 1 500 ms, e o toa medido em SF12
+  (~1 155 ms, `tools/alcance.py`) deixava margem perigosamente curta —
+  qualquer variação de processamento estouraria o timeout e geraria "perda"
+  que seria do software, não do rádio. Corrigido calculando o timeout em
+  runtime a partir do toa real de cada SF (`firmware/src/main.cpp`,
+  `timeoutPongMs = toa*3 + 200`), antes de rodar a campanha.
+- **Assimetria estável entre 12,5 e 14,1 dB em todos os SF.** Como SF afeta
+  sensibilidade (limiar de decodificação), não RSSI (potência recebida), a
+  assimetria — que é `rssi_sobe - rssi_desce`, uma diferença de RSSI puro —
+  não deveria variar com SF. Ela não variou. É o teste de sanidade que diz
+  que o pipeline (firmware → bridge → ingestor → banco) está medindo
+  corretamente, e não é coincidência: alguma diferença fixa entre as duas
+  placas (ganho de antena, calibração do LNA) domina a assimetria, não o SF.
+- **Regravação remota da `HTC-03` pela própria rede**, sem tocar na placa:
+  12 ciclos de build+flash+verificação de hash em ambas as pontas, zero
+  intervenção manual após o comando inicial.
+
+### O que este ensaio **não** prova — e por quê
+
+A margem **não** sobe de forma suave e monotônica com o SF, como a teoria
+prevê (SF7→SF12 deveria ganhar ~14 dB de sensibilidade em degraus de
+~2,5–2,8 dB). Em vez disso, o **RSSI bruto** variou ~11 dB entre rodadas
+(−86,8 a −97,9 dBm) sem relação com o SF — essa variação é da mesma ordem
+de grandeza do ganho teórico inteiro que a varredura queria isolar.
+
+**Causa mais provável [E]:** as placas foram manuseadas fisicamente entre
+cada rodada (retirar/reconectar a `HTC-01` no cabo USB para cada gravação,
+~12 vezes ao longo de ~15 minutos), o que perturba orientação de antena e
+acoplamento de campo próximo o bastante para dominar o sinal. Ambiente
+interno de bancada, com pessoas e outros equipamentos por perto, também
+introduz variação de multipercurso entre rodadas que uma varredura de campo
+com as placas fixas não teria.
+
+**Consequência prática:** a tabela acima **não é uma curva de alcance × SF
+confiável** — é validação de tooling. A curva de verdade exige o ensaio 03
+descrito abaixo: ponto fixo em campo, placas paradas, sem manuseio entre os
+SF (que agora é possível sem recabeamento — só rodar
+`tools/varredura_sf.py` apontando para a posição de campo).
+
+### Conclusão
+
+Ensaio **válido para o que se propunha**: prova que a automação, o SF
+ajustável em runtime e a correção de timeout funcionam ponta a ponta, com
+100% de entrega em todo o intervalo SF7–SF12. Não substitui — e não tentava
+substituir — o ensaio de alcance de campo, que segue como item prioritário.
+
+---
+
 ## Próximos ensaios
 
 Procedimento detalhado em [ROTEIRO_CAMPO.md](ROTEIRO_CAMPO.md).
 
 - [x] **02** — Percurso urbano, 7 pontos até ~205 m. Modelo ajustado com
       n = 2,57; altura demonstrou valer ~8 dB por 11 m.
-- [ ] **03** — **Prioritário.** Varredura SF7/SF9/SF12 no P6 (ponto alto, já
-      caracterizado), comparando margem contra tempo no ar. SF12 acrescenta
-      8 dB de sensibilidade sobre SF9 — pelo modelo ajustado, isso **dobra o
-      alcance**, ao custo de ~6× mais tempo de rádio ligado.
+- [x] **03a** — Varredura SF7–SF12 automatizada em bancada — valida o método
+      (`tools/varredura_sf.py`), não substitui o ensaio de campo abaixo.
+- [ ] **03** — **Prioritário.** Varredura SF7–SF12 no P6 (ponto alto, já
+      caracterizado), com as placas **fixas** (sem manuseio entre SF —
+      `tools/varredura_sf.py` já resolve isso, só precisa rodar do local).
+      SF12 acrescenta 8 dB de sensibilidade sobre SF9 — pelo modelo ajustado,
+      isso **dobra o alcance**, ao custo de ~6× mais tempo de rádio ligado.
 - [ ] **02b** — Repetir P5/P6 com a coordenada do `HTC-02` registrada (P-008) e
       em tempo seco, para separar o efeito da vegetação molhada.
 - [ ] **04** — Percurso com relevo e vegetação reais, no município-piloto

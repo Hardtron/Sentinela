@@ -21,6 +21,67 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (16) — Varredura SF7–SF12 automatizada: método validado, curva de campo pendente
+
+**Fase:** 0 · **Duração:** média
+
+### Feito
+
+- **`LORA_SF` vira parâmetro de build** (`-D LORA_SF=N`, `firmware/include/
+  board_heltec_v2.h`, guardado por `#ifndef` — 9 continua padrão quando a
+  flag não é passada). `firmware/platformio.ini` ganhou 12 ambientes
+  (`sf7_pinger`/`sf7_bridge` … `sf12_pinger`/`sf12_bridge`).
+- **Armadilha corrigida antes de rodar a campanha**: o timeout de espera do
+  pong era `TIMEOUT_PONG_MS=1500` fixo — folgado em SF9 (toa~170 ms), mas
+  perto demais do limite em SF12 (toa~1155 ms, `tools/alcance.py`). Rodar a
+  varredura sem corrigir teria produzido "perda" que seria do software
+  esperando de menos, não do rádio — contaminando exatamente o dado que a
+  campanha existe para medir. Virou `timeoutPongMs`, calculado em `setup()`
+  a partir do toa real (`toa*3 + 200`).
+- **`tools/varredura_sf.py`** automatiza o ciclo: compila e grava as duas
+  pontas para cada SF (HTC-01 local via cabo, HTC-03 remota via SSH+esptool,
+  sem tirar a placa da USB do RPi), espera amostras chegarem ao banco via o
+  ingestor, e resume margem/assimetria/perda por SF. Validado com teste de
+  fumaça em SF7 isolado antes de comprometer a campanha inteira.
+- **Campanha SF7–SF12 rodada em bancada**: **0% de perda em todo o
+  intervalo**, inclusive SF12 — confirma que a correção do timeout funcionou
+  sob a condição mais apertada. Resultado completo e análise em
+  `docs/CAMPO.md`, ensaio 03a.
+- Placas devolvidas ao firmware operacional (SF9: `node_dev`/`bridge`) ao
+  final, e confirmado dado voltando a fluir normalmente.
+
+### Aprendido
+
+- **A margem não subiu de forma suave com o SF, como a teoria prevê** (SF7→
+  SF12 deveria ganhar ~14 dB de sensibilidade em degraus de ~2,5–2,8 dB).
+  Investigado a fundo em vez de aceitar o número: isolando cada rodada pelos
+  buracos de tempo entre gravações (uma consulta ad-hoc inicial estava
+  misturando o teste de fumaça com a campanha oficial — descartada depois de
+  identificar a contaminação), o RSSI bruto variou ~11 dB entre rodadas sem
+  relação com o SF. Causa mais provável: manuseio físico da `HTC-01` a cada
+  uma das ~12 regravações em ~15 minutos perturba antena/campo próximo o
+  bastante para dominar o sinal — ordem de grandeza comparável ao ganho
+  teórico inteiro que a varredura queria isolar. **A tabela de bancada não é
+  uma curva de alcance × SF confiável; é validação de tooling.** Registrado
+  sem maquiar em CAMPO.md — o dado ruim documentado corretamente vale mais
+  que um número bonito sem essa ressalva.
+- **A assimetria ficou estável (12,5–14,1 dB) em todo o SF**, e isso é
+  esperado: SF muda sensibilidade (limiar de decodificação), não RSSI
+  (potência recebida) — assimetria é diferença de RSSI puro, não deveria
+  variar com SF. Serviu de teste de sanidade da própria campanha: se tivesse
+  variado descontroladamente, seria sinal de pipeline quebrado, não de
+  física real.
+
+### Próximo
+
+1. **Ensaio 03 de verdade**: mesma ferramenta, mas em campo, no P6 (ponto
+   alto já caracterizado no ensaio 02), com as placas **fixas** — sem
+   recabear entre SF, já que `varredura_sf.py` resolve isso remotamente. É
+   isso que falta para fechar o critério de saída da Fase 0.
+2. `lib/proto/` seguirá sendo o próximo item de firmware depois disso.
+
+---
+
 ## 2026-07-31 (15) — O dado para de evaporar: ingestor, banco e consumo medido
 
 **Fase:** 2 → 3 · **Duração:** longa
