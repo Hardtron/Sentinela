@@ -46,16 +46,17 @@ reinício sem perder acumulado (RC-06).
 
 **Objetivo.** Dados chegando ao banco, ponta a ponta.
 
-- [x] `HTC-03` gravada com `bridge` (RF-ativo, PONGER) e antena conectada,
-      31/07/2026 — falta ligar fisicamente na USB do RPi 4
+- [x] `HTC-03` gravada com `bridge` (RF-ativo, PONGER), antena conectada e
+      ligada fisicamente na USB do RPi 4 — 31/07/2026
 - [x] Acesso SSH ao Raspberry Pi 4 por chave — resolvido em 31/07/2026,
       `sentinelapi@192.168.15.73`, fecha P-010
 - [x] Mosquitto instalado e ativo no RPi 4 (`apt`), 31/07/2026
-- [x] Bridge instalada no RPi 4 real — repositório sincronizado via `rsync`
-      (não `git clone`: repo privado, RPi é host de runtime), venv com
-      `pyserial`/`paho-mqtt`, unidade `sentinela-bridge.service` habilitada e
-      rodando (`sentinelapi`, não `pi` — ajustado no unit file). Falta plugar
-      a `HTC-03` fisicamente para o primeiro dado real passar ponta a ponta.
+- [x] Bridge instalada e rodando no RPi 4 real — repositório sincronizado via
+      `rsync` (não `git clone`: repo privado, RPi é host de runtime), venv
+      com `pyserial`/`paho-mqtt`, unidade `sentinela-bridge.service` ativa
+- [x] **Primeira telemetria real ponta a ponta** — `HTC-01` → LoRa →
+      `HTC-03`/bridge → `sentinela/no/1/telemetria` no MQTT, confirmado por
+      `mosquitto_sub`, 31/07/2026
 - [ ] Ingestor MQTT → banco, decodificando `proto/`
 - [x] Detecção de nó silencioso (RC-02) — implementada na bridge (saúde
       publicada a cada 30 s); falta o lado do banco/ingestor

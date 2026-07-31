@@ -28,7 +28,8 @@ Wants=network-online.target
 Type=simple
 User=sentinelapi
 WorkingDirectory=/home/sentinelapi/sentinela/gateway
-ExecStart=/home/sentinelapi/sentinela/tools/venv/bin/python /home/sentinelapi/sentinela/gateway/bridge.py --porta /dev/ttyUSB0 --broker localhost --bridge-id FAR-HTC03
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/sentinelapi/sentinela/tools/venv/bin/python /home/sentinelapi/sentinela/gateway/bridge.py --porta /dev/ttyUSB0 --broker localhost --bridge-id FAR-HTC03 --no-id 1
 Restart=always
 RestartSec=5
 StandardOutput=journal

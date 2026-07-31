@@ -21,6 +21,49 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (13) — Primeira telemetria ponta a ponta: rádio → MQTT
+
+**Fase:** 2 · **Duração:** curta
+
+### Feito
+
+- **`HTC-03` conectada fisicamente na USB do Raspberry Pi 4.** Reiniciada a
+  `sentinela-bridge.service`: conectou serial (`/dev/ttyUSB0`) e MQTT sem
+  erro, sem precisar de nenhuma intervenção manual — confirma que o
+  `Restart=always` + espera tolerante a porta ausente funcionam como
+  desenhado.
+- **Corrigido `--no-id` ausente na unidade systemd**: sem ele, `bridge.py`
+  usa o padrão `0` e a telemetria saía em `sentinela/no/0/telemetria` — não
+  é bug do script, é parâmetro operacional mesmo (o CSV do firmware não
+  carrega o `node_id` de quem enviou o ping, só de quem recebeu; por isso
+  `--no-id` existe). Adicionado `--no-id 1` ao `ExecStart` (par ativo hoje:
+  `HTC-01` como PINGER). Também adicionado `Environment=PYTHONUNBUFFERED=1`,
+  fechando a pendência anotada na entrada 9 — sem isso o `journalctl` não
+  mostrava as linhas de log do processo em tempo real.
+- **Primeira telemetria real ponta a ponta confirmada**: `mosquitto_sub` no
+  próprio RPi mostrou `sentinela/no/1/telemetria` publicando a cada ~3–4 s,
+  com `enviados`/`recebidos` subindo em paridade (65/65 no momento da
+  checagem) e RSSI em torno de −83 dBm local / −90 dBm remoto. Fecha o
+  critério de saída da Fase 2 ("leitura visível no banco em menos de 5 s") no
+  trecho que já existe — falta só o ingestor MQTT → banco.
+
+### Aprendido
+
+- `--no-id` é por-par, não por-protocolo: se um dia houver mais de um
+  PINGER falando com a mesma bridge, o esquema atual não distingue a origem
+  — é limitação conhecida do formato CSV do firmware de bring-up, aceitável
+  na Fase 0/2, não algo a corrigir agora.
+
+### Próximo
+
+1. Ingestor MQTT → banco (`sentinela/no/<id>/telemetria` → TimescaleDB) —
+   primeiro item real que falta para fechar a Fase 2 de ponta a ponta.
+2. Deixar `HTC-01` com alimentação independente (poder ficar sem estar preso
+   à USB do Mac) para o ensaio poder rodar por mais tempo sem depender do
+   notebook ligado.
+
+---
+
 ## 2026-07-31 (12) — SSH do Raspberry Pi resolvido; bridge instalada de verdade
 
 **Fase:** 2 · **Duração:** média
