@@ -15,8 +15,9 @@ Nenhuma compra é necessária antes da fase 4.
 - [x] Display de diagnóstico com 4 páginas navegáveis pelo botão PRG
 - [x] Ping-pong entre `HTC-01` e `HTC-02` com RSSI/SNR — ensaio 01, 0% de perda
 - [~] Medição de consumo — **em operação medida** (81 mA / 423 mW a 5 V,
-      31/07/2026, ver HARDWARE.md); **deep sleep pendente**, o firmware ainda
-      não dorme
+      31/07/2026, ver HARDWARE.md); baterias adquiridas (P-012 resolvida),
+      libera ensaio de autonomia real; **deep sleep pendente**, o firmware
+      ainda não dorme
 - [x] **Teste de alcance em campo** — ensaio 02, 7 pontos, modelo n = 2,57
 - [~] Levantamento de alcance por spreading factor (SF7 a SF12) —
       **prioritário**. Método pronto e validado em bancada 31/07/2026
@@ -144,7 +145,7 @@ e alimentação.
 | ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
 | ~~P-010~~ | ~~Configurar acesso SSH ao Raspberry Pi 4~~ | **Resolvida em 31/07/2026** — chave SSH, `sentinelapi@192.168.15.73`, conforme ADR-007 |
 | P-011 | Comprar 4 antenas adicionais — **6 dBi**, não mais que isso (CONFORMIDADE.md §1.1.1: acima de 6 dBi não há ganho extra de transmissão) | Liberar `HTC-02`, `HTC-04`–`06` do modo bancada (antenas hoje só em `HTC-01`/`HTC-03`) |
-| P-012 | Comprar bateria(s) para ensaio de autonomia | Fase 1/4 |
+| ~~P-012~~ | ~~Comprar bateria(s) para ensaio de autonomia~~ | **Resolvida em 31/07/2026** — 2× NCR18650B (Panasonic, 3,7 V, ~3400 mAh), instaladas em `HTC-01`/`HTC-02`, ver HARDWARE.md |
 | P-013 | Definir e comprar o primeiro sensor (báscula de chuva é o de maior prioridade, ver SENSORES.md) | Fase 1 |
 | A-01 a A-05 | Pendências do projeto de ancoragem | Ver ANCORAGEM.md §10 |
 | R-01 a R-06 | Habilitação profissional e responsabilidade técnica | Ver RESPONSABILIDADE_TECNICA.md §10 |

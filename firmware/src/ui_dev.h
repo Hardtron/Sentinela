@@ -35,6 +35,7 @@ struct UiState {
   uint32_t toaMs;       // tempo no ar do quadro
   float vbat;           // V — não calibrado, ver pendência no README
   uint32_t bootCount;
+  float tempChipC;      // °C — sensor interno do ESP32, aproximado
 
   // --- modo bancada (ROLE_BENCH) — placa sem antena, ver A-003/HARDWARE.md ---
   uint8_t i2cCount;      // sensores encontrados no barramento externo

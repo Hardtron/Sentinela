@@ -7,7 +7,7 @@
 | **6** | Heltec WiFi LoRa 32 **V2** | ESP32-D0WDQ6, SX1276, OLED, 915 MHz |
 | 1 | Raspberry Pi 4 | Bridge/servidor de bancada |
 | **2** | Antena, **2 dBi** | Único par disponível — ver §"Restrição de antenas" |
-| 0 | Bateria | **Não adquirida** |
+| **2** | Bateria, Li-ion **NCR18650B** (Panasonic, 3,7 V, ~3400 mAh nominal) | Instaladas em `HTC-01` e `HTC-02`, 31/07/2026 — ver §"Baterias" |
 | 0 | Sensor (qualquer grandeza) | **Não adquirido** |
 | 0 | Concentrador LoRa (SX1302/SX1303) | **Não adquirido** — ver ADR-002 |
 
@@ -208,6 +208,31 @@ plano AU915), confortavelmente dentro da faixa alta permitida. Ao migrar para
 LoRaWAN: **AU915, sub-banda 2** (canais 8–15, 916,8–918,2 MHz).
 
 > **Nunca transmitir sem antena conectada.** O PA do SX1276 sem carga se degrada.
+
+## Baterias
+
+**31/07/2026 [M]** — duas células **Panasonic NCR18650B** (Li-ion, 3,7 V
+nominal, 3400 mAh nominal pelo datasheet do fabricante) instaladas em
+`HTC-01` e `HTC-02`, ligadas ao conector JST 2 pinos de bateria da Heltec V2
+(a mesma placa que já carrega e monitora tensão via o pino `PIN_VBAT_ADC`).
+Etiqueta confirmada por foto: `NCR18650B Li-ion MH12210`.
+
+Fecha **P-012** — a medição de autonomia (item aberto da Fase 0) deixa de
+depender de compra.
+
+### Corrente de carga observada
+
+Medidor USB em série com a `HTC-02` durante o carregamento: **0,200 A**. É
+a corrente que o circuito carregador da placa está entregando à célula, não
+o consumo do circuito em operação (não confundir com os 81 mA/423 mW
+medidos em operação normal, seção abaixo — são medições de fenômenos
+diferentes: uma é o carregador enchendo a bateria, a outra é o rádio+MCU
+consumindo dela).
+
+**[?]** O datasheet do carregador embarcado na Heltec V2 não foi localizado
+— não dá para afirmar se 0,200 A é a corrente máxima de carga ou um patamar
+intermediário sem medir a curva completa até a célula sinalizar carga
+plena (queda de corrente característica do perfil CC/CV do Li-ion).
 
 ## Consumo
 

@@ -266,10 +266,13 @@ que o gateway definitivo não terá.
 
 ---
 
-## Ensaio 03a — Bancada, varredura SF7–SF12 automatizada (validação de método)
+## Ensaio 03a — Interno, ~18 m entre cômodos, varredura SF7–SF12 automatizada
 
 **Data:** 31/07/2026 · **Nós:** `HTC-01` (PINGER, USB do MacBook) e `HTC-03`
-(bridge/PONGER, USB do Raspberry Pi 4) · **Distância:** bancada, mesma sala
+(bridge/PONGER, USB do Raspberry Pi 4) · **Distância:** ~18 m, placas em
+**cômodos separados por paredes de alvenaria**, com portas abertas e pessoas
+transitando entre os cômodos em momentos diferentes ao longo do ensaio — as
+duas placas ficaram **fisicamente paradas**, sem manuseio entre rodadas.
 **Ferramenta:** `tools/varredura_sf.py` — grava as duas placas para cada SF
 (local via cabo, remota via SSH+esptool), espera 20 amostras chegarem ao
 banco e resume o resultado. Ver LOG.md para o desenvolvimento da ferramenta.
@@ -277,10 +280,11 @@ banco e resume o resultado. Ver LOG.md para o desenvolvimento da ferramenta.
 ### O que este ensaio **não** é
 
 Não é a varredura de campo prevista no item **03** (abaixo) — aquela mede
-alcance real, ponto fixo já caracterizado (P6), célula a pé. Este é um ensaio
-de **bancada**, boards paradas na mesma sala: existe para validar o método
-(SF ajustável em runtime, timeout dinâmico, automação de ponta a ponta) antes
-de gastar uma saída de campo nele.
+alcance real, ao ar livre, no ponto alto já caracterizado (P6), célula a pé,
+com controle de ambiente. Este é um ensaio **interno**, sem controle de
+ambiente (pessoas e portas mudando entre rodadas): existe para validar o
+método (SF ajustável em runtime, timeout dinâmico, automação de ponta a
+ponta) antes de gastar uma saída de campo nele.
 
 ### Resultado
 
@@ -325,19 +329,26 @@ prevê (SF7→SF12 deveria ganhar ~14 dB de sensibilidade em degraus de
 (−86,8 a −97,9 dBm) sem relação com o SF — essa variação é da mesma ordem
 de grandeza do ganho teórico inteiro que a varredura queria isolar.
 
-**Causa mais provável [E]:** as placas foram manuseadas fisicamente entre
-cada rodada (retirar/reconectar a `HTC-01` no cabo USB para cada gravação,
-~12 vezes ao longo de ~15 minutos), o que perturba orientação de antena e
-acoplamento de campo próximo o bastante para dominar o sinal. Ambiente
-interno de bancada, com pessoas e outros equipamentos por perto, também
-introduz variação de multipercurso entre rodadas que uma varredura de campo
-com as placas fixas não teria.
+**Causa mais provável [E]:** as placas ficaram fixas — o que varia não é
+posição, é o **caminho de propagação em si**. A ~18 m através de alvenaria,
+com portas entre os cômodos abrindo e fechando e pessoas transitando em
+momentos diferentes de cada rodada, o sinal tem múltiplos percursos
+possíveis (direto atenuado pela parede, difratado pelo vão da porta,
+refletido). Cada configuração porta-aberta/porta-fechada/pessoa-no-caminho
+troca qual percurso domina — e a diferença entre eles, nesta geometria, é
+plausivelmente da ordem dos ~11 dB observados. É o mesmo fenômeno do
+"desvanecimento por obstrução intermitente" que a tira de perdas do painel
+já foi desenhada para distinguir de perda isolada (ver `app.js`,
+`grafPerdas`) — só que aqui, em vez de derrubar pacotes, ele desloca o RSSI
+médio da rodada inteira.
 
 **Consequência prática:** a tabela acima **não é uma curva de alcance × SF
 confiável** — é validação de tooling. A curva de verdade exige o ensaio 03
-descrito abaixo: ponto fixo em campo, placas paradas, sem manuseio entre os
-SF (que agora é possível sem recabeamento — só rodar
-`tools/varredura_sf.py` apontando para a posição de campo).
+descrito abaixo: ao ar livre, sem parede nem porta entre os nós, onde o
+percurso dominante não muda de rodada para rodada (só a posição do ponto,
+que fica fixa durante toda a varredura de SF — algo que agora é possível
+sem recabeamento, só rodar `tools/varredura_sf.py` apontando para a posição
+de campo).
 
 ### Conclusão
 

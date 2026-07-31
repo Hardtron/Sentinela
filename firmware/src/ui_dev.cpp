@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <U8g2lib.h>
+#include <esp_system.h>  // esp_reset_reason() — motivo do ultimo boot
 
 #include "board_heltec_v2.h"
 
@@ -28,6 +29,7 @@ enum Page : uint8_t {
   PAGE_GRAPH,
   PAGE_RADIO,
   PAGE_SYS,
+  PAGE_BATERIA,
   PAGE_BENCH,
   PAGE_COUNT
 };
@@ -51,6 +53,58 @@ float uiSensitivityDbm(uint8_t sf) {
     case 12: return -137.0f;
     default: return -129.0f;
   }
+}
+
+// Curva de estado de carga aproximada para célula única Li-ion/LiPo (NCR18650B
+// inclusa — mesma família química, 3,0-4,2 V), sob carga leve/moderada. Não é
+// calibração: é a mesma tensão em pontos de referência amplamente publicados
+// pelos fabricantes de célula, usada aqui só para dar ordem de grandeza. Some
+// ao problema já existente do divisor não calibrado (P-005) — por isso o
+// percentual sempre sai marcado "nc" na tela, igual ao vbat bruto (RC-07).
+struct PontoCarga { float v; uint8_t pct; };
+static const PontoCarga CURVA_CARGA[] = {
+    {4.20f, 100}, {4.06f, 90}, {3.98f, 80}, {3.92f, 70}, {3.87f, 60},
+    {3.82f, 50},  {3.79f, 40}, {3.77f, 30}, {3.74f, 20}, {3.68f, 10},
+    {3.45f, 5},   {3.00f, 0},
+};
+static const uint8_t CURVA_CARGA_N = sizeof(CURVA_CARGA) / sizeof(CURVA_CARGA[0]);
+
+static uint8_t bateriaPercentualAprox(float vbat) {
+  if (vbat >= CURVA_CARGA[0].v) return 100;
+  if (vbat <= CURVA_CARGA[CURVA_CARGA_N - 1].v) return 0;
+  for (uint8_t i = 0; i < CURVA_CARGA_N - 1; i++) {
+    const PontoCarga &alto = CURVA_CARGA[i];
+    const PontoCarga &baixo = CURVA_CARGA[i + 1];
+    if (vbat <= alto.v && vbat >= baixo.v) {
+      float f = (vbat - baixo.v) / (alto.v - baixo.v);
+      return (uint8_t)(baixo.pct + f * (alto.pct - baixo.pct));
+    }
+  }
+  return 0;
+}
+
+/// Motivo do boot mais recente — diagnóstico de reinício sem esperar log
+/// serial (RC-03: reinícios frequentes é alarme de sistema). Tabela em vez de
+/// switch: 10 casos num switch estouram o limite de complexidade do projeto
+/// (docs/QUALIDADE_CODIGO.md); em tabela, o custo é o mesmo, e a leitura fica
+/// mais perto de um `Serial.printf` de log do que de lógica de decisão.
+struct MotivoBoot { esp_reset_reason_t codigo; const char *texto; };
+static const MotivoBoot MOTIVOS_RESET[] = {
+    {ESP_RST_POWERON, "energia"},       {ESP_RST_EXT, "pino externo"},
+    {ESP_RST_SW, "software"},           {ESP_RST_PANIC, "panico/excecao"},
+    {ESP_RST_INT_WDT, "watchdog int"},  {ESP_RST_TASK_WDT, "watchdog task"},
+    {ESP_RST_WDT, "watchdog"},          {ESP_RST_DEEPSLEEP, "deep sleep"},
+    {ESP_RST_BROWNOUT, "brownout"},     {ESP_RST_SDIO, "SDIO"},
+};
+static const uint8_t MOTIVOS_RESET_N =
+    sizeof(MOTIVOS_RESET) / sizeof(MOTIVOS_RESET[0]);
+
+static const char *motivoReset() {
+  esp_reset_reason_t motivo = esp_reset_reason();
+  for (uint8_t i = 0; i < MOTIVOS_RESET_N; i++) {
+    if (MOTIVOS_RESET[i].codigo == motivo) return MOTIVOS_RESET[i].texto;
+  }
+  return "desconhecido";
 }
 
 static int mapRssiToY(int16_t rssi, int yTopo, int yBase) {
@@ -375,6 +429,71 @@ static void pagSys(const UiState &s) {
   indicadorPagina();
 }
 
+// --- blocos da página de bateria -------------------------------------------
+
+/// Tensão em fonte grande — mesmo tratamento visual do RSSI em pagLink, para
+/// ser lido de relance. "nc" persiste enquanto o divisor não for calibrado
+/// (P-005) — número plausível e errado é pior que número ausente (RC-07).
+static void blocoVbat(const UiState &s) {
+  char buf[24];
+  oled.setFont(u8g2_font_10x20_tf);
+  snprintf(buf, sizeof(buf), "%.2f", (double)s.vbat);
+  oled.drawStr(0, 28, buf);
+  int w = oled.getStrWidth(buf);
+
+  // "BAIXA" entra na mesma linha, à direita do rótulo — o canto superior
+  // direito já é ocupado pelo cabecalho() (P.. n.. PAPEL), não dá para
+  // colocar selo ali sem sobrepor.
+  oled.setFont(u8g2_font_5x7_tf);
+  bool baixa = s.vbat > 0.5f && s.vbat < VBAT_BAIXA_V;
+  oled.drawStr(w + 3, 28, baixa ? "V nc  BAIXA" : "V nc");
+}
+
+/// Barra de carga estimada — mesma geometria de blocoMargem (pagLink), só
+/// trocando a grandeza. Escala 0-100% direto, sem saturação artificial.
+/// Temperatura do chip divide a linha do rótulo, à direita — mesma ideia de
+/// blocoEco (pagLink), duas leituras curtas cabem lado a lado sem disputar
+/// espaço com o resto da página.
+static void blocoPercentual(const UiState &s) {
+  uint8_t pct = (s.vbat > 0.5f) ? bateriaPercentualAprox(s.vbat) : 0;
+
+  oled.drawFrame(0, 32, 128, 9);
+  int larg = (int)((uint16_t)pct * 126 / 100);
+  if (larg > 0) oled.drawBox(1, 33, larg, 7);
+
+  char buf[16];
+  oled.setFont(u8g2_font_5x7_tf);
+  if (s.vbat > 0.5f) {
+    snprintf(buf, sizeof(buf), "~%u%% (nc)", pct);
+  } else {
+    snprintf(buf, sizeof(buf), "sem leitura");
+  }
+  oled.drawStr(0, 50, buf);
+
+  snprintf(buf, sizeof(buf), "temp ~%.0fC", (double)s.tempChipC);
+  oled.drawStr(128 - oled.getStrWidth(buf), 50, buf);
+}
+
+// Página 5 — bateria. Foco na grandeza que a economia de tela existe para
+// preservar: com célula de verdade a bordo (NCR18650B, HARDWARE.md), esta
+// página deixa de ser diagnóstico de bancada e vira o que o operador olha
+// antes de sair a campo. Reúne o que o hardware da placa consegue medir por
+// si só — sem sensor externo, sem fuel gauge dedicado (não existe um nesta
+// placa): tensão, estimativa de carga, temperatura interna do chip e o
+// motivo do último reinício.
+static void pagBateria(const UiState &s) {
+  cabecalho("BATERIA", s);
+  blocoVbat(s);
+  blocoPercentual(s);
+
+  char buf[26];
+  oled.setFont(u8g2_font_5x7_tf);
+  snprintf(buf, sizeof(buf), "reset: %s", motivoReset());
+  oled.drawStr(0, 58, buf);
+
+  indicadorPagina();
+}
+
 // Página extra — bancada. Confirma o barramento de sensores externos e lembra
 // que esta placa não deve transmitir sem antena (A-003). Disponível em
 // qualquer papel — em PINGER/PONGER só confirma que não há sensor pendurado.
@@ -453,6 +572,7 @@ void uiDraw(const UiState &s) {
     case PAGE_GRAPH: pagGraph(s); break;
     case PAGE_RADIO: pagRadio(s); break;
     case PAGE_SYS: pagSys(s); break;
+    case PAGE_BATERIA: pagBateria(s); break;
     default: pagBench(s); break;
   }
   oled.sendBuffer();

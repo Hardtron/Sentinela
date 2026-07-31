@@ -81,6 +81,11 @@ static float readBattery() {
   return bruto * (3.3f / 4095.0f) * VBAT_FATOR_DIVISOR * VBAT_CALIBRACAO;
 }
 
+/// Sensor de temperatura interno do ESP32 (nao e o mesmo circuito da bateria).
+/// Estimativa de fabrica, sem calibracao propria — serve para acompanhar
+/// tendencia (aquecendo/esfriando), nao como medicao de precisao.
+static float readTempChip() { return temperatureRead(); }
+
 /// Inicia um novo ponto de medição: zera as estatísticas para que o resumo na
 /// tela descreva apenas este ponto, e marca a transição no CSV.
 static void novoPonto() {
@@ -147,6 +152,7 @@ static void idleWithUi(uint32_t ms) {
     uiChecaInatividade();
     if ((int32_t)(millis() - proximoDesenho) >= 0) {
       ui.vbat = readBattery();
+      ui.tempChipC = readTempChip();
       uiDraw(ui);
       proximoDesenho = millis() + 150;
     }
@@ -265,6 +271,7 @@ void setup() {
 #endif
 
   ui.vbat = readBattery();
+  ui.tempChipC = readTempChip();
   uiRegistrarAtividade();
   uiDraw(ui);
 }
@@ -347,6 +354,7 @@ void loop() {
   if (!packetReady) {
     if ((int32_t)(millis() - proximoDesenho) >= 0) {
       ui.vbat = readBattery();
+      ui.tempChipC = readTempChip();
       uiDraw(ui);
       proximoDesenho = millis() + 150;
     }
@@ -397,6 +405,7 @@ void loop() {
 
   if ((int32_t)(millis() - proximoDesenho) >= 0) {
     ui.vbat = readBattery();
+    ui.tempChipC = readTempChip();
     uiDraw(ui);
     proximoDesenho = millis() + 150;
   }

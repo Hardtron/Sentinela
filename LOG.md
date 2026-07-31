@@ -21,6 +21,77 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (17) — Baterias reais, correção do ensaio 03a e página BATERIA no OLED
+
+**Fase:** 0 · **Duração:** média
+
+### Feito
+
+- **Correção factual no ensaio 03a (CAMPO.md) e na entrada 16 deste log**: o
+  usuário esclareceu que `HTC-01` e `HTC-03` estavam em **cômodos separados
+  por alvenaria, ~18 m, com portas abertas e pessoas transitando** durante a
+  varredura SF7–SF12 — não na mesma bancada. As placas ficaram **paradas**
+  o tempo todo; a hipótese original registrada ("manuseio físico a cada
+  regravação") foi **descartada e substituída** pela explicação real: o que
+  variava entre rodadas era qual percurso de propagação dominava (direto
+  atenuado pela parede, difratado pelo vão da porta, refletido) — plausível
+  para explicar os ~11 dB de variação de RSSI observados. A conclusão prática
+  não muda (a tabela de bancada segue não sendo curva de alcance × SF
+  confiável), mas a causa registrada agora é a real, não um palpite.
+- **Baterias adquiridas**: 2× **Panasonic NCR18650B** (Li-ion, 3,7 V,
+  ~3400 mAh nominal), instaladas em `HTC-01` e `HTC-02` via conector JST da
+  Heltec V2. Fecha **P-012**. Foto confirma a etiqueta da célula.
+  `HTC-02` mostrou **0,200 A** de corrente de carga no medidor USB — anotado
+  como medição do carregador enchendo a célula, explicitamente distinto dos
+  81 mA/423 mW já medidos em operação (fenômenos diferentes, não comparáveis
+  direto). Documentado em HARDWARE.md, nova seção "Baterias".
+- **Página BATERIA no OLED** (`ui_dev.h`/`ui_dev.cpp`), sexta página do
+  display: tensão em fonte grande (mantendo o rótulo "nc" — divisor segue
+  não calibrado, P-005), barra de carga estimada por curva de referência de
+  célula Li-ion (também rotulada "nc", RC-07: número plausível errado é pior
+  que ausente), temperatura interna do chip (`temperatureRead()`, sensor de
+  fábrica do ESP32) e motivo do último reinício (`esp_reset_reason()` —
+  energia, watchdog, brownout, deep sleep etc.). Reúne o que é possível medir
+  **só com o hardware da própria placa**: não há fuel gauge nem pino de
+  status de carga na Heltec V2, então "carregando: sim/não" continua sendo
+  algo que só o medidor externo do usuário sabe dizer, não o firmware.
+- MAC/flash confirmado (`3c:71:bf:8c:2c:d0`), `HTC-01` regravada com
+  `node_dev` atualizado e boot verificado por serial, sem erro.
+
+### Aprendido
+
+- **`switch` com 10 casos estoura o limite de complexidade do projeto**
+  (`motivoReset()` deu CC 11 num primeiro rascunho). Convertido para tabela
+  `{codigo, texto}` + busca linear — mesmo padrão já usado em
+  `bateriaPercentualAprox` e, no painel web, nos objetos `CORES_*` do
+  `app.js`. Reforça que "switch grande" é sempre candidato a virar tabela
+  neste projeto, não só quando o limite já estourou.
+- **Revisão de layout pegou uma colisão antes de gravar**: o selo "BAIXA"
+  desenhado como caixa invertida no canto superior direito ocuparia o mesmo
+  espaço que `cabecalho()` já usa para "P.. n.. PAPEL". Corrigido para texto
+  simples na mesma linha da tensão — mesmo padrão, mais simples, já usado
+  com segurança em `pagSys`.
+- Não há como verificar visualmente o layout do OLED remotamente (sem
+  câmera apontada para a placa) — a verificação desta sessão ficou limitada
+  a compilação limpa, complexidade dentro do limite e boot sem erro via
+  serial. Revisão de geometria de pixel foi feita por leitura de código
+  contra os padrões já validados nas páginas existentes, não por captura de
+  tela real.
+
+### Próximo
+
+1. `HTC-02` precisa ser reconectada à USB para receber o firmware
+   atualizado (está no carregador no momento). `HTC-03` segue com o
+   firmware anterior — atualizar é opcional, ninguém olha o OLED dela
+   dentro do Raspberry Pi.
+2. Ensaio de autonomia real agora é possível (baterias resolvidas) — falta
+   decidir o protocolo (carga cheia até `VBAT_BAIXA_V`, cronometrado).
+3. Calibração do divisor de tensão (P-005) segue como pré-requisito para
+   qualquer conclusão numérica de autonomia — a página BATERIA deixa isso
+   visível todo boot ("nc"), não escondido.
+
+---
+
 ## 2026-07-31 (16) — Varredura SF7–SF12 automatizada: método validado, curva de campo pendente
 
 **Fase:** 0 · **Duração:** média
@@ -58,13 +129,18 @@ apenas o apontamento.
   buracos de tempo entre gravações (uma consulta ad-hoc inicial estava
   misturando o teste de fumaça com a campanha oficial — descartada depois de
   identificar a contaminação), o RSSI bruto variou ~11 dB entre rodadas sem
-  relação com o SF. Causa mais provável: manuseio físico da `HTC-01` a cada
-  uma das ~12 regravações em ~15 minutos perturba antena/campo próximo o
-  bastante para dominar o sinal — ordem de grandeza comparável ao ganho
-  teórico inteiro que a varredura queria isolar. **A tabela de bancada não é
-  uma curva de alcance × SF confiável; é validação de tooling.** Registrado
-  sem maquiar em CAMPO.md — o dado ruim documentado corretamente vale mais
-  que um número bonito sem essa ressalva.
+  relação com o SF. **Causa (confirmada pelo usuário, não mais hipótese):**
+  as placas ficaram fixas — `HTC-01` e `HTC-03` em cômodos separados por
+  alvenaria, ~18 m, com portas abertas e pessoas transitando em momentos
+  diferentes de cada rodada. O que mudava entre rodadas não era posição, era
+  qual percurso de propagação dominava (direto atenuado, difratado pelo vão
+  da porta, refletido) — ordem de grandeza comparável ao ganho teórico
+  inteiro que a varredura queria isolar. **A tabela de bancada não é uma
+  curva de alcance × SF confiável; é validação de tooling.** Registrado sem
+  maquiar em CAMPO.md — o dado ruim documentado corretamente vale mais que
+  um número bonito sem essa ressalva. (Correção: a hipótese original,
+  registrada antes de confirmar com o usuário, apontava manuseio físico da
+  placa — descartada.)
 - **A assimetria ficou estável (12,5–14,1 dB) em todo o SF**, e isso é
   esperado: SF muda sensibilidade (limiar de decodificação), não RSSI
   (potência recebida) — assimetria é diferença de RSSI puro, não deveria

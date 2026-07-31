@@ -93,9 +93,10 @@ Um botão, duas funções:
 | **Toque curto** | Passa para a próxima página |
 | **Toque longo (>1 s)** | **Marca novo ponto de medição** — zera as estatísticas e pisca o LED confirmando |
 
-As cinco páginas: **ENLACE** (RSSI grande e barra de margem) · **PONTO**
+As seis páginas: **ENLACE** (RSSI grande e barra de margem) · **PONTO**
 (resumo consolidado) · **HISTORICO** (gráfico) · **RADIO** (parâmetros) ·
-**SISTEMA** (saúde).
+**SISTEMA** (saúde) · **BATERIA** (tensão, carga estimada, temperatura do
+chip, motivo do último reinício — ver HARDWARE.md §Baterias).
 
 A página **PONTO** é a que se fotografa antes de sair de cada local.
 
