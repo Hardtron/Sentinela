@@ -31,8 +31,12 @@ confundidas com bugs nossos.
       falha.
 - [x] Publicação de saúde da própria bridge em `sentinela/bridge/<id>/saude`
       (RC-02 vale para ela também — bridge muda não é diferente de nó mudo).
-- [ ] Instalação real no Raspberry Pi 4 — requer acesso SSH à placa, ainda não
-      configurado nesta sessão.
+- [x] **Instalação real no Raspberry Pi 4** — feita em 31/07/2026.
+      `sentinelapi@192.168.15.73` (SSH por chave, ADR-007), Mosquitto via
+      `apt`, repositório sincronizado por `rsync` (não `git clone` — repo
+      privado, o RPi é host de runtime), unidade `sentinela-bridge.service`
+      habilitada e ativa. Falta apenas ligar a `HTC-03` na USB do RPi para o
+      primeiro dado real passar ponta a ponta.
 
 ### Testar sem nenhum hardware
 
@@ -65,8 +69,8 @@ linha CSV recebida) e `sentinela/bridge/<bridge_id>/saude` (a cada 30 s).
 
 ## Decisões pendentes
 
-- Mosquitto no RPi 4 ou no homeserver. Inclinação: **no RPi 4**, para que a
-  bridge continue enfileirando se o enlace até o homeserver cair.
-- Acesso remoto ao Raspberry Pi 4 para instalação e testes com hardware real
-  — falta configurar (diferente do homeserver, que já tem acesso SSH
-  estabelecido).
+- ~~Mosquitto no RPi 4 ou no homeserver~~ — **decidido e implementado: no RPi
+  4** (31/07/2026), para que a bridge continue enfileirando se o enlace até o
+  homeserver cair.
+- ~~Acesso remoto ao Raspberry Pi 4~~ — **resolvido em 31/07/2026**, SSH por
+  chave, mesmo padrão do homeserver (ver ADR-007).

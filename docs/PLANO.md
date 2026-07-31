@@ -47,10 +47,15 @@ reinício sem perder acumulado (RC-06).
 **Objetivo.** Dados chegando ao banco, ponta a ponta.
 
 - [x] `HTC-03` gravada com `bridge` (RF-ativo, PONGER) e antena conectada,
-      31/07/2026 — falta ligar fisicamente na USB do RPi 4 (SSH ainda pendente)
-- [x] Bridge serial → MQTT no RPi 4 — `gateway/bridge.py`, testado sem
-      hardware via `--simular`; falta instalar no RPi real (acesso pendente)
-- [ ] Mosquitto — unidade systemd pronta em `gateway/sentinela-bridge.service`
+      31/07/2026 — falta ligar fisicamente na USB do RPi 4
+- [x] Acesso SSH ao Raspberry Pi 4 por chave — resolvido em 31/07/2026,
+      `sentinelapi@192.168.15.73`, fecha P-010
+- [x] Mosquitto instalado e ativo no RPi 4 (`apt`), 31/07/2026
+- [x] Bridge instalada no RPi 4 real — repositório sincronizado via `rsync`
+      (não `git clone`: repo privado, RPi é host de runtime), venv com
+      `pyserial`/`paho-mqtt`, unidade `sentinela-bridge.service` habilitada e
+      rodando (`sentinelapi`, não `pi` — ajustado no unit file). Falta plugar
+      a `HTC-03` fisicamente para o primeiro dado real passar ponta a ponta.
 - [ ] Ingestor MQTT → banco, decodificando `proto/`
 - [x] Detecção de nó silencioso (RC-02) — implementada na bridge (saúde
       publicada a cada 30 s); falta o lado do banco/ingestor
@@ -119,7 +124,7 @@ e alimentação.
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
 | ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
 | ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
-| P-010 | Configurar acesso SSH ao Raspberry Pi 4 — **decidido**: Raspberry Pi OS Lite 64-bit oficial, ver ADR-007 para o passo a passo | Instalação real da bridge |
+| ~~P-010~~ | ~~Configurar acesso SSH ao Raspberry Pi 4~~ | **Resolvida em 31/07/2026** — chave SSH, `sentinelapi@192.168.15.73`, conforme ADR-007 |
 | P-011 | Comprar 4 antenas adicionais — **6 dBi**, não mais que isso (CONFORMIDADE.md §1.1.1: acima de 6 dBi não há ganho extra de transmissão) | Liberar `HTC-02`, `HTC-04`–`06` do modo bancada (antenas hoje só em `HTC-01`/`HTC-03`) |
 | P-012 | Comprar bateria(s) para ensaio de autonomia | Fase 1/4 |
 | P-013 | Definir e comprar o primeiro sensor (báscula de chuva é o de maior prioridade, ver SENSORES.md) | Fase 1 |

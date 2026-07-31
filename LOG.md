@@ -21,6 +21,54 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (12) — SSH do Raspberry Pi resolvido; bridge instalada de verdade
+
+**Fase:** 2 · **Duração:** média
+
+### Feito
+
+- **P-010 fechada: acesso SSH por chave ao Raspberry Pi 4 estabelecido**,
+  `sentinelapi@192.168.15.73` (Debian 13/Trixie, aarch64). O usuário rodou
+  `ssh-copy-id` pelo próprio terminal (chave adicionada com sucesso); eu não
+  toquei em nenhuma senha, mesma regra de sempre.
+  - No caminho, `ssh-copy-id` acusou `REMOTE HOST IDENTIFICATION HAS
+    CHANGED` — esperado (não incidente de segurança): o SD card foi
+    regravado desde a última tentativa, então o host gerou chaves SSH novas
+    para o mesmo IP. Resolvido limpando a entrada antiga com `ssh-keygen -R
+    192.168.15.73` antes de repetir o `ssh-copy-id`.
+- **Mosquitto instalado e ativo no RPi 4** via `apt` (decide a dúvida em
+  aberto do `gateway/README.md`: broker fica no RPi, não no homeserver, para
+  a bridge continuar enfileirando se o link até o homeserver cair).
+- **Bridge instalada de verdade no RPi 4**: repositório sincronizado com
+  `rsync` (não `git clone` — o repo é privado e o RPi é host de runtime, não
+  precisa de outra chave de deploy do GitHub), venv criado com
+  `pyserial`/`paho-mqtt`. Unidade `gateway/sentinela-bridge.service` ajustada
+  (usuário real é `sentinelapi`, não `pi` como no template) e instalada via
+  `systemctl enable --now` — confirmado `active (running)`, sem loop de
+  reinício mesmo com a `HTC-03` ainda não conectada fisicamente (a bridge
+  tolera a porta serial ausente, como projetado).
+
+### Aprendido
+
+- `ssh-copy-id` falhando por causa de host key não é automaticamente motivo
+  de alarme quando há uma explicação concreta na própria sessão (SD card
+  regravado) — mas vale sempre checar o porquê antes de simplesmente apagar
+  a entrada, para não normalizar ignorar o aviso.
+- Rodar o setup do RPi (apt install, pip install) em background evitou
+  travar a sessão em instalações lentas de primeira execução numa placa
+  ARM — o padrão de "background + notificação" funcionou bem aqui.
+
+### Próximo
+
+1. Conectar a `HTC-03` fisicamente na USB do Raspberry Pi 4 e confirmar que
+   `journalctl -u sentinela-bridge -f` mostra telemetria chegando (ou ao
+   menos a porta serial sendo aberta sem erro).
+2. Publicar uma mensagem MQTT de teste (`mosquitto_sub` no próprio RPi) para
+   fechar o ciclo ponta a ponta desta fase antes do ingestor existir.
+3. Ingestor MQTT → banco ainda não existe — próximo item real da Fase 2.
+
+---
+
 ## 2026-07-31 (11) — HTC-01 regravada com o firmware atual (economia de tela)
 
 **Fase:** 0 · **Duração:** curta
