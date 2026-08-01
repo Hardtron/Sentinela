@@ -291,6 +291,20 @@ td.livre { white-space: normal; min-width: 250px; }
 .legenda span { display: flex; align-items: center; gap: 6px; }
 .pt { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
+/* Popup da Atalaia no mapa. O Leaflet injeta o conteúdo fora da árvore das
+   abas, então estas regras são globais de propósito. */
+.pop-foto {
+  display: block; width: 100%; max-width: 220px; border-radius: 4px;
+  margin: 6px 0; border: 1px solid var(--borda);
+}
+.pop-chuva {
+  margin: 6px 0; padding: 6px 8px; border-radius: 4px; line-height: 1.5;
+  background: var(--acento-suave); border-left: 3px solid var(--acento);
+}
+.pop-chuva.pop-atencao {
+  background: #d2992222; border-left-color: #d29922;
+}
+
 /* --------------------------------------------- monitoramento ao vivo --- */
 
 .grafico .ref { stroke-width: 1; stroke-dasharray: 5 4; opacity: .85; }

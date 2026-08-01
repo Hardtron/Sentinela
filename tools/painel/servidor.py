@@ -21,16 +21,28 @@ Autoria: Matheus Marassi
 
 import argparse
 import json
+import mimetypes
+import os
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 
 import banco
 import coletor
 import telemetria
 
 ESTATICOS = Path(__file__).resolve().parent / "static"
+
+# Pasta das Atalaias (comissionamento.py escreve, o painel só lê). Mesmo
+# padrão de `backend/comissionamento.py` — não duplicar o caminho ao mudar.
+MEDIA = Path(os.environ.get("SENTINELA_MEDIA",
+                            "/DATA/Projects/Sentinela-Media/Atalaias"))
+
+# Só o que o laudo e o mapa precisam exibir. Lista branca, não lista negra:
+# a pasta da Atalaia guarda ART e checklist assinado, documento de terceiro
+# que não tem por que sair por HTTP sem autenticação.
+MEDIA_EXTENSOES = {".jpg", ".jpeg", ".png", ".webp"}
 
 ROTAS = {
     "/api/visao-geral": lambda q: coletor.visao_geral(),
@@ -67,9 +79,34 @@ class Manipulador(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         rota = urlparse(self.path)
+        if rota.path.startswith("/media/"):
+            return self._responde_midia(rota.path[len("/media/"):])
         if not rota.path.startswith("/api/"):
             return super().do_GET()
         self._responde_api(rota)
+
+    def _responde_midia(self, relativo):
+        """Serve a foto oficial da Atalaia a partir da pasta de mídia.
+
+        A pasta fica fora da raiz de estáticos de propósito: ela é dado
+        operacional, não código, e vive no volume do homeserver. Por isso o
+        caminho é resolvido e conferido contra a raiz — `..` no caminho não
+        pode virar leitura de arquivo arbitrário do servidor.
+        """
+        try:
+            alvo = (MEDIA / unquote(relativo)).resolve()
+            alvo.relative_to(MEDIA.resolve())
+        except (ValueError, OSError):
+            return self._json({"erro": "caminho fora da pasta de mídia"}, 403)
+        if alvo.suffix.lower() not in MEDIA_EXTENSOES or not alvo.is_file():
+            return self._json({"erro": "mídia não encontrada"}, 404)
+        dados = alvo.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type",
+                         mimetypes.guess_type(alvo.name)[0] or "image/jpeg")
+        self.send_header("Content-Length", str(len(dados)))
+        self.end_headers()
+        self.wfile.write(dados)
 
     def do_POST(self):
         """Só o comissionamento escreve. Corpo em JSON, não multipart: o

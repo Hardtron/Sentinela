@@ -1092,19 +1092,53 @@ function camadaBase() {
     { maxZoom: 19, attribution: "© OpenStreetMap, © CARTO" });
 }
 
+/// Chuva oficial no popup. Sai **junto com a distância da estação** sempre:
+/// o acumulado sozinho sugere uma precisão que ele não tem. Acima de 5 km a
+/// representatividade cai (ADR-009) e o número aparece marcado, não escondido
+/// — ocultar dado ruim é pior que exibi-lo com a ressalva.
+function chuvaNoPopup(p) {
+  if (p.distancia_estacao_m == null) {
+    return '<div class="pop-chuva">chuva oficial: sem estação associada</div>';
+  }
+  const km = (p.distancia_estacao_m / 1000).toFixed(1);
+  const longe = p.distancia_estacao_m > 5000;
+  const mm = (v) => (v == null ? "—" : `${v} mm`);
+  return `<div class="pop-chuva${longe ? " pop-atencao" : ""}">
+    chuva oficial · ${esc(p.estacao || "—")} a ${km} km${longe
+      ? " <strong>(representatividade limitada)</strong>" : ""}<br>
+    24 h ${mm(p.mm_24h)} · 72 h ${mm(p.mm_72h)} · <strong>84 h ${mm(p.mm_84h)}</strong>
+  </div>`;
+}
+
+/// Enlace e energia correntes. Sem leitura, diz "sem leitura" — nunca zero
+/// (RC-07: ausência de medida não pode virar valor plausível).
+function enlaceNoPopup(p) {
+  if (p.rssi_dbm == null) return "enlace: sem leitura<br>";
+  const bat = p.v_fim_mv != null ? ` · bat ${(p.v_fim_mv / 1000).toFixed(2)} V` : "";
+  const umi = p.umidade_interna != null ? ` · U<sub>int</sub> ${p.umidade_interna}%` : "";
+  return `enlace: ${p.rssi_dbm} dBm · SNR ${p.snr_db ?? "—"} dB${bat}${umi}<br>`;
+}
+
 function marcador(f) {
   const p = f.properties || {};
   const cor = CORES_ESTADO[p.estado] || CORES_MAPA[p.faixa] || CORES_MAPA.SEM_DADO;
   const [lon, lat] = f.geometry.coordinates;
+  const foto = p.foto_oficial_path
+    ? `<img class="pop-foto" alt="instalação de ${esc(p.placa || "")}"
+         src="/media/${encodeURIComponent(p.placa)}/${esc(p.foto_oficial_path)}">`
+    : "";
   return L.circleMarker([lat, lon], {
     radius: 9, color: cor, fillColor: cor, fillOpacity: 0.75, weight: 2,
   }).bindPopup(`
     <strong>${esc(p.placa || p.node_id)}</strong><br>
     <span style="color:${cor}">● ${esc(p.estado || "—")}</span><br>
     ${esc(p.papel || "")}<br>
+    ${foto}
     índice: ${p.indice ?? "sem dado"} (${esc(p.faixa || "—")})<br>
     comunicação: ${esc(p.estado_comunicacao || "—")}<br>
+    ${enlaceNoPopup(p)}
     alarmes abertos: ${p.alarmes_abertos ?? 0}<br>
+    ${chuvaNoPopup(p)}
     <a href="#/laudo?no=${p.node_id}">ficha de homologação</a>`);
 }
 

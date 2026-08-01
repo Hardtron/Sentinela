@@ -158,14 +158,45 @@ def _geojson(linhas, campo="geojson"):
 
 
 def gis_atalaias():
+    """Atalaias no mapa, com tudo que decide olhar para ela (§I.3 do plano).
+
+    O marcador junta três escalas que só fazem sentido lidas juntas: o estado
+    do ciclo de vida (Atalaia em comissionamento não é ponto de dado confiável),
+    a chuva **regional** oficial da estação mais próxima com a distância — que
+    é o limitador da representatividade (ADR-009) — e o enlace **local**
+    corrente. Chuva de 84 h sem a distância da estação é número solto: célula
+    convectiva de 1–5 km na Serra do Mar não cabe numa estação a 8 km.
+    """
     linhas = consulta("""
         SELECT n.node_id, n.placa, n.papel, n.antena, n.estado,
                ST_AsGeoJSON(n.posicao::geometry) AS geojson,
                f.indice, f.faixa, f.alarmes_abertos,
-               s.estado AS estado_comunicacao
+               s.estado AS estado_comunicacao,
+               ae.estacao, ae.distancia_m AS distancia_estacao_m,
+               round(ca.mm_24h::numeric, 1) AS mm_24h,
+               round(ca.mm_72h::numeric, 1) AS mm_72h,
+               round(ca.mm_84h::numeric, 1) AS mm_84h,
+               u.rssi_dbm, u.snr_db, u.recebido_em AS enlace_em,
+               sa.v_fim_mv, sa.umidade_interna, sa.temp_interna_c,
+               ci.foto_oficial_path
           FROM no n
           LEFT JOIN fila_manutencao f ON f.node_id = n.node_id
           LEFT JOIN no_silencioso   s ON s.node_id = n.node_id
+          LEFT JOIN atalaia_estacao ae ON ae.node_id = n.node_id
+          LEFT JOIN chuva_oficial_acumulada ca ON ca.codigo = ae.codigo
+          LEFT JOIN LATERAL (
+              SELECT e.rssi_dbm, e.snr_db, e.recebido_em FROM enlace e
+               WHERE e.node_id = n.node_id
+               ORDER BY e.recebido_em DESC LIMIT 1) u ON true
+          LEFT JOIN LATERAL (
+              SELECT h.v_fim_mv, h.umidade_interna, h.temp_interna_c
+                FROM saude_atalaia h
+               WHERE h.node_id = n.node_id
+               ORDER BY h.recebido_em DESC LIMIT 1) sa ON true
+          LEFT JOIN LATERAL (
+              SELECT c.foto_oficial_path FROM checklist_instalacao c
+               WHERE c.node_id = n.node_id AND c.foto_oficial_path IS NOT NULL
+               ORDER BY c.submetido_em DESC LIMIT 1) ci ON true
          WHERE n.posicao IS NOT NULL
     """)
     saida = _geojson(linhas)
