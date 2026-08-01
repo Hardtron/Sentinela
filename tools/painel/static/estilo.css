@@ -342,3 +342,39 @@ td.livre { white-space: normal; min-width: 250px; }
   .doc-lista { position: static; flex-direction: row; flex-wrap: wrap; }
   .doc-lista button { width: auto; }
 }
+
+/* ------------------------------------ laudo de homologação (Frente 9) --- */
+
+.assinaturas {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 26px; margin-top: 34px; font-size: 12.5px; color: var(--texto-2);
+}
+.assinaturas hr {
+  border: none; border-top: 1px solid var(--borda-forte); margin-bottom: 6px;
+}
+
+/* Impressão: o laudo é documento oficial para Defesa Civil e auditoria, então
+   sai em A4 limpo — sem menu, sem fundo escuro, sem elemento de tela. Fundo
+   claro forçado porque impressora não imprime o tema escuro do painel: sairia
+   ilegível ou gastaria toner à toa. */
+@media print {
+  @page { size: A4; margin: 14mm; }
+
+  .lateral, .pular, .filtros, .imprimir-nao, #mapa-aviso { display: none !important; }
+  .app { grid-template-columns: 1fr !important; }
+  .conteudo { padding: 0 !important; }
+
+  :root, :root[data-tema="escuro"] {
+    --fundo: #fff; --fundo-2: #fff; --fundo-3: #f2f4f7;
+    --texto: #000; --texto-2: #333; --texto-3: #555;
+    --borda: #bbb; --borda-forte: #888;
+    --ok: #1a7f37; --atencao: #9a6700; --erro: #cf222e; --acento: #0b62d0;
+  }
+  body { background: #fff !important; color: #000 !important; }
+
+  .cartao, .tabela-caixa { box-shadow: none !important; break-inside: avoid; }
+  .grade { break-inside: avoid; }
+  h2.secao { break-after: avoid; }
+  .assinaturas { break-inside: avoid; }
+  a { text-decoration: none; color: #000 !important; }
+}

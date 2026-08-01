@@ -543,6 +543,203 @@ rotas["sensor"] = async () => {
     ], s.leituras);
 };
 
+
+/* ------------------------------------------- comissionamento (Frente 9) */
+
+const CORES_ESTADO_TAG = {
+  REGISTRADA: "neutro", INSTALADA: "acento", COMISSIONANDO: "atencao",
+  VALIDANDO_ENLACE: "atencao", OPERACIONAL: "ok", FALHA_ENLACE: "erro",
+  MANUTENCAO: "atencao", DESATIVADA: "neutro",
+};
+
+const selEstado = (e) =>
+  `<span class="tag ${CORES_ESTADO_TAG[e] || "neutro"}">${esc(e || "—")}</span>`;
+
+rotas["comissionamento"] = async () => {
+  const c = await api("/api/comissionamento");
+  const cab = cabecalho("Comissionamento",
+    `Ciclo de vida da Atalaia, de <em>REGISTRADA</em> a <em>OPERACIONAL</em>.
+     Uma Atalaia comissionada sem validação é fonte de falso positivo ou falso
+     negativo — os dois perigosos num sistema de alerta. As pré-condições de
+     cada transição são verificadas <strong>no banco</strong>, não só aqui.`);
+
+  if (c.erro) return cab + semDado("Banco indisponível.", c.erro);
+
+  const oper = c.atalaias.filter((a) => a.estado === "OPERACIONAL").length;
+  return cab
+    + `<div class="grade g4">
+        ${metrica("Operacionais", oper, `de ${c.atalaias.length} cadastradas`,
+          oper ? "ok" : "")}
+        ${metrica("Com posição", c.atalaias.filter((a) => a.tem_posicao).length,
+          "coordenada validada")}
+        ${metrica("Com checklist", c.atalaias.filter((a) => a.checklist_em).length,
+          "submetido")}
+        ${metrica("Transições", c.transicoes.length, "registradas (auditoria)")}
+      </div>`
+    + secao("Estado das Atalaias")
+    + tabela([
+      { rot: "Atalaia", val: (a) => `<strong>${esc(a.placa)}</strong>` },
+      { rot: "Estado", val: (a) => selEstado(a.estado) },
+      { rot: "Posição", val: (a) => a.tem_posicao
+        ? `<span class="tag ok">sim</span>`
+        : `<span class="tag neutro">não</span>` },
+      { rot: "Suscetib.", val: (a) => esc(a.classe_suscetibilidade || "—") },
+      { rot: "Estação", val: (a) => a.distancia_estacao_m
+        ? `${Math.round(a.distancia_estacao_m)} m` : "—", classe: "num" },
+      { rot: "Enlace", val: (a) => a.teste_enlace_aprovado === true
+        ? `<span class="tag ok">aprovado</span>`
+        : a.teste_enlace_aprovado === false
+        ? `<span class="tag erro">reprovado</span>`
+        : `<span class="tag neutro">—</span>` },
+      { rot: "Responsável", val: (a) => esc(a.responsavel_campo || "—"), classe: "livre" },
+      { rot: "Laudo", val: (a) => a.checklist_em
+        ? `<a href="#/laudo?no=${a.node_id}">ficha</a>` : "—" },
+    ], c.atalaias)
+
+    + secao("Critérios de aceite")
+    + tabela([
+      { rot: "Critério", val: (k) => `<code>${esc(k.chave)}</code>` },
+      { rot: "Valor", val: (k) => `${k.valor} ${esc(k.unidade || "")}`, classe: "num" },
+      { rot: "Fonte", val: (k) => `<span class="tag acento">${esc(k.fonte)}</span>` },
+      { rot: "Por quê", val: (k) => esc(k.descricao || ""), classe: "livre" },
+    ], c.criterios)
+    + `<p class="nota">Os limiares vêm do <strong>ensaio 02 [M]</strong> e dos
+       critérios de campo já usados no display (<code>ui_dev.h</code>) — não são
+       números novos. Ficam em tabela para poderem ser ajustados sem alterar
+       código, mas com a origem registrada.</p>`
+
+    + secao("Trilha de auditoria")
+    + tabela([
+      { rot: "Quando", val: (x) => esc((x.ocorrida_em || "").replace("T", " ").slice(0, 19)) },
+      { rot: "Atalaia", val: (x) => esc(x.placa) },
+      { rot: "Transição", val: (x) => `${esc(x.de || "—")} → ${selEstado(x.para)}` },
+      { rot: "Autor", val: (x) => esc(x.autor) },
+      { rot: "Motivo", val: (x) => esc(x.motivo || ""), classe: "livre" },
+    ], c.transicoes)
+    + `<p class="nota">Quem ativou cada Atalaia e quando — é a pergunta que a
+       Defesa Civil vai fazer se um alerta for contestado (RC-10).</p>`;
+};
+
+/* -------------------------------------------- laudo de homologação (§H) */
+
+rotas["laudo"] = async (params) => {
+  const nodeId = params?.get("no") || "1";
+  const l = await api(`/api/laudo?no=${encodeURIComponent(nodeId)}`);
+  if (l.erro) return cabecalho("Laudo", "") + semDado("Banco indisponível.", l.erro);
+  if (!l.no.length) return cabecalho("Laudo", "") + semDado("Atalaia não encontrada.");
+
+  const n = l.no[0];
+  const c = l.checklist[0];
+  if (!c) {
+    return cabecalho(`Laudo — ${esc(n.placa)}`, "")
+      + semDado("Esta Atalaia ainda não foi comissionada.")
+      + `<p class="nota">A ficha de homologação é gerada a partir do checklist
+        de instalação. Estado atual: ${selEstado(n.estado)}.</p>`;
+  }
+
+  const secoes = [
+    ["A — Identificação", c.secao_a_identificacao],
+    ["B — Estabilidade mecânica", c.secao_b_mecanica],
+    ["C — Energia fotovoltaica", c.secao_c_energia],
+    ["D — Estanqueidade", c.secao_d_estanqueidade],
+    ["E — Sensoriamento", c.secao_e_sensoriamento],
+    ["F — Conectividade rádio", c.secao_f_radio],
+  ];
+  const item = (v) => v === true || v === "SIM"
+    ? `<span class="tag ok">conforme</span>`
+    : v === false || v === "NAO"
+    ? `<span class="tag erro">não conforme</span>`
+    : `<span class="tag neutro">${esc(v)}</span>`;
+
+  return `<div class="laudo">
+    ${cabecalho(`Ficha técnica de homologação — ${esc(n.placa)}`,
+      `Documento gerado pelo sistema em ${new Date().toLocaleString("pt-BR")}.
+       <strong>Não é laudo geotécnico</strong>: atesta a instalação e o enlace
+       (Camada 1), não a estabilidade do talude, que exige ART de engenheiro
+       ou geólogo (Camada 2 — RESPONSABILIDADE_TECNICA.md §3).`)}
+
+    <div class="grade g4">
+      ${metrica("Estado", n.estado, "", CORES_ESTADO_TAG[n.estado] + " texto")}
+      ${metrica("Coordenada", c.lat ? `${(+c.lat).toFixed(5)}` : "—",
+        c.lon ? `${(+c.lon).toFixed(5)} · WGS84` : "sem posição")}
+      ${metrica("Suscetibilidade", c.classe_suscetibilidade || "não cadastrada",
+        "CPRM/SGB [G]", c.classe_suscetibilidade ? "atencao texto" : "neutro texto")}
+      ${metrica("Estação de chuva", c.distancia_estacao_m
+        ? `${Math.round(c.distancia_estacao_m)} m` : "—",
+        esc(c.estacao_codigo || ""), c.distancia_estacao_m > 5000 ? "atencao" : "")}
+    </div>
+    ${c.distancia_estacao_m > 5000 ? `<div class="aviso">
+      <strong>Chuva oficial com representatividade limitada neste ponto.</strong>
+      <p>A estação está a ${Math.round(c.distancia_estacao_m)} m. Células
+      convectivas na Serra do Mar têm 1–5 km, então a chuva medida pode
+      subestimar a do talude. A <strong>umidade de solo local ganha peso
+      relativo</strong> na avaliação deste ponto (ADR-009).</p></div>` : ""}
+
+    ${secao("Exposição no raio de 300 m")}
+    <div class="grade g3">
+      ${metrica("Domicílios", c.domicilios_300m ?? "—", "no raio de 300 m")}
+      ${metrica("População", c.populacao_300m ?? "—", "estimada [G]")}
+      ${metrica("Declividade", c.declividade_graus ?? "—",
+        c.declividade_graus ? "graus (FABDEM)" : "raster não importado")}
+    </div>
+    <p class="nota"><strong>Não é área de alcance de massa.</strong> O raio de
+    300 m é geométrico; delimitar alcance real exige análise geotécnica com ART.
+    Serve para priorizar vistoria e dimensionar resposta.</p>
+
+    ${secao("Teste de enlace no comissionamento")}
+    <div class="grade g4">
+      ${metrica("Resultado", c.teste_enlace_aprovado ? "aprovado" : "reprovado",
+        `${c.teste_enlace_amostras ?? 0} amostras`,
+        (c.teste_enlace_aprovado ? "ok" : "erro") + " texto")}
+      ${metrica("RSSI", c.teste_enlace_rssi_med != null
+        ? (+c.teste_enlace_rssi_med).toFixed(1) + " dBm" : "—", "médio")}
+      ${metrica("Margem", c.teste_enlace_margem != null
+        ? (+c.teste_enlace_margem).toFixed(1) + " dB" : "—", "sobre a sensibilidade")}
+      ${metrica("Perdas", c.teste_enlace_perdas ?? "—", "na janela de 60 s",
+        c.teste_enlace_perdas ? "erro" : "ok")}
+    </div>
+    <p class="nota">O teste consulta o <strong>banco</strong>, não o broker:
+    aprova apenas se o dado atravessou a esteira inteira — rádio, bridge, MQTT,
+    ingestor e PostgreSQL —, que é onde a decisão de risco acontece.</p>
+
+    ${secao("Checklist de instalação")}
+    ${secoes.map(([titulo, dados]) => `
+      <h3 style="font-size:13px;margin:16px 0 6px;color:var(--texto-2)">${titulo}</h3>
+      ${Object.keys(dados || {}).length
+        ? tabela([
+            { rot: "Item", val: (k) => esc(k[0]), classe: "livre" },
+            { rot: "Verificação", val: (k) => item(k[1]) },
+          ], Object.entries(dados))
+        : `<div class="vazio">seção sem itens</div>`}`).join("")}
+
+    ${secao("Responsabilidade técnica")}
+    <div class="tabela-caixa"><table><tbody>
+      <tr><td>Camada 1 — produto (instalação, firmware)</td>
+          <td><strong>${esc(c.responsavel_campo || "—")}</strong></td></tr>
+      <tr><td>Camada 2 — geotecnia (ART CREA)</td>
+          <td><strong>${esc(c.responsavel_geotecnico || "não informado")}</strong></td></tr>
+      <tr><td>Camada 3 — decisão de evacuação</td>
+          <td>Defesa Civil municipal — <em>o sistema não decide (RC-00)</em></td></tr>
+      <tr><td>Submetido por</td><td>${esc(c.submetido_por || "—")}</td></tr>
+      <tr><td>Submetido em</td>
+          <td>${esc((c.submetido_em || "").replace("T", " ").slice(0, 19))}</td></tr>
+    </tbody></table></div>
+    ${c.justificativa_posicao ? `<p class="nota"><strong>Justificativa de
+      posição:</strong> ${esc(c.justificativa_posicao)}</p>` : ""}
+    ${c.observacoes ? `<p class="nota"><strong>Observações:</strong>
+      ${esc(c.observacoes)}</p>` : ""}
+
+    ${secao("Assinaturas")}
+    <div class="assinaturas">
+      <div><hr>Técnico responsável (CRT)</div>
+      <div><hr>Eng. Geotécnico / Geólogo (CREA)</div>
+      <div><hr>Defesa Civil Municipal</div>
+    </div>
+    <p class="nota imprimir-nao">Use <strong>Imprimir → Salvar como PDF</strong>
+    para gerar a via oficial: a folha de estilo já remove menu e cores de tela.</p>
+  </div>`;
+};
+
 /* ------------------------------------------------------- mapa (Frente 5) */
 
 rotas["mapa"] = async () => cabecalho("Mapa",
@@ -843,7 +1040,7 @@ async function navega() {
   alvo.innerHTML = `<div class="carregando">carregando…</div>`;
   window.scrollTo({ top: 0 });
   try {
-    alvo.innerHTML = await render();
+    alvo.innerHTML = await render(params);
   } catch (e) {
     alvo.innerHTML = `<div class="vazio">falha ao carregar: ${esc(e.message)}</div>`;
     return;
@@ -868,6 +1065,16 @@ const CORES_MAPA = {
   INTERVIR: "#f85149", SEM_DADO: "#6e7d8f",
 };
 
+/* Estado do ciclo de vida (Frente 9). O marcador no mapa é colorido pelo
+   estado, não pelo índice de saúde: uma Atalaia em COMISSIONANDO ainda não é
+   ponto de dado confiável, e mostrá-la verde induziria o operador a confiar em
+   medição que ainda não foi homologada. */
+const CORES_ESTADO = {
+  REGISTRADA: "#6e7d8f", INSTALADA: "#4da3ff", COMISSIONANDO: "#d29922",
+  VALIDANDO_ENLACE: "#d29922", OPERACIONAL: "#3fb950",
+  FALHA_ENLACE: "#f85149", MANUTENCAO: "#d29922", DESATIVADA: "#3a4553",
+};
+
 /// Fundo do mapa. Tiles online são conveniência; o mapa **precisa** continuar
 /// utilizável sem internet, porque é durante a tempestade — quando o enlace
 /// tende a cair — que o operador mais precisa dele. Por isso o basemap é
@@ -880,16 +1087,18 @@ function camadaBase() {
 
 function marcador(f) {
   const p = f.properties || {};
-  const cor = CORES_MAPA[p.faixa] || CORES_MAPA.SEM_DADO;
+  const cor = CORES_ESTADO[p.estado] || CORES_MAPA[p.faixa] || CORES_MAPA.SEM_DADO;
   const [lon, lat] = f.geometry.coordinates;
   return L.circleMarker([lat, lon], {
     radius: 9, color: cor, fillColor: cor, fillOpacity: 0.75, weight: 2,
   }).bindPopup(`
     <strong>${esc(p.placa || p.node_id)}</strong><br>
+    <span style="color:${cor}">● ${esc(p.estado || "—")}</span><br>
     ${esc(p.papel || "")}<br>
     índice: ${p.indice ?? "sem dado"} (${esc(p.faixa || "—")})<br>
     comunicação: ${esc(p.estado_comunicacao || "—")}<br>
-    alarmes abertos: ${p.alarmes_abertos ?? 0}`);
+    alarmes abertos: ${p.alarmes_abertos ?? 0}<br>
+    <a href="#/laudo?no=${p.node_id}">ficha de homologação</a>`);
 }
 
 function pontoEnsaio(f) {

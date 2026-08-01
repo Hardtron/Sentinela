@@ -21,6 +21,7 @@ Autoria: Matheus Marassi
 
 import argparse
 import json
+import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -52,6 +53,8 @@ ROTAS = {
     "/api/gis/suscetibilidade": lambda q: banco.gis_suscetibilidade(),
     "/api/gis/estacoes": lambda q: banco.gis_estacoes(),
     "/api/situacao": lambda q: banco.situacao(),
+    "/api/comissionamento": lambda q: banco.comissionamento(),
+    "/api/laudo": lambda q: banco.laudo(int((q.get("no") or ["1"])[0])),
     "/api/gis/ensaios": lambda q: banco.gis_ensaios(),
     "/api/historico": lambda q: banco.historico(
         int((q.get("no") or ["1"])[0]), int((q.get("horas") or ["72"])[0])),
@@ -67,6 +70,39 @@ class Manipulador(SimpleHTTPRequestHandler):
         if not rota.path.startswith("/api/"):
             return super().do_GET()
         self._responde_api(rota)
+
+    def do_POST(self):
+        """Só o comissionamento escreve. Corpo em JSON, não multipart: o
+        módulo `cgi` saiu no Python 3.13 e escrever parser de multipart à mão
+        no caminho mais crítico do sistema seria fragilidade gratuita. As
+        fotos chegam pela pasta da Atalaia, que o gestor autônomo já vigia."""
+        rota = urlparse(self.path)
+        if rota.path != "/api/comissionamento/cadastrar":
+            return self._json({"erro": "rota desconhecida"}, 404)
+        try:
+            tam = int(self.headers.get("Content-Length") or 0)
+            if tam <= 0 or tam > 2_000_000:
+                return self._json({"erro": "corpo ausente ou grande demais"}, 400)
+            payload = json.loads(self.rfile.read(tam).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError) as e:
+            return self._json({"erro": f"JSON inválido: {e}"}, 400)
+        self._comissiona(payload)
+
+    def _comissiona(self, payload):
+        """Recusa de validação é 400 com o motivo — o técnico em campo precisa
+        saber o que corrigir, não receber 500 genérico."""
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
+        try:
+            import comissionamento
+        except ImportError as e:
+            return self._json({"erro": f"backend indisponível: {e}"}, 503)
+        try:
+            self._json(comissionamento.comissiona(
+                payload, payload.get("foto_oficial")))
+        except comissionamento.ComissionamentoInvalido as e:
+            self._json({"erro": str(e), "recusado": True}, 400)
+        except Exception as e:                          # noqa: BLE001
+            self._json({"erro": str(e)}, 500)
 
     def _responde_api(self, rota):
         consulta = parse_qs(rota.query)

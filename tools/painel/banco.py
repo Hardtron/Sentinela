@@ -159,7 +159,7 @@ def _geojson(linhas, campo="geojson"):
 
 def gis_atalaias():
     linhas = consulta("""
-        SELECT n.node_id, n.placa, n.papel, n.antena,
+        SELECT n.node_id, n.placa, n.papel, n.antena, n.estado,
                ST_AsGeoJSON(n.posicao::geometry) AS geojson,
                f.indice, f.faixa, f.alarmes_abertos,
                s.estado AS estado_comunicacao
@@ -211,6 +211,41 @@ def situacao():
              WHERE e.ativa ORDER BY e.nome
         """)),
         "limiares": _limpa(consulta("SELECT * FROM limiar_municipio")),
+        "erro": _estado["erro"],
+    }
+
+
+def comissionamento():
+    """Estado do ciclo de vida de cada Atalaia (Frente 9)."""
+    return {
+        "atalaias": _limpa(consulta("SELECT * FROM comissionamento_estado")),
+        "criterios": _limpa(consulta(
+            "SELECT chave, valor, unidade, fonte, descricao "
+            "FROM criterio_comissionamento ORDER BY chave")),
+        "transicoes": _limpa(consulta("""
+            SELECT t.node_id, n.placa, t.de, t.para, t.ocorrida_em, t.autor, t.motivo
+              FROM transicao_estado t JOIN no n ON n.node_id = t.node_id
+             ORDER BY t.ocorrida_em DESC LIMIT 40""")),
+        "erro": _estado["erro"],
+    }
+
+
+def laudo(node_id):
+    """Ficha técnica de homologação — tudo o que sustenta a ativação."""
+    checklist = consulta("""
+        SELECT c.*, ST_Y(c.posicao_exif::geometry) AS lat,
+               ST_X(c.posicao_exif::geometry) AS lon
+          FROM checklist_instalacao c
+         WHERE c.node_id = %s ORDER BY c.submetido_em DESC LIMIT 1""", (node_id,))
+    return {
+        "no": _limpa(consulta(
+            "SELECT * FROM comissionamento_estado WHERE node_id = %s", (node_id,))),
+        "checklist": _limpa(checklist),
+        "transicoes": _limpa(consulta(
+            "SELECT de, para, ocorrida_em, autor, motivo FROM transicao_estado "
+            "WHERE node_id = %s ORDER BY ocorrida_em", (node_id,))),
+        "criterios": _limpa(consulta(
+            "SELECT chave, valor, unidade, fonte FROM criterio_comissionamento")),
         "erro": _estado["erro"],
     }
 
