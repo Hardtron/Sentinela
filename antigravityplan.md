@@ -78,23 +78,18 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 
 ## 3. Especificações e Maturação das Próximas Implementações
 
-### Frente 1: Firmware e Estrutura de Payload (`firmware/`)
+### Frente 1: Firmware e Estrutura de Payload (`firmware/`) — ✅ PARCIALMENTE IMPLEMENTADA
 
-#### A. Estruturação da Camada Protocolo (`lib/proto/`)
-- **Meta:** Definir a codificação de payload binário ultracompacto ($\le 20\,\text{bytes}$) para transmissão em LoRa P2P e LoRaWAN.
-- **Campos Propostos (Payload de Sensor):**
-  1. `node_id` (uint16_t, 2B): Identificador único da Atalaia.
-  2. `seq_num` (uint16_t, 2B): Contador de sequência de pacotes.
-  3. `timestamp` (uint32_t, 4B): Epoch UNIX das medições.
-  4. `chuva_acum_1h` (uint16_t, 2B): Pluviometria acumulada na última hora ($0,1\,\text{mm}$/lsb).
-  5. `inclinacao_pitch_roll` (int16_t x 2, 4B): Ângulos de inclinação ($0,01^\circ$/lsb).
-  6. `umidade_solo` (uint16_t, 2B): Saturação da camada superficial.
-  7. `bateria_mv` (uint16_t, 2B): Tensão de alimentação em millivolts.
-  8. `status_flags` (uint8_t, 1B): Indicadores de integridade, watchdog e alarme de vedação.
-- **Portabilidade:** Código C++ puro, compilável no host para testes unitários automatizados.
+#### A. Estruturação da Camada Protocolo (`lib/proto/`) — ✅ IMPLEMENTADA
+- **Status:** Completa. Implementada em [proto.h](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/firmware/lib/proto/proto.h) e [proto.cpp](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/firmware/lib/proto/proto.cpp).
+- **Quadro de Sensor:** 20 bytes exatos (teto do PLANO.md), com compressões deliberadas: `umidade_solo` de 16→8 bits (0,5 %/lsb), `bateria` de 16→8 bits (passo 10 mV a partir de 2500 mV), versão+tipo no mesmo byte.
+- **Quadro de Saúde (RC-12):** 32 bytes, cadência diária. Separado do sensor para não roubar tempo de ar do dado de risco.
+- **Decodificador Python:** [decodifica.py](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/backend/decodifica.py) — espelho exato do C++.
+- **Teste Cruzado C++ ↔ Python:** [testa_decodifica.py](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/tools/testa_decodifica.py) — 0 falhas. Garante que os dois lados concordam, evitando o pior modo de falha: gravar número errado sem sinal de erro.
+- **Portabilidade:** Código C++ puro, sem Arduino, compilável no host e reutilizável no STM32WLE5 (ADR-004).
 
-> [!IMPORTANT]
-> **Insight de Análise Cruzada:** O payload acima **não inclui os campos de telemetria de saúde** exigidos por [RC-12](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/REQUISITOS.md#L72) e detalhados em [MANUTENCAO.md §8](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/MANUTENCAO.md#L264). É necessário definir um **segundo tipo de payload — pacote de saúde** — com frequência menor (1x/dia), contendo: `E_dia`, `t_ini`, `t_fim`, `I_pico`, `V_min`, `DoD`, `V_fim`, `temperatura_interna`, `umidade_interna`, `reinicios`, `watchdogs`, `heap_livre`, `sensores_validos` (bitmap) e `versao_firmware`. Esses campos alimentam a Frente 7.
+> [!NOTE]
+> **Resolvido.** O quadro de saúde (struct `Saude` em `proto.h`) já implementa todos os campos exigidos: `energia_dia`, `t_ini`, `t_fim`, `corrente_pico`, `v_min`, `v_fim`, `dod`, `temp_interna`, `umidade_interna`, `reinicios`, `watchdogs`, `heap_livre_kb`, `sensores_validos` e `versao_firmware`. Alimenta a Frente 7 conforme planejado.
 
 #### B. Desmembramento da HAL (`lib/hal/`) e Alvo STM32WLE5
 - Manter a divisão rígida descrita em [ADR-004](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/ARQUITETURA.md#L100):
@@ -111,26 +106,27 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 - Acumulados de chuva (24h/72h) e referência de calibração sobrevivem a reinício (NVS).
 - Histórico local de **30 dias** de resumo diário de energia persiste em NVS, para reconstruir tendência após período sem enlace.
 
-#### E. Autenticação de Payload ([RC-11](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/REQUISITOS.md#L61))
+#### E. Autenticação de Payload ([RC-11](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/REQUISITOS.md#L61)) — ✅ ESPAÇO RESERVADO
 
-> [!WARNING]
-> **Lacuna identificada:** O protocolo P2P da fase 0-1 deve **reservar espaço** para autenticação desde o início, mesmo que ainda não implementada. Em LoRaWAN (fase 4+), AES-128 com contador anti-replay vem da spec. No P2P, a injeção de alerta falso é ameaça concreta — especialmente em sistema de alerta de risco à vida.
+> [!NOTE]
+> **Resolvido parcialmente.** O byte `AUTH_AUSENTE = 0x00` está reservado no cabeçalho desde a v1 do protocolo. A constante está em `proto.h` com documentação explícita de que o objetivo é evitar mudança incompatível de layout quando a autenticação for implementada. A implementação efetiva do MAC/assinatura P2P permanece como ação futura (T-06).
 
 ---
 
-### Frente 2: Backend, Ingestão e Modelagem GIS (`backend/`)
+### Frente 2: Backend, Ingestão e Modelagem GIS (`backend/`) — ✅ IMPLEMENTADA
 
-#### A. Ingestor e Séries Temporais (TimescaleDB)
-- **Status Atual:** `backend/ingestor.py` insere registros de telemetria brutos recebidos do broker Mosquitto MQTT no PostgreSQL/TimescaleDB.
-- **O que o esquema.sql já tem:** Tabelas `enlace`, `saude_bridge`, `ponto_ensaio`, view `enlace_analise` e aggregated view contínua `enlace_hora`.
-- **Maturação Necessária:**
-  - Criação de **tabela de leitura de sensor** (ainda inexistente — o esquema atual é explicitamente de enlace, não de sensor). Campos: `node_id`, `recebido_em`, `chuva_acum_1h`, `chuva_acum_24h`, `chuva_acum_72h`, `inclinacao_pitch`, `inclinacao_roll`, `umidade_solo`, `bateria_mv`, `status_flags`.
-  - Criação de **tabela de saúde da Atalaia** para dados do pacote diário de energia (RC-12): `E_dia`, `V_min`, `DoD`, janelas, bitmap de sensores válidos.
-  - Criação de agregadores contínuos (*Continuous Aggregates*) no TimescaleDB para janelas móveis de chuva acumulada de 1h, 24h e 72h.
-  - Implementação de **tabela de eventos de alarme** com idempotência rigorosa contra reconexões do gateway/bridge, vinculando cada alarme ao dado bruto que o originou ([RC-10](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/REQUISITOS.md#L57) — rastreabilidade).
+#### A. Ingestor e Séries Temporais (TimescaleDB) — ✅ IMPLEMENTADA
+- **Status:** Completa. Sistema de migrações versionadas em [backend/migracoes/](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/backend/migracoes/) com runner automático [migra.py](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/backend/migra.py).
+- **Migrações implementadas (001–006):**
+  - `001_enlace.sql`: Tabelas de enlace de rádio, views de análise e agregação contínua horária.
+  - `002_sensor.sql`: ✅ Tabela `leitura` (hypertable), `saude_atalaia` (RC-12), `alarme` (RC-10 com evidência JSONB). Resolve as lacunas de esquema identificadas.
+  - `003_gis_e_chuva.sql`: ✅ Tabelas `suscetibilidade` e `exposicao` (PostGIS), view `chuva_acumulada` com janela móvel (não balde fixo), agregação contínua `leitura_hora` e função `exposicao_ao_redor()`.
+  - `004_saude_frota.sql`: ✅ View `referencia_distribuida`, função `indice_saude()` (RC-16), view `no_silencioso` (RC-02) e `fila_manutencao`.
+  - `005_corrige_indice_sem_dado.sql`: Correção do bug RC-07 — nó sem dado devolvia índice 25 em vez de NULL.
+  - `006_chuva_oficial.sql`: ✅ ADR-009 implementado — `estacao_externa`, `chuva_oficial` (hypertable), `limiar_municipio`, views `atalaia_estacao`, `chuva_oficial_acumulada` (janelas 24h/72h/84h) e `situacao_atalaia`.
 
-> [!IMPORTANT]
-> **Insight de Análise Cruzada — Esquema SQL vs. Plano:** O `esquema.sql` atual é exclusivamente de **enlace de rádio** (RSSI, SNR, perda). Não existe nenhuma tabela para dados de sensor (chuva, inclinação, umidade) nem para alarmes. A Frente 2 precisa criar essas tabelas **antes** da Frente 1 entregar payload de sensor, para evitar que dados de campo evaporem. Sugere-se versionar as migrações com arquivos numerados (`001_enlace.sql`, `002_sensor.sql`, `003_alarmes.sql`, `004_saude_atalaia.sql`).
+> [!NOTE]
+> **Lacuna original resolvida.** O sistema de migrações numeradas proposto neste plano ("001_enlace.sql, 002_sensor.sql...") foi implementado exatamente nessa forma. A sugestão de versionar migrações (RT-06) está operacional.
 
 #### B. Cruzamento Geoespacial (PostGIS)
 - **Modelagem de Dados Espaciais:**
@@ -148,7 +144,7 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 
 ---
 
-### Frente 3: Painel de Controle e Diagnóstico (`tools/painel/`)
+### Frente 3: Painel de Controle e Diagnóstico (`tools/painel/`) — ✅ PARCIALMENTE IMPLEMENTADA
 
 #### A. Monitoramento de Rede LoRa em Tempo Real
 - Manter a visualização do painel em `http://localhost:8765` assinando os tópicos MQTT do Mosquitto.
@@ -161,11 +157,7 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 #### C. Expansão para Dados de Sensor
 
 > [!NOTE]
-> **Dependência:** A aba de monitoramento de sensor no painel depende da Frente 1 (payload de sensor) e da Frente 2 (tabela de leitura). Atualmente, o painel exibe apenas dados de enlace. A nova aba `#/sensor` deve mostrar:
-> - Chuva acumulada instantânea (1h/24h/72h) com barras visuais.
-> - Inclinação com indicador gráfico de vetor.
-> - Umidade do solo com gradiente por profundidade.
-> - Timestamp da última leitura com alerta se ultrapassar 3x o heartbeat ([RC-02](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/REQUISITOS.md#L25)).
+> **Implementado.** A aba `#/sensor` está operacional com rotas `/api/sensor`, `/api/frota-saude`, `/api/historico` e `/api/situacao`. A aba exibe última leitura, chuva acumulada (via rede oficial, ADR-009), inclinação, umidade de solo, detecção de nó silencioso e integração com a chuva oficial CEMADEN/INMET. O bloco de chuva oficial distingue visualmente instrumento próprio (círculo) de dado de terceiro (quadrado). **Pendências residuais:** gráficos de inclinação com vetor e gradiente de umidade por profundidade dependem de sensores físicos conectados (P-013 resolvida via ADR-009; sensor de umidade de solo ainda não adquirido).
 
 ---
 
@@ -222,7 +214,7 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 
 ---
 
-### Frente 5: Centralização Cartográfica no Painel Web (`http://localhost:8765/#/mapa`)
+### Frente 5: Centralização Cartográfica no Painel Web (`http://localhost:8765/#/mapa`) — ✅ PARCIALMENTE IMPLEMENTADA
 
 #### A. Avaliação de Viabilidade e Papéis do Sistema
 - **QGIS como Ferramenta de Autoria e Geoprocessamento (Equipe Técnica):**
@@ -254,10 +246,13 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
    - Traçado da rota otimizada de visita a Atalaias sinalizadas, derivada da roteirização geoespacial do PostGIS.
    - Visível apenas quando há alarmes de manutenção ativos.
 
-#### D. Especificação das Rotas da API REST do Servidor (`tools/painel/servidor.py`)
-- `/api/gis/atalaias`: Retorna a coleção GeoJSON contendo a posição de todas as Atalaias ativas, metadados da pasta de mídia e status instantâneo.
-- `/api/gis/suscetibilidade`: Retorna a camada vetorial GeoJSON de zonas de risco de deslizamento cadastradas no PostGIS.
-- `/api/gis/rotas-manutencao`: Retorna a rota otimizada de manutenção (Frente 7) quando há alarmes ativos.
+#### D. Especificação das Rotas da API REST do Servidor (`tools/painel/servidor.py`) — ✅ IMPLEMENTADA
+- `/api/gis/atalaias`: ✅ Implementada em [banco.py](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/tools/painel/banco.py) — GeoJSON com posição, índice de saúde, faixa e estado de comunicação.
+- `/api/gis/suscetibilidade`: ✅ Implementada — camada vetorial GeoJSON das zonas de risco.
+- `/api/gis/estacoes`: ✅ Implementada (ADR-009) — estações oficiais CEMADEN/INMET com acumulados 24h/72h/84h.
+- `/api/gis/ensaios`: ✅ Implementada — pontos do ensaio 02 com veredito e margem.
+- `/api/situacao`: ✅ Implementada — visão combinada chuva oficial + sensores locais.
+- `/api/gis/rotas-manutencao`: ⚠️ Não implementada — depende da roteirização geoespacial (Frente 7.E).
 - Todas as funções auxiliares mantêm **$CC \le 10$** via refatorações modulares.
 
 > [!NOTE]
@@ -265,7 +260,7 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 
 ---
 
-### Frente 6: Gestor Autônomo de Ingestão de Dados e Insumos Geoespaciais (`tools/gestor_autonomo.py` / `sentinela-gestor.service`)
+### Frente 6: Gestor Autônomo de Ingestão de Dados e Insumos Geoespaciais (`tools/gestor_autonomo.py` / `sentinela-gestor.service`) — ✅ IMPLEMENTADA
 
 #### A. Escopo de Automação do Servidor (O que automatizar vs. O que manter manual)
 > [!IMPORTANT]
@@ -285,17 +280,18 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
   5. **Gestão e Compressão de Séries Temporais no TimescaleDB:**
      - Manutenção automática das políticas de agregação contínua (1h, 24h, 72h) e retenção inteligente de telemetria bruta no PostgreSQL.
 
-#### B. Arquitetura do Serviço e Supervisão
-- **Serviço de Usuário no Systemd:** `sentinela-gestor.service` e `sentinela-gestor.timer` (executado diariamente às 03:00 no homeserver).
-- **Módulo Principal:** `tools/gestor_autonomo.py` escrito em Python puro (stdlib + urllib/json), respeitando o teto de **Complexidade Ciclomática $CC \le 10$** por função (`varre_fotos_atalaias()`, `checa_satelite_sentinel()`, `sincroniza_alertas_cemaden()`, `atualiza_cache_tiles()`).
-- **Tratamento de Falha Gracioso ([RC-07](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/REQUISITOS.md#L43)):** Se uma API externa (ESA/INPE/CEMADEN) estiver indisponível ou offline, o gestor registra o evento no log do sistema (`journalctl --user -u sentinela-gestor`) e preserva os insumos locais vigentes sem interromper o painel web ou os dados de telemetria.
+#### B. Arquitetura do Serviço e Supervisão — ✅ IMPLEMENTADA
+- **Módulo Implementado:** [gestor_autonomo.py](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/tools/gestor_autonomo.py) — Python puro (stdlib + urllib/json), $CC \le 10$.
+- **Tarefas Operacionais:** `fotos` (varredura + georreferenciamento EXIF), `boletins` (placeholder, P-004 em aberto), `tiles` (cache offline), `banco` (aplica migrações pendentes).
+- **Timer no macOS:** [tools/launchd/](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/tools/launchd/) com `Persistent=true`.
+- **Tratamento de Falha Gracioso ([RC-07](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/REQUISITOS.md#L43)):** ✅ Cada tarefa falha isoladamente — se o CEMADEN cair, o cache de tiles continua atualizado. Registra no log e preserva insumo local.
 
 ---
 
-### Frente 7: Manutenção Preditiva e Saúde da Frota (NOVA)
+### Frente 7: Manutenção Preditiva e Saúde da Frota — ✅ PARCIALMENTE IMPLEMENTADA
 
-> [!IMPORTANT]
-> **Insight de Análise Cruzada:** Esta frente estava **implícita** nas Frentes 1 e 2 mas nunca foi especificada como frente própria. O [MANUTENCAO.md](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/MANUTENCAO.md) é um dos documentos mais detalhados do projeto e contém o candidato mais forte à patente ([PATENTES.md §3 — Candidato A](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/PATENTES.md#L56)). O valor que ele descreve — manutenção por condição em vez de calendário — é **o que viabiliza a operação em escala** (50+ Atalaias em encostas de difícil acesso). Merece frente própria com especificação detalhada.
+> [!NOTE]
+> **Status de Implementação:** A camada de banco (referência distribuída, índice de saúde, nó silencioso e fila de manutenção) está **implementada** nas migrações 004 e 005. A integração com o painel (`/api/frota-saude`) está **operacional**. Pendente: validação de assinaturas em campo e roteirização geoespacial.
 
 #### A. Referência Distribuída — A Rede como Sensor de Referência ([MANUTENCAO.md §4](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/MANUTENCAO.md#L109))
 - **Princípio:** Cada Atalaia é comparada com a mediana das vizinhas do mesmo Farol:
@@ -454,6 +450,302 @@ Conforme diretriz do projeto, **nenhuma atualização OTA é aceita sem verifica
 
 ---
 
+### Frente 9: Workflow de Comissionamento, Cadastro e Homologação de Atalaias (`tools/painel/`, `backend/`, `/DATA/Media/Sentinela/Atalaias/`)
+
+> [!IMPORTANT]
+> **Importância Estratégica.** Esta frente é o ponto de convergência de todas as camadas do sistema: o hardware instalado (Frente 1/8), o banco geoespacial (Frente 2), o mapa no painel (Frente 5), a manutenção preditiva (Frente 7) e a tripla responsabilidade técnica (RESPONSABILIDADE_TECNICA.md §3). Uma Atalaia comissionada corretamente é um ponto de dado confiável; uma Atalaia comissionada sem validação é uma fonte de falso positivo ou falso negativo — ambos perigosos num sistema de alerta de risco à vida.
+
+#### A. Desafio de Gestão e Garantia de Qualidade de Instalação
+- **Gargalo Operacional:** Um sistema com dezenas de Atalaias em encostas íngremes depende criticamente de **instalações padronizadas, mecanicamente estáveis e estanques**. Instalação mal feita (haste frouxa, painel sombreado, O-ring mordido) gera falso alarme por flexão eólica (ANCORAGEM.md §1, deflexão > 0,07° em eletroduto 3/4") ou destruição do equipamento por infiltração (RC-14).
+- **Rastreabilidade e Tripla Responsabilidade:** O processo exige vínculo claro entre o trabalho executado pela equipe de campo (Técnico em Mecatrônica / CRT-SP) e a aprovação geotécnica (Engenheiro Geotécnico ou Geólogo / CREA-SP), respaldando o poder público contratante ([RESPONSABILIDADE_TECNICA.md §3](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/RESPONSABILIDADE_TECNICA.md#L43)). O sistema **nunca** substitui julgamento técnico (RC-00); o comissionamento documenta **quem decidiu o quê** em cada camada.
+
+#### B. Embasamento Científico-Geotécnico do Posicionamento
+
+> [!TIP]
+> **Princípio Fundamental.** A posição de uma Atalaia não é arbitrária — ela é determinada pela geomorfologia do talude, pela classe de suscetibilidade a movimentos de massa ([CPRM/SGB, Cartas de Suscetibilidade **[G]**](https://www.sgb.gov.br/)) e pela distribuição da população exposta. O comissionamento deve **validar que a posição de campo é coerente com a geotecnia**, não apenas que o equipamento funciona.
+
+**Critérios geotécnicos que influenciam o posicionamento **[L/G]**:**
+
+1. **Classe de Suscetibilidade a Escorregamentos:**
+   - A Atalaia deve estar dentro ou adjacente a zonas classificadas como **ALTA** ou **MUITO_ALTA** nas cartas de suscetibilidade da CPRM/SGB ou IPT **[G]**.
+   - A validação PostGIS (`ST_DWithin`) no comissionamento verifica se o ponto EXIF da foto oficial cai dentro de um polígono cadastrado na tabela `suscetibilidade` (migração 003). Se não cair, o sistema **não rejeita** (o operador pode ter motivo técnico), mas emite **alerta amarelo** exigindo justificativa textual obrigatória.
+
+2. **Declividade do Terreno (FABDEM):**
+   - A maioria dos deslizamentos translacionais rasos na Serra do Mar ocorre em encostas com declividade entre **25° e 45°** (SIGESP, 2023; Tatizana et al., 1987 **[L]**).
+   - O servidor deve cruzar as coordenadas EXIF com o raster de declividade derivado do FABDEM (Frente 4.C) e registrar a declividade local no cadastro da Atalaia. Isso informa a equipe geotécnica sem exigir visita adicional.
+
+3. **Profundidade Esperada da Superfície de Ruptura:**
+   - Escorregamentos translacionais rasos na Serra do Mar mobilizam predominantemente o **horizonte superficial do solo**, com ruptura no contato solo residual / solo saprolítico (ANCORAGEM.md §3 **[L]**).
+   - A profundidade dos sensores de umidade de solo (ex: 0,5 m, 1,5 m, 3,0 m) deve ser coerente com a espessura estimada do colúvio no sítio — informação que vem do laudo geotécnico (Camada 2 de responsabilidade). O checklist registra as profundidades efetivas e as compara com a ART.
+
+4. **Distância até a Estação Pluviométrica Mais Próxima (ADR-009):**
+   - No momento do comissionamento, o servidor calcula automaticamente (`atalaia_estacao` view, migração 006) a distância da nova Atalaia até a estação CEMADEN/INMET mais próxima.
+   - **A distância é o principal limitador da representatividade da chuva** (SENSORES.md §3): células convectivas de 1–5 km na Serra do Mar significam que estação a >5 km pode subestimar a chuva local em 4× ou mais.
+   - O laudo de comissionamento deve exibir essa distância com destaque, e o sistema deve sinalizar quando a distância exceder **5 km** — indicando que a chuva oficial tem representatividade limitada para aquele talude e que a umidade de solo local ganha peso relativo na avaliação.
+
+5. **Exposição Populacional:**
+   - A função `exposicao_ao_redor()` (migração 003) é executada automaticamente no comissionamento, calculando o número de domicílios e população dentro de um raio de 300 m.
+   - **Não é laudo** — o raio é geométrico, não área de alcance de massa calculada por engenheiro geotécnico. Serve para **priorização e dimensionamento de resposta**, não para delimitação de risco.
+
+#### C. Máquina de Estados do Ciclo de Vida da Atalaia
+
+O comissionamento não é um evento pontual — é uma **transição de estado** num ciclo de vida formal. A Atalaia transita por estados bem definidos, e cada transição tem pré-condições verificáveis:
+
+```mermaid
+stateDiagram-v2
+    [*] --> REGISTRADA: Cadastro inicial<br>(node_id + MAC)
+    REGISTRADA --> INSTALADA: Equipe em campo<br>conclui instalação física
+    INSTALADA --> COMISSIONANDO: Operador submete<br>checklist + foto EXIF
+    COMISSIONANDO --> VALIDANDO_ENLACE: Servidor aceita<br>posição e checklist
+    VALIDANDO_ENLACE --> OPERACIONAL: 60s de enlace OK<br>(RSSI ≥ −110, SNR ≥ −5)
+    VALIDANDO_ENLACE --> FALHA_ENLACE: Teste de 60s<br>não atendeu critérios
+    FALHA_ENLACE --> COMISSIONANDO: Revisão e<br>nova tentativa
+    OPERACIONAL --> MANUTENCAO: Alarme CRÍTICO<br>ou visita programada
+    MANUTENCAO --> OPERACIONAL: Intervenção concluída<br>+ novo teste de enlace
+    OPERACIONAL --> DESATIVADA: Retirada de campo<br>ou obsolescência
+    
+    style OPERACIONAL fill:#00cc66,color:#000
+    style VALIDANDO_ENLACE fill:#ffcc00,color:#000
+    style FALHA_ENLACE fill:#ff4444,color:#fff
+    style MANUTENCAO fill:#ff8800,color:#000
+    style DESATIVADA fill:#666666,color:#fff
+```
+
+**Regras de transição:**
+
+| Transição | Pré-condição | Quem autoriza |
+|---|---|---|
+| REGISTRADA → INSTALADA | Equipe em campo conclui montagem conforme ANCORAGEM.md | Técnico de Campo (CRT) |
+| INSTALADA → COMISSIONANDO | Foto EXIF com GPS válido + checklist físico digitalizado + checklist digital submetido | Operador Central |
+| COMISSIONANDO → VALIDANDO_ENLACE | Posição EXIF dentro do limite municipal (PostGIS) + todos os itens obrigatórios do checklist preenchidos + `node_id` já cadastrado na tabela `no` | Servidor (automático) |
+| VALIDANDO_ENLACE → OPERACIONAL | 10 heartbeats consecutivos em 60s com RSSI ≥ −110 dBm, SNR ≥ −5 dB, Margem > 10 dB | Servidor (automático) + Confirmação do Operador |
+| OPERACIONAL → MANUTENÇÃO | `indice_saude() < 50` OU alarme CRÍTICO aberto (RC-16) | Servidor (automático via Frente 7) |
+| MANUTENÇÃO → OPERACIONAL | Intervenção registrada + novo teste de enlace de 60s | Técnico de Campo (CRT) |
+
+**Sincronicidade com o mapa (Frente 5):** A cor do marcador na Camada 4 do Leaflet é derivada diretamente do estado:
+
+| Estado | Cor do Marcador | Animação |
+|---|---|---|
+| REGISTRADA | Cinza (`#888888`) | Estático |
+| INSTALADA | Cinza com borda azul | Estático |
+| COMISSIONANDO | Amarelo (`#FFFF00`) | Pulso lento |
+| VALIDANDO_ENLACE | Amarelo pulsante | Pulso rápido |
+| OPERACIONAL | Verde (`#00FF00`) | Pulso cardíaco |
+| MANUTENÇÃO | Laranja (`#FF8800`) | Pulso intermitente |
+| FALHA_ENLACE | Vermelho (`#FF0000`) | Pulso de alerta |
+| DESATIVADA | Cinza escuro | Estático, opacidade 50% |
+
+#### D. Fluxo de Comissionamento Detalhado em Quatro Fases
+
+```
+[ FASE 1 — EQUIPE DE CAMPO ]
+  1. Instala a Atalaia conforme ANCORAGEM.md (separação inclinômetro/antena)
+  2. Grava firmware com node_id e calibração de zero do inclinômetro (NVS)
+  3. Verifica tensão de bateria e painel solar in loco (multímetro)
+  4. Preenche e assina o CHECKLIST FÍSICO em papel (6 seções, §E abaixo)
+  5. Tira FOTO OFICIAL Georreferenciada com smartphone (GPS ativo no EXIF)
+  6. Tira fotos complementares: ancoragem, painel solar, entorno da haste
+  7. Escaneia o checklist físico assinado em PDF
+  8. Envia insumos para a Central (fotos + PDF)
+             |
+             v
+[ FASE 2 — OPERADOR CENTRAL (Painel Web Sentinela) ]
+  9. Acessa http://localhost:8765/#/comissionamento
+ 10. Seleciona o node_id já registrado na tabela `no`
+ 11. Preenche o CHECKLIST DIGITAL (§E), idêntico ao físico
+ 12. Anexa: Foto EXIF (.jpg), PDF do Checklist Assinado, Fotos complementares
+ 13. Submete o formulário (POST /api/comissionamento/cadastrar)
+             |
+             v
+[ FASE 3 — PROCESSAMENTO AUTOMATIZADO (Servidor Sentinela) ]
+ 14. Extrai coordenadas GPS e timestamp do EXIF via georreferenciar.py
+ 15. Valida posição: ST_Within(ponto, limite_municipal) no PostGIS
+ 16. Cruza com suscetibilidade: ST_Intersects(ponto, suscetibilidade)
+ 17. Calcula declividade local via raster FABDEM (quando disponível)
+ 18. Associa à estação CEMADEN mais próxima (atalaia_estacao)
+ 19. Calcula exposição populacional (exposicao_ao_redor, raio 300m)
+ 20. Atualiza posição na tabela `no` (coluna `posicao`)
+ 21. Transita estado para VALIDANDO_ENLACE
+ 22. Inicia teste de enlace de 60 segundos
+             |
+             v
+[ FASE 4 — VALIDAÇÃO DE ENLACE E ATIVAÇÃO ]
+ 23. Coleta heartbeats do broker MQTT por 60 segundos
+ 24. Verifica: RSSI ≥ −110 dBm, SNR ≥ −5 dB, Margem > 10 dB, 0 perdas em 10 heartbeats
+ 25. Se APROVADO: Promove para OPERACIONAL (marcador verde no mapa)
+ 26. Se REPROVADO: Mantém em FALHA_ENLACE com diagnóstico (RSSI/SNR/perdas)
+ 27. Gera FICHA TÉCNICA E LAUDO DE HOMOLOGAÇÃO (PDF/Print CSS)
+ 28. Copia arquivos para /DATA/Media/Sentinela/Atalaias/{node_id}/
+ 29. Sincroniza o mapa do painel (Leaflet recarrega a camada de Atalaias)
+```
+
+#### E. Checklist Técnico Real de Instalação (Físico e Digital Idênticos)
+
+O checklist é composto por 6 seções objetivas com critérios passíveis de verificação empírica. Cada item tem uma raiz técnica documentada no projeto — não é arbitrário:
+
+| Seção | Item de Verificação | Critério de Aceite | Base Técnica |
+|---|---|---|---|
+| **A. Identificação** | Código da Atalaia | Padrão `ATL-<município>-<seq>` (ex: `ATL-CGB-014`) | MANUTENCAO.md §1 |
+| | Identificador e MAC | `node_id` compilado + MAC verificado por `esptool` | E-007 (gravar firmware sem verificar MAC já causou confusão real) |
+| | Farol Correspondente | `FAR-<município>-<seq>` com visada ou enlace confirmado | ADR-003 / ARQUITETURA.md |
+| | Responsáveis | Nome + Registro CRT (Campo) e CREA (Geotecnia) | RESPONSABILIDADE_TECNICA.md §3 — Camada 1 (produto) e Camada 2 (aplicação) |
+| **B. Estabilidade Mecânica** | Ancoragem do Inclinômetro | Cravado no solo ou tubo 1.1/2" galv. rente ao terreno (deflexão < 0,07°) | ANCORAGEM.md §2 — deflexão calculada via NBR 6123 a $V_k = 35,8$ m/s **[N]** |
+| | Separação Estrutural | Antena elevada a 1,5 m em tubo separado do inclinômetro | ANCORAGEM.md §2 — conflito rádio vs. inclinômetro resolvido por separação física |
+| | Folga de Vegetação | Raio de 1,5 m sem galhos em contato com a haste | SENSORES.md — galho em contato causa vibração mecânica interpretada como movimento |
+| | Profundidade de Cravação | 0,8 a 1,2 m, conforme espessura do colúvio informada pela ART | ANCORAGEM.md §3 — não cravar abaixo do contato residual/saprolítico **[L]** |
+| **C. Energia Fotovoltaica** | Orientação do Painel | Apontado para o Norte verdadeiro (hemisfério Sul), inclinação $\approx 23°$ | MANUTENCAO.md §3 — maximiza captação anual na latitude da Serra do Mar **[E]** |
+| | Sombreamento | Janela de carga livre das 10h às 15h (sem copa de árvore) | MANUTENCAO.md §3 — sombreamento parcial derruba corrente desproporcionalmente (células em série) |
+| | Tensão em Aberto | $V_{oc} \ge 6{,}0$ V (painel) e $V_{bat} \ge 3{,}7$ V (bateria) | MANUTENCAO.md §3 — baseline para a assinatura solar da Frente 7 |
+| **D. Estanqueidade** | Anel O-ring de Vedação | Limpo, lubrificado com graxa de silicone e assentado sem mordida | RC-14 — infiltração destrói eletrônica antes de qualquer outro modo de falha |
+| | Prensa-Cabos IP68 | Apertados com vedante de rosca nos cabos de saída | RC-14 |
+| | Umidade Interna (Baseline) | Leitura inicial do sensor interno $U_{int} < 40\%$ | RC-14 — o `umidade_interna` na struct `Saude` de `proto.h` monitora essa grandeza continuamente |
+| | Sílica-gel | Sachê dessecante inserido antes do fechamento | RC-14 — reduz umidade residual pós-montagem |
+| **E. Sensoriamento** | Referência Zero Inclinômetro | Calibração de zero gravada em NVS (`pitch_ref`, `roll_ref`) com a haste na posição final | SENSORES.md — inclinômetro mede variação, não absoluto; a referência é a instalação |
+| | Sensor Umidade Solo | Instalado nas profundidades da ART (ex: 0,5 m, 1,5 m, 3,0 m) | SENSORES.md + CEMADEN **[G]** — profundidades devem ser coerentes com a geologia local |
+| | Compensação Térmica | Temperatura interna registrada no baseline (struct `Saude`) | SENSORES.md — MEMS apresenta deriva com temperatura; ciclo diário é a principal fonte de falso positivo **[E]** |
+| **F. Conectividade Rádio** | Antena Omnidirecional | 6 dBi de ganho máximo, conector selado com autofusão | CONFORMIDADE.md §1.1.1 — acima de 6 dBi a potência conduzida deve ser reduzida |
+| | Margem de Enlace | RSSI $\ge -110$ dBm, SNR $\ge -5$ dB, Margem $> 10$ dB | Ensaio 02 **[M]** — modelo de atenuação $n = 3{,}28$ em encosta florestada |
+| | Teste de Sequência | 10 heartbeats consecutivos recebidos sem perda em 60 s | RC-01 — heartbeat é a prova de vida; sequência sem perda é a prova de confiabilidade |
+| | Assimetria de Link | |RSSI↑ − RSSI↓| $< 10$ dB | Ensaio 02 **[M]** — assimetria excessiva indica obstáculo direcional ou problema de antena |
+
+#### F. Modelo de Dados para Migração SQL (`007_comissionamento.sql`)
+
+A migração deve criar as seguintes estruturas, respeitando a arquitetura existente (migrações 001–006):
+
+```sql
+-- Estado da Atalaia (ciclo de vida, §C)
+ALTER TABLE no ADD COLUMN IF NOT EXISTS estado TEXT NOT NULL DEFAULT 'REGISTRADA'
+    CHECK (estado IN ('REGISTRADA','INSTALADA','COMISSIONANDO',
+                      'VALIDANDO_ENLACE','OPERACIONAL','FALHA_ENLACE',
+                      'MANUTENCAO','DESATIVADA'));
+ALTER TABLE no ADD COLUMN IF NOT EXISTS comissionada_em TIMESTAMPTZ;
+ALTER TABLE no ADD COLUMN IF NOT EXISTS comissionada_por TEXT;
+
+-- Checklist de instalação (§E)
+CREATE TABLE IF NOT EXISTS checklist_instalacao (
+    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    node_id        SMALLINT NOT NULL REFERENCES no(node_id),
+    submetido_em   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    submetido_por  TEXT NOT NULL,
+    -- Dados do campo
+    responsavel_campo TEXT NOT NULL,       -- Nome + CRT
+    responsavel_geotecnico TEXT,           -- Nome + CREA (Camada 2)
+    -- Seções A–F (armazenadas como JSONB para flexibilidade evolutiva)
+    secao_a_identificacao   JSONB NOT NULL DEFAULT '{}'::jsonb,
+    secao_b_mecanica        JSONB NOT NULL DEFAULT '{}'::jsonb,
+    secao_c_energia         JSONB NOT NULL DEFAULT '{}'::jsonb,
+    secao_d_estanqueidade   JSONB NOT NULL DEFAULT '{}'::jsonb,
+    secao_e_sensoriamento   JSONB NOT NULL DEFAULT '{}'::jsonb,
+    secao_f_radio           JSONB NOT NULL DEFAULT '{}'::jsonb,
+    -- Resultado da validação automática do servidor
+    posicao_exif       GEOGRAPHY(POINT, 4326),    -- Extraída do EXIF
+    declividade_graus  REAL,                       -- Do raster FABDEM
+    classe_suscetibilidade TEXT,                   -- Cruzamento PostGIS
+    distancia_estacao_m REAL,                      -- Estação CEMADEN mais próxima
+    domicilios_300m    INTEGER,                    -- exposicao_ao_redor()
+    populacao_300m     INTEGER,
+    -- Resultado do teste de enlace
+    teste_enlace_rssi_med REAL,
+    teste_enlace_snr_med  REAL,
+    teste_enlace_margem   REAL,
+    teste_enlace_perdas   SMALLINT,
+    teste_enlace_aprovado BOOLEAN,
+    -- Arquivos associados (caminhos relativos ao diretório da Atalaia)
+    foto_oficial_path  TEXT,                       -- fotos/foto_instalacao_oficial.jpg
+    checklist_pdf_path TEXT,                       -- checklist/checklist_campo_assinado.pdf
+    laudo_pdf_path     TEXT,                       -- documentos/ficha_tecnica_homologacao.pdf
+    -- Observações
+    observacoes TEXT
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS checklist_por_no
+    ON checklist_instalacao (node_id, submetido_em);
+```
+
+> [!IMPORTANT]
+> **Decisão de Design: JSONB para as seções do checklist.** As 6 seções são armazenadas como JSONB em vez de colunas fixas. A razão é evolutiva: o checklist vai evoluir com a experiência de campo, e alterar uma migração SQL para cada item novo é custoso. O JSONB permite que o formulário web e o relatório de impressão evoluam sem migração de banco. A validação estrutural é feita na camada de aplicação (Python), não no PostgreSQL.
+
+#### G. Estrutura de Pastas e Mídia no Homeserver
+
+Organização padronizada do sistema de arquivos sob `/DATA/Media/Sentinela/Atalaias/{node_id}/`:
+
+```
+/DATA/Media/Sentinela/Atalaias/ATL-CGB-014/
+├── fotos/
+│   ├── foto_instalacao_oficial.jpg      # Foto principal georreferenciada (EXIF)
+│   ├── foto_ancoragem_solo.jpg          # Detalhe do engaste do inclinômetro
+│   ├── foto_painel_solar.jpg            # Detalhe da orientação do painel
+│   └── foto_entorno_360.jpg             # Panorama do entorno (sombreamento, vegetação)
+├── checklist/
+│   ├── checklist_campo_assinado.pdf     # Scan/PDF do checklist físico assinado
+│   └── checklist_digital.json           # Dados estruturados do checklist preenchido no servidor
+├── documentos/
+│   ├── ficha_tecnica_homologacao.pdf    # Laudo técnico gerado automaticamente pelo servidor
+│   ├── art_trt_instalacao.pdf           # Cópia do documento de responsabilidade técnica
+│   └── relatorio_declividade.png        # Recorte do raster FABDEM com a posição da Atalaia
+├── dados/
+│   └── baseline_comissionamento.json    # Telemetria dos primeiros 60s (referência para a Frente 7)
+└── manutencao/
+    └── README.md                        # Índice de visitas e intervenções (Frente 7.E)
+```
+
+> [!TIP]
+> **Sincronicidade com o Gestor Autônomo (Frente 6).** Quando uma foto nova é adicionada a `fotos/`, o gestor autônomo (`tools/gestor_autonomo.py`, tarefa `fotos`) detecta automaticamente, executa `georreferenciar.py`, extrai o EXIF e atualiza o PostGIS. O comissionamento é o **evento inicial** que popula essa pasta; a manutenção periódica (Frente 7) a mantém viva.
+
+#### H. Geração da Ficha Técnica e Laudo de Comissionamento (PDF & Print CSS)
+
+- **Interface no Painel Web:** Módulo `http://localhost:8765/#/laudo?id=ATL-CGB-014`.
+- **Formatação de Apresentação Oficial (Para Defesa Civil e Auditoria):**
+  - Otimizado com folha de estilo CSS `@media print` para exportação direta em PDF A4 limpo.
+  - **Cabeçalho:** Logotipo Sentinela + Brasão do Município / Logotipo Geopixel.
+  - **Bloco 1 — Dados Cadastrais:** Código `ATL`, Farol, Coordenadas SIRGAS 2000 / WGS84, Data/Hora de Ativação, Estado atual, Responsáveis Técnicos (CRT + CREA).
+  - **Bloco 2 — Contexto Geoespacial:**
+    - Foto oficial georreferenciada com metadados EXIF visíveis (Data, Hora, Lat, Long, Alt).
+    - Mapa de Localização: recorte do Leaflet sobreposto à carta de suscetibilidade, com a Atalaia e a estação CEMADEN mais próxima marcadas, e a distância entre elas exibida.
+    - Declividade local (FABDEM) e classe de suscetibilidade (CPRM/SGB).
+    - Contagem de domicílios e população no raio de 300 m (`exposicao_ao_redor()`).
+  - **Bloco 3 — Validação de Checklist:** Tabela comparativa dos itens do checklist digital com indicadores visuais de conformidade (✅/⚠️/❌). Cada item exibe o critério de aceite e a base técnica.
+  - **Bloco 4 — Telemetria de Enlace Inicial:** Gráfico do teste de comissionamento (RSSI, SNR, tensão de bateria e umidade interna baseline). O gráfico serve como **referência zero** para a Frente 7 — degradação futura é medida contra esse ponto.
+  - **Bloco 5 — Baseline de Manutenção Preditiva:**
+    - Energia colhida no primeiro dia (`E_dia` da struct `Saude`) serve como referência para a assinatura solar (MANUTENCAO.md §3).
+    - Tensão de bateria baseline (`V_min`, `V_fim`).
+    - Umidade interna baseline ($U_{int}$ < 40%) — qualquer elevação futura acima de 70% é alarme de vedação (RC-14).
+  - **Bloco 6 — Campo de Assinaturas:** Espaço para assinatura digital/física do Técnico em Mecatrônica (CRT), Engenheiro Geotécnico/Geólogo (CREA) e Gestor da Defesa Civil Municipal.
+
+> [!NOTE]
+> **Integração com a Frente 7 (Manutenção Preditiva).** O baseline de comissionamento é o **ponto zero** de toda a manutenção preditiva. A `referencia_distribuida` (migração 004) compara `E_dia` com a mediana da frota — mas nos primeiros dias de operação, a Atalaia recém-comissionada é sua própria referência. O baseline registrado no comissionamento permite que a Frente 7 detecte degradação **antes** de haver histórico suficiente para a referência distribuída funcionar.
+
+#### I. Integração com o Mapa e Telemetria em Tempo Real
+
+O comissionamento é o evento que **materializa a Atalaia no mapa**. Antes dele, o `node_id` existe apenas na tabela `no` sem `posicao`. Após o comissionamento:
+
+1. **PostGIS:** A coluna `no.posicao` é preenchida com as coordenadas EXIF validadas.
+2. **Leaflet (Camada 4):** O marcador aparece no mapa na cor correspondente ao estado.
+3. **Modal da Atalaia:** Ao clicar no marcador, o modal exibe:
+   - Foto oficial de instalação (carregada de `/DATA/Media/Sentinela/Atalaias/{node_id}/fotos/`).
+   - Status do enlace em tempo real (RSSI, SNR, bateria).
+   - Chuva acumulada oficial da estação mais próxima (24h/72h/84h) com a distância.
+   - Inclinação e umidade de solo (quando sensores estiverem conectados).
+   - Link para o Laudo de Comissionamento (`#/laudo?id=ATL-CGB-014`).
+   - Índice de saúde e faixa de manutenção (Frente 7).
+4. **Tooltip de Exposição:** Ao passar o mouse sobre a zona de suscetibilidade adjacente, exibe a contagem de domicílios e população.
+
+#### J. Cronograma de Maturação da Frente 9
+
+| Item | Fase | Depende de | Status |
+|---|---|---|---|
+| Coluna `estado` na tabela `no` + migração 007 | 2 | Migração runner | **T-16** — Nova |
+| Tabela `checklist_instalacao` (JSONB) | 2 | Migração 007 | **T-16** — Nova |
+| Rota REST `POST /api/comissionamento/cadastrar` com upload multipart | 3 | Painel Backend | **T-17** — Nova |
+| Interface web de formulário de checklist e upload (`#/comissionamento`) | 3 | Painel Frontend | **T-18** — Nova |
+| Validação automática de posição (PostGIS) e enlace (MQTT 60s) | 3 | Ingestor + banco | **T-17** — Nova |
+| Cruzamento com declividade FABDEM e suscetibilidade | 3 | Raster importado | **T-17** — Nova |
+| Módulo de geração de Ficha Técnica em PDF / Print CSS (`#/laudo`) | 3 | Painel Frontend | **T-19** — Nova |
+| Registro de baseline de manutenção preditiva no comissionamento | 3 | Frente 7 operacional | **T-19** — Nova |
+| Máquina de estados com transições automáticas (Frente 7 → MANUTENÇÃO) | 4 | Frente 7.D (índice de saúde) | Nova |
+
+---
+
 ## 4. Mapa de Dependências entre Frentes
 
 ```mermaid
@@ -469,48 +761,54 @@ graph LR
     F7 --> F5
     F8[Frente 8<br>Secure OTA Campo] --> F1
     F8 --> F7
+    F9[Frente 9<br>Comissionamento & Checklist] --> F2
+    F9 --> F5
+    F9 --> F3
     
     style F1 fill:#2d3748,stroke:#4fd1c5,color:#fff
     style F2 fill:#2d3748,stroke:#4fd1c5,color:#fff
     style F7 fill:#2d3748,stroke:#f56565,color:#fff
     style F8 fill:#2d3748,stroke:#ed8936,color:#fff
+    style F9 fill:#2d3748,stroke:#9f7aea,color:#fff
 ```
 
-**Caminho crítico:** F1 → F2 → F7 (sem payload de sensor, não há dados no banco; sem dados no banco, não há manutenção preditiva). As Frentes 4, 5 e 6 podem avançar em paralelo porque dependem primariamente do PostGIS (que já existe) e de dados estáticos (tiles, fotos EXIF). A Frente 8 provê a infraestrutura de atualização segura sem fio para o firmware de campo (F1).
+**Caminho crítico:** F1 → F2 → F7 (sem payload de sensor, não há dados no banco; sem dados no banco, não há manutenção preditiva). As Frentes 4, 5 e 6 podem avançar em paralelo porque dependem primariamente do PostGIS (que já existe) e de dados estáticos (tiles, fotos EXIF). A Frente 8 provê a infraestrutura de atualização segura sem fio para o firmware de campo (F1). A Frente 9 formaliza a entrada de novas Atalaias com validação geoespacial, checklist e emissão de laudo.
 
 ---
 
-## 5. Lacunas Identificadas na Análise Cruzada
+## 5. Lacunas Identificadas na Análise Cruzada (Revisão 01/08/2026)
 
 ### 5.1. Esquema SQL vs. Requisitos Documentados
 
-| Requisito | Documento | Status no `esquema.sql` |
+| Requisito | Documento | Status Atual |
 |---|---|---|
-| RC-01/RC-02 (Heartbeat e nó silencioso) | REQUISITOS.md | ⚠️ Parcialmente coberto pela tabela `enlace`, mas **não há trigger/view de detecção de silêncio** |
-| RC-03 (Telemetria de saúde — tensão, RSSI, etc.) | REQUISITOS.md | ✅ RSSI/SNR estão no enlace; ⚠️ tensão, temperatura e reinícios **ausentes** |
-| RC-10 (Rastreabilidade de alarme) | REQUISITOS.md | ❌ **Não existe tabela de alarmes** |
-| RC-12 (Telemetria de energia agregada) | REQUISITOS.md / MANUTENCAO.md | ❌ **Não existe tabela de saúde da Atalaia** |
-| RC-14 (Umidade interna) | REQUISITOS.md | ❌ Sem coluna em nenhuma tabela |
-| Cartas de suscetibilidade | antigravityplan Frente 2.B | ❌ **Não existe tabela de suscetibilidade** |
-| População/Moradias expostas | antigravityplan Frente 2.B | ❌ **Não existe tabela de população** |
+| RC-01/RC-02 (Heartbeat e nó silencioso) | REQUISITOS.md | ✅ **Resolvido** — view `no_silencioso` (migração 004, corrigida na 005) |
+| RC-03 (Telemetria de saúde — tensão, RSSI, etc.) | REQUISITOS.md | ✅ **Resolvido** — tabela `saude_atalaia` (migração 002) com todos os campos |
+| RC-10 (Rastreabilidade de alarme) | REQUISITOS.md | ✅ **Resolvido** — tabela `alarme` com evidência JSONB (migração 002) |
+| RC-12 (Telemetria de energia agregada) | REQUISITOS.md / MANUTENCAO.md | ✅ **Resolvido** — tabela `saude_atalaia` + view `referencia_distribuida` (migrações 002/004) |
+| RC-14 (Umidade interna) | REQUISITOS.md | ✅ **Resolvido** — coluna `umidade_interna` em `saude_atalaia` (migração 002), usada no `indice_saude()` |
+| Cartas de suscetibilidade | antigravityplan Frente 2.B | ✅ **Resolvido** — tabela `suscetibilidade` com PostGIS (migração 003) |
+| População/Moradias expostas | antigravityplan Frente 2.B | ✅ **Resolvido** — tabela `exposicao` + função `exposicao_ao_redor()` (migração 003) |
+| Chuva oficial (ADR-009) | SENSORES.md / ARQUITETURA.md | ✅ **Resolvido** — `estacao_externa`, `chuva_oficial`, `limiar_municipio`, views de acumulado 24/72/84h (migração 006) |
+| **Checklist de comissionamento** | **antigravityplan Frente 9** | ❌ **Não existe** — pendente migração 007 (T-16) |
 
 ### 5.2. Firmware vs. Requisitos Documentados
 
 | Requisito | Status no Firmware |
 |---|---|
-| RC-05 (Autonomia — decisão local) | ⚠️ Especificado em ADR-006, **não implementado** — atual é ping-pong de enlace |
-| RC-06 (Persistência NVS) | ⚠️ Especificado, **não implementado** — não há acumulados para persistir ainda |
-| RC-07 (Sensor falho reportado) | ⚠️ Especificado, **não implementado** — não há sensores conectados ainda |
-| RC-09 (Confirmação cruzada) | ⚠️ Especificado, **não implementado** |
-| RC-11 (Autenticação de payload) | ⚠️ Reservar espaço em `lib/proto/` desde agora |
+| RC-05 (Autonomia — decisão local) | ⚠️ Especificado em ADR-006, **não implementado** — firmware atual é enlace, não decisão |
+| RC-06 (Persistência NVS) | ⚠️ Especificado, **não implementado** — depende de sensores conectados |
+| RC-07 (Sensor falho reportado) | ✅ **Protocolo pronto** — flags em `proto.h` (`FLAG_CHUVA_OK`, `FLAG_INCLIN_OK`, `FLAG_SOLO_OK`); firmware de leitura pendente |
+| RC-09 (Confirmação cruzada) | ⚠️ Releitura via ADR-009: satisfeito localmente por umidade de solo + vizinhança. **Implementação pendente** |
+| RC-11 (Autenticação de payload) | ✅ **Espaço reservado** — `AUTH_AUSENTE = 0x00` em `proto.h`; implementação efetiva é T-06 |
 
 ### 5.3. Lacunas de Documentação
 
-| Documento Citado mas Inexistente | Referenciado em |
-|---|---|
-| Manual de Operação (limitações declaradas do sistema) | RESPONSABILIDADE_TECNICA.md §8 |
-| Contrato com delimitação de responsabilidade por camada | RESPONSABILIDADE_TECNICA.md §8 |
-| Termo de aceitação do órgão contratante | RESPONSABILIDADE_TECNICA.md §8 |
+| Documento Citado mas Inexistente | Referenciado em | Status |
+|---|---|---|
+| Manual de Operação (limitações declaradas do sistema) | RESPONSABILIDADE_TECNICA.md §8 | ❌ Pendente (T-10) |
+| Contrato com delimitação de responsabilidade por camada | RESPONSABILIDADE_TECNICA.md §8 | ❌ Pendente |
+| Termo de aceitação do órgão contratante | RESPONSABILIDADE_TECNICA.md §8 | ❌ Pendente |
 
 ---
 
@@ -526,10 +824,11 @@ graph LR
 | **RT-06** | Esquema SQL acumula tabelas sem migração versionada | Quebras ao atualizar banco em produção | Adotar migrações numeradas (`001_*.sql`, `002_*.sql`) |
 | **RT-07** | Antena sem 6 dBi nas Atalaias de teste | Margem de enlace reduzida; resultados de campo não representam a configuração final | Adquirir 4 antenas de 6 dBi (P-011) |
 | **RT-08** | Injeção de firmware invasor ou bricking do nó por OTA | Perda do dispositivo em campo selado ou comprometimento de segurança da rede | Assinatura digital ECDSA P-256 mandatory + SHA-256 + Dual Bootloader com Rollback automático (Frente 8) |
+| **RT-09** | Atalaia ativada sem validação de vedação/ancoragem | Falsos alarmes de movimento por flexão da haste ou destruição por infiltração de água | Exigência de Checklist Técnico de 6 seções + validação autônoma de enlace por 60s antes de ativar o nó (Frente 9) |
 
 ---
 
-## 7. Matriz de Ações Pendentes e Próximos Passos
+## 7. Matriz de Ações Pendentes e Próximos Passos (Revisão 01/08/2026)
 
 ### Ações Críticas (Bloqueantes)
 
@@ -548,29 +847,36 @@ graph LR
 | **P-003** | Definir licença oficial de código do repositório | Gestão | Aberta | — |
 | **P-005** | Calibrar divisor de tensão da bateria da Heltec V2 | Hardware | Aberta | 1 |
 | **P-011** | Adquirir 4 antenas de 6 dBi adicionais | Suprimentos | Aberta | 1 |
-| **P-013** | Selecionar e adquirir o primeiro sensor de chuva | Sensor | Aberta | 1 |
+| **P-013** | ~~Selecionar e adquirir o primeiro sensor de chuva~~ → **Sensor de umidade de solo** | Sensor | Redireccionada (ADR-009) | 1 |
 | **R-01** | Confirmar abrangência do TRT de Mecatrônica no CRT-SP | Legal/Técnico | Pendente | — |
-| **R-03** | Firmar parceria com Eng. Geotécnico / Geólogo com ART | Parcerias | Pendente | — |
+| **R-03** | Firmar parceria com Eng. Geotécnico / Geólogo com ART | Parcerias | Pendente | 9 |
 
-### Ações Técnicas (Novas)
+### Ações Técnicas — Status Atualizado
 
 | ID | Ação | Responsável | Status | Frente |
 |---|---|---|---|---|
-| **T-01** | Estrutura de pacote de saúde (RC-12) em `lib/proto/` | Firmware | Nova | 1, 7 |
-| **T-02** | Migração SQL para tabela de leitura de sensor | Backend | Nova | 2 |
-| **T-03** | Migração SQL para tabela de alarmes (RC-10) | Backend | Nova | 2, 7 |
-| **T-04** | Migração SQL para tabela de saúde da Atalaia | Backend | Nova | 2, 7 |
-| **T-05** | Migração SQL para suscetibilidade e população | Backend | Nova | 2, 5 |
-| **T-06** | Autenticação em `lib/proto/` (P2P) | Firmware | Nova | 1 |
-| **T-07** | Campo `fonte` na tabela de leitura | Backend | Nova | 2 |
+| **T-01** | Estrutura de pacote de saúde (RC-12) em `lib/proto/` | Firmware | ✅ **Implementada** — struct `Saude` em `proto.h` | 1, 7 |
+| **T-02** | Migração SQL para tabela de leitura de sensor | Backend | ✅ **Implementada** — `002_sensor.sql` | 2 |
+| **T-03** | Migração SQL para tabela de alarmes (RC-10) | Backend | ✅ **Implementada** — `002_sensor.sql` | 2, 7 |
+| **T-04** | Migração SQL para tabela de saúde da Atalaia | Backend | ✅ **Implementada** — `002_sensor.sql` | 2, 7 |
+| **T-05** | Migração SQL para suscetibilidade e população | Backend | ✅ **Implementada** — `003_gis_e_chuva.sql` | 2, 5 |
+| **T-06** | Autenticação em `lib/proto/` (P2P) | Firmware | ⚠️ Espaço reservado (`AUTH_AUSENTE`); implementação pendente | 1 |
+| **T-07** | Campo `fonte` na tabela de leitura | Backend | ✅ **Implementada** — coluna `fonte` em `leitura` (002) | 2 |
 | **T-08** | Exportação OGC SensorThings para Geopixel | Backend | Nova | 2, 5 |
-| **T-09** | Detecção de nó silencioso (RC-02) no ingestor | Backend | Nova | 2, 3 |
+| **T-09** | Detecção de nó silencioso (RC-02) no ingestor | Backend | ✅ **Implementada** — view `no_silencioso` (004/005) | 2, 3 |
 | **T-10** | Manual de operação com limitações | Documentação | Nova | — |
-| **T-11** | Padronização de pastas `ATL-<município>-<seq>` | Operação | Nova | 4, 6 |
-| **T-12** | Dual-OTA (`default_ota.csv`) no `platformio.ini` | Firmware | Nova | 1, 8 |
-| **T-13** | Verificação ECDSA P-256 e SHA-256 em `lib/hal/esp32/` | Firmware | Nova | 8 |
-| **T-14** | BLE LE Secure Connections com MITM | Firmware | Nova | 8 |
-| **T-15** | LoRaWAN FUOTA (TR-005) e backup P2P | Firmware | Nova | 8 |
+| **T-11** | Padronização de pastas `ATL-<município>-<seq>` | Operação | ✅ **Implementada** — `gestor_autonomo.py` cria a estrutura | 4, 6 |
+| **T-12** | Dual-OTA (`default_ota.csv`) no `platformio.ini` | Firmware | ✅ **Já existente** — Arduino-ESP32 já traz `ota_0`/`ota_1` | 1, 8 |
+| **T-13** | Verificação ECDSA P-256 e SHA-256 em `lib/hal/esp32/` | Firmware | Nova — depende de RAK3172 | 8 |
+| **T-14** | BLE LE Secure Connections com MITM | Firmware | Nova — depende de RAK3172 | 8 |
+| **T-15** | LoRaWAN FUOTA (TR-005) e backup P2P | Firmware | Nova — depende de RAK3172 | 8 |
+| **T-16** | Migração 007: coluna `estado` + tabela `checklist_instalacao` | Backend | **Nova** — especificação em §9.F | 2, 9 |
+| **T-17** | Rota REST `POST /api/comissionamento/cadastrar` com upload multipart + validação PostGIS | Backend | **Nova** — especificação em §9.D | 3, 9 |
+| **T-18** | Formulário web de comissionamento e upload no painel (`#/comissionamento`) | Frontend | **Nova** — especificação em §9.D | 3, 9 |
+| **T-19** | Template de impressão CSS `@media print` para Ficha Técnica / PDF (`#/laudo`) | Frontend | **Nova** — especificação em §9.H | 3, 9 |
+| **T-20** | Máquina de estados do ciclo de vida da Atalaia com transições automáticas | Backend | **Nova** — especificação em §9.C | 7, 9 |
+| **T-21** | Cruzamento automático de posição EXIF com declividade FABDEM e suscetibilidade | Backend | **Nova** — especificação em §9.B | 2, 9 |
+| **T-22** | Registro de baseline de comissionamento para manutenção preditiva | Backend | **Nova** — especificação em §9.H | 7, 9 |
 
 ---
 
@@ -584,17 +890,19 @@ Para evitar conflito de edição entre o **MacBook** (ambiente de gravação/USB
 
 ---
 
-## 9. Sequência Recomendada de Execução
+## 9. Sequência Recomendada de Execução (Revisão 01/08/2026)
 
-Com base na análise de dependências e no caminho crítico mapeado na §4:
+Com base na análise de dependências, no caminho crítico mapeado na §4 e no progresso de implementação:
 
-| Prioridade | O que | Justificativa |
-|---|---|---|
-| **1ª** | PT-01 + PT-03 (Patentes) | Antes de qualquer divulgação — risco de perda de novidade |
-| **2ª** | Frente 1A+1E (Proto com sensor + espaço para auth) | Desbloqueador: sem payload de sensor, nenhuma frente subsequente avança |
-| **3ª** | Frente 2 (Tabelas de sensor, alarme e saúde) | O banco precisa existir antes de os dados chegarem |
-| **4ª** | Frente 7A–D (Referência distribuída e catálogo de alarmes) | Valor diferencial do produto; implementação no ingestor |
-| **5ª** | Frente 8A–C (Secure OTA & Dual Boot) | Atualização segura em campo sem deslacrar invólucro (anti-bricking/anti-invasão) |
-| **6ª** | Frente 3C + 5 (Aba de sensor no painel + mapa) | Visualização — pode avançar em paralelo com a 4ª/5ª |
-| **7ª** | Frente 4 + 6 (QGIS + Gestor Autônomo) | Infraestrutura de apoio — avança independentemente |
-| **8ª** | P-006 (Homologação Anatel) | Maior salto de valor unitário, mas independente do firmware |
+| Prioridade | O que | Justificativa | Status |
+|---|---|---|---|
+| **1ª** | PT-01 + PT-03 (Patentes) | Antes de qualquer divulgação — risco de perda de novidade | ⚠️ Pendente |
+| **2ª** | ~~Frente 1A+1E (Proto com sensor + espaço para auth)~~ | ~~Desbloqueador: sem payload de sensor, nenhuma frente subsequente avança~~ | ✅ **Concluída** |
+| **3ª** | ~~Frente 2 (Tabelas de sensor, alarme e saúde)~~ | ~~O banco precisa existir antes de os dados chegarem~~ | ✅ **Concluída** (migrações 001–006) |
+| **4ª** | ~~Frente 7A–D (Referência distribuída e catálogo de alarmes)~~ | ~~Valor diferencial do produto; implementação no ingestor~~ | ✅ **Concluída** (migração 004/005) |
+| **5ª** | **Frente 9A–J (Comissionamento, Checklist & Máquina de Estados)** | **Próxima prioridade:** garantia de qualidade de instalação + ativação formal no mapa | 🔜 Pronta para implementar |
+| **6ª** | Frente 8A–C (Secure OTA & Dual Boot) | Atualização segura em campo sem deslacrar invólucro | ⚠️ Depende de RAK3172 |
+| **7ª** | ~~Frente 3C + 5 (Aba de sensor no painel + mapa)~~ | ~~Visualização~~ | ✅ **Concluída** (painel + Leaflet + rotas GIS) |
+| **8ª** | ~~Frente 4 + 6 (QGIS + Gestor Autônomo)~~ | ~~Infraestrutura de apoio~~ | ✅ **Concluída** (`gestor_autonomo.py`) |
+| **9ª** | P-006 (Homologação Anatel) | Maior salto de valor unitário, mas independente do firmware | ⚠️ Pendente |
+
