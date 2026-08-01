@@ -38,6 +38,13 @@ geoespacial, mapa, manutenção preditiva e a tripla responsabilidade técnica.
   geoespacial, transições e baseline.
 - **Painel** — abas `#/comissionamento` e `#/laudo`, POST de cadastro, cor do
   marcador no mapa **por estado do ciclo de vida** e CSS de impressão A4.
+- **Modal da Atalaia no mapa** (§I.3 do plano) — o popup passou a juntar as
+  três escalas que só fazem sentido lidas juntas: estado do ciclo de vida,
+  chuva **regional** oficial da estação mais próxima com a distância, e o
+  enlace **local** corrente. Rota `/media/` serve a foto de instalação, só
+  imagem e com o caminho conferido contra a raiz. Conferido no ar: HTC-01
+  associada à estação *Sertão do Porto Novo* a 2.445 m, 11,4 mm em 84 h,
+  RSSI −88 dBm, SNR 12 dB.
 - **Validado ponta a ponta com dado real**: HTC-01 comissionada até
   `OPERACIONAL` com 17 amostras, margem 41,4 dB, zero perdas, trilha de 4
   transições e baseline gravado em disco.
