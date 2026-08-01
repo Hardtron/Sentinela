@@ -102,6 +102,10 @@ reinício sem perder acumulado (RC-06).
       falta o motor de limiar alimentá-las
 - [ ] Integração QGIS sobre a mesma base
 
+- [x] **Comissionamento de Atalaia (Frente 9)** — ciclo de vida em 8 estados com
+      pré-condições no banco, checklist de 6 seções, teste de enlace contra a
+      esteira real e laudo de homologação, 01/08/2026
+
 **Critério de saída.** Alerta simulado produzindo a informação completa —
 grandeza medida, limiar violado, área de alcance e exposição.
 

@@ -21,6 +21,79 @@ apenas o apontamento.
 
 ---
 
+## 2026-08-01 (23) — Frente 9: comissionamento e ciclo de vida da Atalaia
+
+**Fase:** 2/3 · **Duração:** longa
+
+### Feito
+
+O ponto de convergência de todas as camadas: hardware instalado, banco
+geoespacial, mapa, manutenção preditiva e a tripla responsabilidade técnica.
+
+- **Migração 007** — coluna `estado` com 8 estados, `transicao_estado`
+  (trilha de auditoria), `checklist_instalacao` (6 seções em JSONB),
+  `criterio_comissionamento` e as funções `teste_enlace()`,
+  `transita_estado()` e `valida_posicao()`.
+- **`backend/comissionamento.py`** — orquestra checklist, EXIF, validação
+  geoespacial, transições e baseline.
+- **Painel** — abas `#/comissionamento` e `#/laudo`, POST de cadastro, cor do
+  marcador no mapa **por estado do ciclo de vida** e CSS de impressão A4.
+- **Validado ponta a ponta com dado real**: HTC-01 comissionada até
+  `OPERACIONAL` com 17 amostras, margem 41,4 dB, zero perdas, trilha de 4
+  transições e baseline gravado em disco.
+
+### Decidido
+
+- **As pré-condições de transição vivem no banco, não só na aplicação.**
+  Regra que existe apenas no formulário web é regra que se contorna com um
+  POST manual. `transita_estado()` recusa transição inválida dizendo **quais**
+  seriam válidas, e não deixa nada entrar em `OPERACIONAL` sem teste de
+  enlace aprovado.
+- **O teste de enlace consulta o banco, não o broker.** É deliberado e é uma
+  melhora sobre o plano: validar pelo banco prova a esteira inteira — rádio,
+  bridge, MQTT, ingestor, PostgreSQL. Um teste que só escutasse MQTT
+  aprovaria uma Atalaia cujo dado não chega onde a decisão acontece.
+- **Checklist em JSON, fotos por pasta — não multipart.** O plano previa
+  upload multipart; o módulo `cgi`, que fazia esse parsing na stdlib, foi
+  **removido no Python 3.13**, que é o que roda no homeserver. Escrever
+  parser de multipart à mão no caminho mais crítico do sistema seria
+  fragilidade gratuita. A pasta da Atalaia já é vigiada pelo gestor autônomo
+  (Frente 6), então as fotos entram por lá e o formulário manda só o
+  checklist.
+- **Marcador colorido por estado, não por índice de saúde.** Uma Atalaia em
+  `COMISSIONANDO` ainda não é ponto de dado confiável; pintá-la de verde
+  induziria o operador a confiar em medição não homologada.
+- **Pasta de mídia fora de `/DATA/Media`.** Aquele caminho pertence ao root e
+  o sudo do homeserver pede senha; o padrão aponta para um diretório que o
+  serviço já escreve, e `SENTINELA_MEDIA` permite mover depois.
+
+### Aprendido
+
+- **`format()` do PostgreSQL não aceita `%.1f`** — só `%s`, `%I` e `%L`. Os
+  `%.1f` que escrevi na 007 estouravam exceção **exatamente no caminho de
+  reprovação**: o caminho feliz devolvia o motivo, mas qualquer reprovação
+  virava erro de SQL. A função existe para explicar **por que** uma Atalaia
+  não pode operar; falhar justo aí trocaria diagnóstico acionável por erro
+  que o técnico em campo não interpreta. Corrigido na 008.
+- **`comissiona()` chegou a CC 19 e `valida_checklist()` a 14** — acima do
+  limite inviolável de 10. Refatorados em funções coesas
+  (`_coordenada`, `_leva_ate_comissionando`, `_grava_baseline`, `_copia_foto`,
+  `_itens_reprovados`), todas ≤ 9.
+- **Recusa precisa dizer o que corrigir.** Checklist incompleto responde
+  quais seções faltam; item reprovado sem observação diz qual item. A volta a
+  uma encosta custa caro para o motivo ser "recusado".
+
+### Próximo
+
+1. Carta de suscetibilidade (CPRM/SGB) e setores do IBGE — hoje
+   `valida_posicao()` responde "fora de zona cadastrada" porque não há
+   polígono no banco, não porque a posição seja ruim.
+2. Raster FABDEM para a declividade; a coluna existe e fica NULL.
+3. Formulário web do checklist (hoje o POST é por JSON; a interface de
+   preenchimento é a próxima peça).
+
+---
+
 ## 2026-08-01 (22) — Chuva oficial integrada: três fontes, cada uma na sua escala
 
 **Fase:** 1/3 · **Duração:** média

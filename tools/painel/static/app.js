@@ -749,12 +749,19 @@ rotas["mapa"] = async () => cabecalho("Mapa",
        <div id="mapa" style="height:min(72vh,640px);width:100%"></div>
      </div>
      <div class="legenda" style="margin-top:12px">
-       <span><i class="pt" style="background:var(--ok)"></i>saudável</span>
-       <span><i class="pt" style="background:var(--acento)"></i>observar</span>
-       <span><i class="pt" style="background:var(--atencao)"></i>agendar</span>
-       <span><i class="pt" style="background:var(--erro)"></i>intervir</span>
-       <span><i class="pt" style="background:var(--neutro)"></i>sem dado</span>
+       <span><i class="pt" style="background:#3fb950"></i>operacional</span>
+       <span><i class="pt" style="background:#d29922"></i>comissionando / manutenção</span>
+       <span><i class="pt" style="background:#4da3ff"></i>instalada</span>
+       <span><i class="pt" style="background:#f85149"></i>falha de enlace</span>
+       <span><i class="pt" style="background:#6e7d8f"></i>registrada</span>
+       <span><i class="pt" style="background:#4da3ff;border-radius:2px"></i>estação de chuva [G]</span>
      </div>
+     <p class="nota">Círculo é Atalaia (instrumento do projeto), quadrado é
+     estação oficial de chuva — escalas de confiança diferentes. A cor da
+     Atalaia vem do <strong>estado do ciclo de vida</strong>, não do índice de
+     saúde: uma Atalaia ainda em comissionamento não é ponto de dado confiável,
+     e mostrá-la verde induziria o operador a confiar em medição não
+     homologada.</p>
      <div id="mapa-aviso"></div>`;
 
 rotas["hardware"] = async () => {
