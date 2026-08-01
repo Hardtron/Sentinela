@@ -21,6 +21,82 @@ apenas o apontamento.
 
 ---
 
+## 2026-08-01 (21) — Implementação estruturada: Frentes 1, 2, 3C, 5, 6 e 7
+
+**Fase:** 1/2/3 · **Duração:** longa
+
+Implementação do `antigravityplan.md`. Segui a sequência recomendada pelo
+próprio caderno (§9), pelo caminho crítico F1 → F2 → F7.
+
+### Feito
+
+**Frente 1 — `lib/proto/` (desbloqueador).** C++ puro, sem Arduino, testável
+no host. Dois quadros: `Sensor` (por ciclo) e `Saude` (1×/dia, RC-12),
+separados de propósito para que telemetria de manutenção não roube tempo de ar
+do dado de risco. Byte de autenticação reservado desde já (RC-11) — ligar
+autenticação depois não pode ser mudança incompatível com nós em campo.
+**31 testes, 0 falhas** (`tools/testa_proto.py`).
+
+**Frente 2 — migrações versionadas.** `backend/migracoes/` com runner
+(`migra.py`) e registro do que já rodou. Resolve o RT-06 e a causa real do
+problema da entrada 18, em que o `.sql` versionado divergiu do banco. Novas
+tabelas: `leitura`, `saude_atalaia`, `alarme` (RC-10, com evidência em JSONB),
+`suscetibilidade`, `exposicao`. Janela **móvel** de chuva 1/24/72 h — não balde
+fixo, porque o limiar intensidade-duração pergunta "quanto choveu nas últimas
+72 h", não "na hora cheia".
+
+**Frente 7 — manutenção por condição.** `referencia_distribuida` (a rede como
+sensor de referência), `indice_saude()` com RC-16, `no_silencioso` (RC-02) e
+`fila_manutencao`.
+
+**Frentes 3C e 5 — abas Sensores e Mapa.** Leaflet 1.9.4 **hospedado
+localmente**; rotas `/api/sensor`, `/api/frota-saude`, `/api/gis/*`. Mapa
+renderizando os 7 pontos do ensaio 02 direto do PostGIS.
+
+**Frente 6 — gestor autônomo.** `tools/gestor_autonomo.py` + timer diário às
+03:00, com `Persistent=true`. Automatiza **insumos**, nunca software.
+
+### Decidido
+
+- **O payload proposto no plano não cabia no teto do próprio plano.** Os
+  campos somavam 19 B; com cabeçalho de 4 B o quadro dava **23 B**, acima dos
+  20 declarados em PLANO.md. Em vez de afrouxar a meta, cortei onde havia
+  precisão fictícia: versão+tipo no mesmo byte, `umidade_solo` a 0,5 %/lsb e
+  bateria em passo de 10 mV (num divisor que nem calibrado está — P-005).
+  Fecha em **20 B exatos**. **Não cortei o `instante` (4 B)**, que era o corte
+  óbvio: sem carimbo do nó, leitura bufferizada (RC-06/RC-13) entraria na
+  janela errada de chuva acumulada, corrompendo justamente o preditor central.
+- **Teste cruzado C++ ↔ Python** (`tools/testa_decodifica.py`): o C++ emite os
+  bytes, o Python decodifica os mesmos bytes. Sem isso, um campo trocado faria
+  o servidor gravar número errado **sem erro nenhum** — falha silenciosa e
+  plausível, a pior espécie num sistema de alerta.
+- **T-12 já estava resolvido.** A `default.csv` do Arduino-ESP32 já traz
+  `ota_0`, `ota_1` e `otadata`: a capacidade dual-boot existe, só não é usada.
+  Não criei tabela de partição nova — documentei.
+- **Frente 8 (Secure OTA) não implementada**, e não por esquecimento: ECDSA em
+  eFuse, BLE Secure Connections e FUOTA dependem do RAK3172 (não adquirido) e
+  são Fase 2/4 no cronograma do próprio plano. Implementar contra hardware
+  ausente produziria código não testável.
+
+### Aprendido
+
+- **O índice de saúde creditava 25 pontos a nó que nunca reportou.** Causa:
+  `SELECT ... INTO` sem linhas deixa NULL, e `least(25, NULL)` devolve **25**
+  no PostgreSQL — least/greatest ignoram NULL. Num índice cuja função é
+  priorizar visita de manutenção, isso escondia exatamente o nó que precisa de
+  atenção. Corrigido na migração 005: sem dado devolve **NULL**, não 0 e não
+  25 — zero diria "medimos e está péssimo", NULL diz "não sabemos", que é a
+  verdade (RC-07). O sistema de migrações provou o próprio valor no primeiro
+  dia de uso.
+
+### Próximo
+
+1. Frente 8 quando houver RAK3172; a base (dual-partition) já existe.
+2. Aba Sensores só mostra dado quando houver pluviômetro (P-013).
+3. Mapa só mostra Atalaias quando `no.posicao` for preenchido na instalação.
+
+---
+
 ## 2026-07-31 (20) — Troca de placas nos postos HTC-01 e HTC-03
 
 **Fase:** 0/2 · **Duração:** média

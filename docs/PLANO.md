@@ -38,7 +38,10 @@ projeto inteiro — todo o resto é estimativa até ele existir.
 
 **Objetivo.** Nó que lê o ambiente e transmite payload compacto.
 
-- [ ] `lib/proto/` — payload binário versionado (alvo: ≤ 20 bytes)
+- [x] **`lib/proto/` — payload binário versionado**, 01/08/2026. Quadro de
+      sensor em **20 B exatos** e de saúde (RC-12) em 32 B; espaço de
+      autenticação reservado (RC-11). C++ puro, testado no host e com teste
+      cruzado contra o decodificador Python do servidor
 - [ ] `lib/hal/esp32/` — rádio, I2C, ADC, sono
 - [ ] `lib/app/` — máquina de estados, testável no host
 - [ ] Sensores de bancada: temperatura, umidade, pressão, acelerômetro
@@ -89,9 +92,12 @@ reinício sem perder acumulado (RC-06).
 - [~] **Hypertables e agregação contínua** — `enlace` e `saude_bridge` já são
       hypertables, com agregação horária contínua funcionando. A janela de
       chuva (24/72/96 h) depende do pluviômetro (P-013)
-- [ ] Modelo geoespacial: nós, taludes, áreas de alcance, população exposta
+- [~] Modelo geoespacial — tabelas `suscetibilidade` e `exposicao` criadas com
+      função `exposicao_ao_redor()`; **faltam os dados** (carta do CPRM/SGB e
+      setores do IBGE, ver M-01)
 - [ ] Motor de limiar intensidade-duração
-- [ ] Dashboard operacional
+- [~] Dashboard operacional — abas *Sensores* e *Mapa* (Leaflet local) no ar;
+      falta o motor de limiar alimentá-las
 - [ ] Integração QGIS sobre a mesma base
 
 **Critério de saída.** Alerta simulado produzindo a informação completa —
