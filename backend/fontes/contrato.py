@@ -30,6 +30,8 @@ class Resposta:
     status: int
     tipo_conteudo: str
     dados: bytes
+    etag: Optional[str] = None
+    ultima_modificacao: Optional[str] = None
 
 
 @dataclass(frozen=True)

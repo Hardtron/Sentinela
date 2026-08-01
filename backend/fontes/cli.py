@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from .contrato import ConfiguracaoAusente
@@ -23,11 +24,21 @@ def coleta_requisicao(requisicao, repositorio, buscar=busca, guardar=guarda_brut
     resposta = None
     sha256 = None
     try:
+        condicionais = repositorio.condicionais_http(conjunto_id)
+        if condicionais:
+            requisicao = replace(
+                requisicao,
+                cabecalhos={**requisicao.cabecalhos, **condicionais})
         resposta = buscar(requisicao)
+        if resposta.status == 304:
+            repositorio.termina(execucao_id, "SEM_NOVIDADE", http_status=304)
+            return "SEM_NOVIDADE", 0
         caminho, sha256 = guardar(resposta, requisicao.provedor,
                                    requisicao.conjunto)
         ativo_id, novo, processado = repositorio.registra_ativo(
-            conjunto_id, execucao_id, resposta, caminho, sha256)
+            conjunto_id, execucao_id, resposta, caminho, sha256, {
+                "http": {"etag": resposta.etag,
+                         "ultima_modificacao": resposta.ultima_modificacao}})
         if not novo and processado:
             repositorio.termina(execucao_id, "SEM_NOVIDADE", http_status=resposta.status)
             return "SEM_NOVIDADE", 0

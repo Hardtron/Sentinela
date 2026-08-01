@@ -31,6 +31,12 @@ podem coexistir porque conteúdo diferente tem outro hash e observações têm
 revisão. Corpos de erro, senhas, tokens e chaves não entram no log, banco ou URI
 persistida.
 
+Quando o servidor publica `ETag` ou `Last-Modified`, a próxima execução usa
+`If-None-Match`/`If-Modified-Since`; HTTP 304 vira `SEM_NOVIDADE` sem baixar o
+corpo. O teto padrão é 50 MiB por resposta e pode ser ajustado por provedor
+(`INPE_MERGE_MAX_BYTES`, por exemplo) somente após dimensionar banda e
+armazenamento; ultrapassar o teto envia a aquisição à quarentena.
+
 ## Catálogo e nível de integração
 
 | Fonte | Contrato oficial verificado | Estado no coletor | Pré-condição externa |

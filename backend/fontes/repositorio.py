@@ -55,6 +55,25 @@ class Repositorio:
     def reverte(self):
         self.conexao.rollback()
 
+    def condicionais_http(self, conjunto_id):
+        with self.conexao.cursor() as cur:
+            cur.execute("""
+                SELECT metadados->'http'->>'etag',
+                       metadados->'http'->>'ultima_modificacao'
+                  FROM fonte_ativo_bruto
+                 WHERE conjunto_id=%s
+                 ORDER BY adquirido_em DESC, id DESC LIMIT 1
+            """, (conjunto_id,))
+            linha = cur.fetchone()
+        if not linha:
+            return {}
+        cabecalhos = {}
+        if linha[0]:
+            cabecalhos["If-None-Match"] = linha[0]
+        if linha[1]:
+            cabecalhos["If-Modified-Since"] = linha[1]
+        return cabecalhos
+
     def inicia(self, provedor, conjunto, configuracao):
         conjunto_id = self.conjunto_id(provedor, conjunto)
         with self.conexao.cursor() as cur:

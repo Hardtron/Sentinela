@@ -35,7 +35,13 @@ def _url(requisicao):
                        urlencode(query), ""))
 
 
-def busca(requisicao, timeout_s=30, max_bytes=MAX_BYTES_PADRAO, abridor=urlopen):
+def busca(requisicao, timeout_s=30, max_bytes=None, abridor=urlopen):
+    if max_bytes is None:
+        max_bytes = int(os.environ.get(
+            f"{requisicao.provedor}_MAX_BYTES",
+            os.environ.get("SENTINELA_FONTES_MAX_BYTES", MAX_BYTES_PADRAO)))
+    if max_bytes <= 0:
+        raise ValueError("limite de resposta precisa ser positivo")
     url = _url(requisicao)
     cabecalhos = {"User-Agent": "Sentinela-fontes/1",
                   "Accept": "application/json, application/geo+json, */*"}
@@ -52,8 +58,12 @@ def busca(requisicao, timeout_s=30, max_bytes=MAX_BYTES_PADRAO, abridor=urlopen)
                 raise ValueError(f"resposta excede limite de {max_bytes} bytes")
             return Resposta(
                 uri_publica(url), int(getattr(resposta, "status", 200)),
-                resposta.headers.get_content_type(), dados)
+                resposta.headers.get_content_type(), dados,
+                resposta.headers.get("ETag"),
+                resposta.headers.get("Last-Modified"))
     except HTTPError as erro:
+        if erro.code == 304:
+            return Resposta(uri_publica(url), 304, "", b"")
         # Não lê nem registra o corpo: ele pode repetir token/credencial.
         raise RuntimeError(f"HTTP {erro.code} em {uri_publica(url)}") from erro
 

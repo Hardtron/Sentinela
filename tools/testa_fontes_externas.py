@@ -125,6 +125,9 @@ def testa_bruto_em_quarentena_e_reprocessado():
         def registra_ativo(self, *args):
             return 3, False, False  # já baixado, ainda não processado
 
+        def condicionais_http(self, *args):
+            return {}
+
         def normaliza(self, *args):
             self.normalizou = True
             return 1
@@ -147,6 +150,39 @@ def testa_bruto_em_quarentena_e_reprocessado():
         guardar=lambda *args: (Path("/tmp/bruto"), "a" * 64))
     verifica(estado == "SUCESSO" and aceitos == 1 and repo.normalizou,
              "bruto não processado não foi retentado")
+
+
+def testa_http_304_e_sem_novidade():
+    class Repo:
+        terminou = None
+
+        def inicia(self, *args):
+            return 1, 2
+
+        def condicionais_http(self, *args):
+            return {"If-None-Match": '"abc"'}
+
+        def termina(self, execucao, estado, **kwargs):
+            self.terminou = (execucao, estado, kwargs.get("http_status"))
+
+        def reverte(self):
+            pass
+
+    recebeu = {}
+
+    def buscar(req):
+        recebeu.update(req.cabecalhos)
+        return Resposta("https://x.test", 304, "", b"")
+
+    repo = Repo()
+    req = Requisicao("SGB", "setorizacao-risco", "https://x.test")
+    estado, aceitos = coleta_requisicao(
+        req, repo, buscar=buscar,
+        guardar=lambda *args: (_ for _ in ()).throw(
+            AssertionError("HTTP 304 tentou gravar corpo")))
+    verifica(recebeu.get("If-None-Match") == '"abc"', "ETag não foi enviado")
+    verifica((estado, aceitos) == ("SEM_NOVIDADE", 0), "HTTP 304 mal classificado")
+    verifica(repo.terminou == (2, "SEM_NOVIDADE", 304), "execução 304 incompleta")
 
 
 def main():
