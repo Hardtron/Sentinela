@@ -1,5 +1,4 @@
 # Caderno de Planejamento e Insights do Projeto Sentinela (`antigravityplan.md`)
-
 > **Finalidade:** Este arquivo centraliza todas as análises, descobertas de bancada/campo, diretrizes de arquitetura e especificações técnicas de maturação do **Projeto Sentinela**. Serve como base de conhecimento e registro oficial para o trabalho integrado das equipes de desenvolvimento.
 
 ---
@@ -746,6 +745,241 @@ O comissionamento é o evento que **materializa a Atalaia no mapa**. Antes dele,
 
 ---
 
+### Frente 10: Reestruturação do Painel — de Informativo a Central de Operações (`tools/painel/`)
+
+> [!IMPORTANT]
+> **Ponto de Transição.** O painel cumpriu a função de ferramenta de acompanhamento do desenvolvimento. Agora o sistema precisa de uma **central de operações** onde equipes de campo e operadores centrais possam inserir dados, cadastrar Atalaias, acompanhar alarmes e tomar decisões. O painel atual é **100% somente-leitura**: 13 rotas GET, 0 formulários, 0 campos de entrada.
+
+#### A. Diagnóstico do Estado Atual
+
+**Inventário dos arquivos:**
+
+| Arquivo | Linhas | Papel |
+|---|---|---|
+| `static/index.html` | 73 | Estrutura e navegação lateral (3 grupos, 13 abas) |
+| `static/app.js` | 1337 | 13 rotas, todas somente-leitura |
+| `static/estilo.css` | 395 | Design system: cartões, tabelas, tags, gráficos — **zero estilos de formulário** |
+| `servidor.py` | 205 | HTTP handler com 1 POST sem formulário correspondente no frontend |
+| `banco.py` | 239 | Consultas SQL para sensor, frota, GIS e comissionamento |
+
+**Navegação atual (3 grupos, 13 abas):**
+
+```
+📁 Projeto          ← foco: DESENVOLVIMENTO
+  ├── Visão geral   ← fases do PLANO.md, modelo de propagação, commits git
+  ├── Pendências    ← pendências de documentação
+  └── Linha do tempo ← git log
+
+📁 Engenharia       ← mistura operação com desenvolvimento
+  ├── Monitoramento ← ✅ operacional (telemetria MQTT ao vivo)
+  ├── Mapa          ← ✅ operacional (Leaflet + PostGIS)
+  ├── Sensores      ← ✅ operacional (leituras + chuva oficial)
+  ├── Comissionamento ← ⚠️ SÓ LEITURA, sem formulário
+  ├── Hardware      ← desenvolvimento (inventário placas, portas USB)
+  ├── Rede LoRa     ← desenvolvimento (resultados do ensaio 02)
+  ├── Frota e alarmes ← ⚠️ operacional, mas sem ação sobre alarme
+  ├── Firmware      ← desenvolvimento (builds, CC)
+  └── Qualidade     ← desenvolvimento (complexidade ciclomática)
+
+📁 Conhecimento
+  ├── Documentos    ← leitor markdown
+  └── Referências   ← proveniência [M]/[L]/[G]/[E]
+```
+
+**Problemas críticos:**
+1. **Zero formulários.** Sem `<input>`, `<textarea>`, `<select>` ou `<form>`. O POST de comissionamento existe no backend mas não há formulário para invocá-lo.
+2. **Linguagem de engenharia no primeiro plano.** Termos como "CC máxima", "SF9", "ADR-009", "`no.posicao`", "RC-02" aparecem em texto do operador.
+3. **Desenvolvimento ocupa primeiro plano.** Das 13 abas, 7 são exclusivamente de desenvolvimento. O operador precisa navegar por itens irrelevantes.
+4. **Alarmes sem ação.** A aba "Frota e alarmes" mostra catálogo e índice de saúde mas não permite reconhecer, escalar ou fechar um alarme.
+5. **Comissionamento sem workflow.** O checklist está especificado no antigravityplan.md e o backend já aceita POST, mas não há wizard nem formulário.
+
+#### B. Nova Navegação Proposta (3 grupos reestruturados)
+
+```
+📁 Operação                            ← PRIMEIRO PLANO (operador vê)
+  ├── 🏠 Situação                      ← dashboard operacional
+  ├── 🗺️ Mapa                          ← mantém, com popups de ação
+  ├── 🌧️ Chuva e Sensores             ← chuva oficial + leituras locais
+  ├── ⚠️ Alertas                       ← alarmes ATIVOS com botões de ação
+  ├── 📡 Rede ao Vivo                  ← telemetria MQTT (mantém)
+  └── 🔧 Saúde da Frota               ← fila de manutenção
+
+📁 Cadastro e Campo                    ← FORMULÁRIOS DE ENTRADA
+  ├── ➕ Nova Atalaia                   ← wizard de comissionamento (4 passos)
+  ├── 📋 Atalaias Cadastradas          ← lista com estado e ações
+  └── 📄 Ficha Técnica                 ← laudo de homologação (impressão)
+
+📁 Desenvolvimento                     ← SEGUNDO PLANO (colapsável)
+  ├── 📊 Progresso do Projeto          ← consolida: fases + pendências + timeline
+  ├── 🔌 Hardware e Firmware           ← consolida: placas + builds + CC
+  ├── 📡 Ensaio de Rede               ← resultados ensaio 02
+  ├── 📝 Documentos                    ← leitor markdown
+  └── 📚 Referências                   ← proveniência
+```
+
+#### C. Dashboard Operacional (`#/situacao`) — Nova tela principal
+
+Substitui a "Visão geral" que mostrava fases do PLANO.md e commits git. O operador abre o painel e vê **em um só olhar** o estado do sistema.
+
+**Layout em 4 blocos:**
+
+1. **Resumo rápido** (grade de 4 métricas):
+   - `Atalaias operacionais` — contagem verde/total
+   - `Alertas abertos` — contagem com severidade máxima em cor
+   - `Chuva 84h máxima` — valor da estação com maior acumulado
+   - `Último dado recebido` — timestamp da leitura mais recente
+
+2. **Chuva regional** (tabela compacta):
+   - Estações CEMADEN com acumulados 24h/72h/84h
+   - Linguagem operacional, sem referências internas
+
+3. **Mapa miniatura** (~300px, Leaflet embutido):
+   - Só Atalaias + estações, sem ensaios
+   - Clique leva à aba Mapa completa
+
+4. **Alertas mais recentes** (top 5, botão "ver todos"):
+   - Severidade, descrição em linguagem direta, Atalaia afetada, há quanto tempo
+
+#### D. Wizard de Comissionamento (`#/comissionamento`) — Formulário de 4 passos
+
+O que existe hoje: 63 linhas de tabela somente-leitura com estados e critérios.
+
+O que precisa virar: um **stepper de 4 passos** guiando o operador pelo fluxo da Frente 9.
+
+```
+┌─────────────┐   ┌──────────────────┐   ┌───────────────┐   ┌──────────────┐
+│ 1. Selecionar│──▶│ 2. Checklist de  │──▶│ 3. Fotos e    │──▶│ 4. Revisão e │
+│    Atalaia   │   │    Instalação    │   │    Documentos │   │    Envio     │
+└─────────────┘   └──────────────────┘   └───────────────┘   └──────────────┘
+```
+
+**Passo 1 — Selecionar Atalaia:**
+- `<select>` com Atalaias em estado REGISTRADA ou INSTALADA
+- Exibe informações básicas e tooltip de ajuda
+
+**Passo 2 — Checklist de Instalação (6 seções, §9.E):**
+- Cada seção é um accordion expansível
+- Cada item tem: label com critério, input adequado, ícone de ajuda `?` com tooltip
+- Indicador visual: ✅ preenchido / ⚠️ pendente
+
+| Seção | Campos de entrada | Tipo |
+|---|---|---|
+| A. Identificação | Código ATL, Farol, Responsável Campo (CRT), Responsável Geotécnico (CREA) | text |
+| B. Estabilidade | Ancoragem, Separação, Folga vegetação, Profundidade | select (conforme/não) + observação |
+| C. Energia | Orientação painel, Sombreamento, Tensão aberta (V) | select + number |
+| D. Estanqueidade | O-ring, Prensa-cabos, Umidade interna (%), Sílica-gel | select + number |
+| E. Sensoriamento | Referência zero, Profundidade sensores solo, Temperatura baseline | select + number |
+| F. Conectividade | Tipo antena, Conector selado, Observações | select + textarea |
+
+**Passo 3 — Fotos e Documentos:**
+- Campo para indicar caminho da foto oficial (upload pela pasta de mídia, gestor autônomo processa)
+- Preview da foto se existir no diretório
+- Campo para PDF do checklist digitalizado
+
+**Passo 4 — Revisão e Envio:**
+- Resumo visual de todos os campos
+- Itens não-conformes destacados
+- Botão "Submeter" → POST `/api/comissionamento/cadastrar`
+- Feedback de resultado (validação do servidor, posição, enlace, suscetibilidade)
+
+#### E. Alertas com Ação (`#/alertas`) — Nova aba
+
+Diferente da "Frota e alarmes" atual (catálogo estático), a nova aba "Alertas" mostra **alarmes ativos** com botões:
+
+1. **Contadores de severidade** (CRÍTICO / URGENTE / ATENÇÃO)
+2. **Lista de alarmes abertos** com:
+   - Severidade (tag colorida)
+   - Atalaia afetada (nome legível, não `node_id`)
+   - Descrição em linguagem direta
+   - Há quanto tempo está aberto
+   - Botão **"Reconhecer"** — registra que o operador viu
+   - Botão **"Despachar"** — abre modal para registrar ação tomada
+3. **Dicionário de alarmes** (colapsável, abaixo)
+
+**API nova necessária:**
+- `POST /api/alarme/reconhecer` — marca como visto
+- `POST /api/alarme/despachar` — registra ação e fecha
+- **Migração 008:** `ALTER TABLE alarme ADD COLUMN reconhecido_em TIMESTAMPTZ, reconhecido_por TEXT, acao_tomada TEXT`
+
+#### F. Reformulação de Linguagem (transversal)
+
+Termos técnicos internos (RC-XX, ADR-XXX, nomes de tabelas SQL, referências a arquivos do repositório) **nunca aparecem em texto do operador**. Ficam em tooltips ou na seção de Desenvolvimento.
+
+| Texto atual | Texto para o operador |
+|---|---|
+| "ADR-009: chuva oficial como rede oficial" | "Dados oficiais do CEMADEN" |
+| "payload de sensor (`lib/proto/`)" | remover do texto operacional |
+| "RC-02: nó silencioso há 3600s" | "A Atalaia ATL-CGB-014 parou de enviar dados há 1 hora" |
+| "`no.posicao` só é preenchido na instalação" | "As Atalaias aparecem no mapa após a instalação" |
+| "Margem ≥ 10 dB" | "Comunicação confiável" (+ tooltip com detalhes técnicos) |
+
+**Ajuda contextual (tooltips `ⓘ`)** em termos inevitáveis:
+- RSSI → "Força do sinal recebido. Quanto mais próximo de zero, melhor."
+- SNR → "Qualidade do sinal acima do ruído. Positivo é bom."
+- Margem → "Folga de comunicação. Acima de 10 dB o enlace é confiável."
+- 84h → "Janela de acumulado de chuva usada como referência para a Serra do Mar."
+
+#### G. Design System para Formulários (CSS)
+
+O `estilo.css` tem design system completo para leitura (395 linhas de cartões, tabelas, tags, gráficos), mas **zero estilos de formulário**. Classes novas necessárias:
+
+| Categoria | Classes | Finalidade |
+|---|---|---|
+| Formulário base | `.campo`, `.campo-label`, `.campo-ajuda`, `.campo-erro` | Container, rótulo, ajuda e erro |
+| Inputs | `.entrada`, `.entrada-texto`, `.entrada-numero`, `.entrada-area` | Campos estilizados |
+| Select | `.selecao` | Select com aparência consistente |
+| Botões | `.btn-primario`, `.btn-secundario`, `.btn-perigo`, `.btn-fantasma` | Hierarquia visual de ações |
+| Stepper | `.stepper`, `.passo`, `.passo-ativo`, `.passo-feito` | Wizard de comissionamento |
+| Accordion | `.expansivel`, `.expansivel-cab`, `.expansivel-corpo` | Seções do checklist |
+| Modal | `.modal`, `.modal-fundo`, `.modal-conteudo` | Confirmações e detalhes |
+| Tooltip | `.dica`, `.dica-conteudo` | Ajuda contextual |
+| Feedback | `.aviso-sucesso`, `.aviso-erro`, `.carregando-acao` | Respostas do servidor |
+
+**Padrão visual:** Fundo `var(--fundo-3)`, borda `var(--borda)`, raio `var(--r)`, tipografia `var(--sans)` a 14px. Foco com `outline` em `var(--acento)`. Erro com borda `var(--erro)`. Compatível com ambos os temas (claro/escuro).
+
+#### H. Consolidação de Abas de Desenvolvimento
+
+| Abas atuais | Nova aba consolidada | Conteúdo |
+|---|---|---|
+| Visão geral + Pendências + Linha do tempo | **Progresso do Projeto** (`#/progresso`) | Fases, pendências e commits em seções verticais |
+| Hardware + Firmware + Qualidade | **Hardware e Firmware** (`#/hardware`) | Inventário de placas, builds e complexidade |
+| Rede LoRa | **Ensaio de Rede** (`#/rede`) | Mantém, movida para grupo Desenvolvimento |
+
+**Redução:** 13 abas → 12 rotas, com 6 no grupo operacional (primeiro plano) e 5 no grupo de desenvolvimento (segundo plano, colapsável).
+
+#### I. Novas Rotas no Backend
+
+| Método | Rota | Finalidade | Arquivo |
+|---|---|---|---|
+| POST | `/api/alarme/reconhecer` | Marca alarme como visto | `servidor.py` + `banco.py` |
+| POST | `/api/alarme/despachar` | Registra ação e fecha alarme | `servidor.py` + `banco.py` |
+| GET | `/api/atalaias` | Lista completa com estado e saúde | `banco.py` |
+| GET | `/api/dashboard` | Dados agregados para `#/situacao` | `banco.py` |
+
+**Migração SQL 008 (nova):**
+```sql
+ALTER TABLE alarme ADD COLUMN IF NOT EXISTS reconhecido_em TIMESTAMPTZ;
+ALTER TABLE alarme ADD COLUMN IF NOT EXISTS reconhecido_por TEXT;
+ALTER TABLE alarme ADD COLUMN IF NOT EXISTS acao_tomada TEXT;
+```
+
+#### J. Cronograma de Maturação da Frente 10
+
+| Item | Fase | Depende de | Status |
+|---|---|---|---|
+| Design system de formulários no `estilo.css` | 2 | — | **T-23** — Nova |
+| Reorganização da navegação no `index.html` | 2 | — | **T-24** — Nova |
+| Dashboard operacional `#/situacao` | 3 | Rotas GIS e sensor existentes | **T-25** — Nova |
+| Wizard de comissionamento `#/comissionamento` (4 passos) | 3 | T-16 (migração 007), T-17 (rota POST) | **T-26** — Nova |
+| Aba de Alertas com ação `#/alertas` | 3 | Migração 008 (T-27), rotas POST | **T-28** — Nova |
+| Migração SQL 008 (reconhecimento de alarme) | 2 | Migração runner | **T-27** — Nova |
+| Reformulação de linguagem em todas as rotas | 3 | — | **T-29** — Nova |
+| Consolidação de abas de desenvolvimento | 3 | — | **T-30** — Nova |
+| Lista de Atalaias `#/atalaias` com filtro por estado | 3 | T-16 | **T-31** — Nova |
+| Tooltips de ajuda contextual em termos técnicos | 3 | T-23 (CSS) | **T-32** — Nova |
+
+---
+
 ## 4. Mapa de Dependências entre Frentes
 
 ```mermaid
@@ -764,15 +998,19 @@ graph LR
     F9[Frente 9<br>Comissionamento & Checklist] --> F2
     F9 --> F5
     F9 --> F3
+    F10[Frente 10<br>Painel de Operações] --> F3
+    F10 --> F9
+    F10 --> F7
     
     style F1 fill:#2d3748,stroke:#4fd1c5,color:#fff
     style F2 fill:#2d3748,stroke:#4fd1c5,color:#fff
     style F7 fill:#2d3748,stroke:#f56565,color:#fff
     style F8 fill:#2d3748,stroke:#ed8936,color:#fff
     style F9 fill:#2d3748,stroke:#9f7aea,color:#fff
+    style F10 fill:#2d3748,stroke:#48bb78,color:#fff
 ```
 
-**Caminho crítico:** F1 → F2 → F7 (sem payload de sensor, não há dados no banco; sem dados no banco, não há manutenção preditiva). As Frentes 4, 5 e 6 podem avançar em paralelo porque dependem primariamente do PostGIS (que já existe) e de dados estáticos (tiles, fotos EXIF). A Frente 8 provê a infraestrutura de atualização segura sem fio para o firmware de campo (F1). A Frente 9 formaliza a entrada de novas Atalaias com validação geoespacial, checklist e emissão de laudo.
+**Caminho crítico:** F1 → F2 → F7 (sem payload de sensor, não há dados no banco; sem dados no banco, não há manutenção preditiva). As Frentes 4, 5 e 6 podem avançar em paralelo porque dependem primariamente do PostGIS (que já existe) e de dados estáticos (tiles, fotos EXIF). A Frente 8 provê a infraestrutura de atualização segura sem fio para o firmware de campo (F1). A Frente 9 formaliza a entrada de novas Atalaias com validação geoespacial, checklist e emissão de laudo. A **Frente 10** transforma o painel de informativo em central de operações — depende da Frente 9 (formulário de comissionamento) e da Frente 7 (alarmes com ação).
 
 ---
 
@@ -870,13 +1108,23 @@ graph LR
 | **T-13** | Verificação ECDSA P-256 e SHA-256 em `lib/hal/esp32/` | Firmware | Nova — depende de RAK3172 | 8 |
 | **T-14** | BLE LE Secure Connections com MITM | Firmware | Nova — depende de RAK3172 | 8 |
 | **T-15** | LoRaWAN FUOTA (TR-005) e backup P2P | Firmware | Nova — depende de RAK3172 | 8 |
-| **T-16** | Migração 007: coluna `estado` + tabela `checklist_instalacao` | Backend | **Nova** — especificação em §9.F | 2, 9 |
-| **T-17** | Rota REST `POST /api/comissionamento/cadastrar` com upload multipart + validação PostGIS | Backend | **Nova** — especificação em §9.D | 3, 9 |
-| **T-18** | Formulário web de comissionamento e upload no painel (`#/comissionamento`) | Frontend | **Nova** — especificação em §9.D | 3, 9 |
-| **T-19** | Template de impressão CSS `@media print` para Ficha Técnica / PDF (`#/laudo`) | Frontend | **Nova** — especificação em §9.H | 3, 9 |
-| **T-20** | Máquina de estados do ciclo de vida da Atalaia com transições automáticas | Backend | **Nova** — especificação em §9.C | 7, 9 |
-| **T-21** | Cruzamento automático de posição EXIF com declividade FABDEM e suscetibilidade | Backend | **Nova** — especificação em §9.B | 2, 9 |
-| **T-22** | Registro de baseline de comissionamento para manutenção preditiva | Backend | **Nova** — especificação em §9.H | 7, 9 |
+| **T-16** | Migração 007: coluna `estado` + tabela `checklist_instalacao` | Backend | ✅ **Implementada** — `007_comissionamento.sql` | 2, 9 |
+| **T-17** | Rota REST `POST /api/comissionamento/cadastrar` com JSON + validação PostGIS | Backend | ✅ **Implementada** — `comissionamento.py` | 3, 9 |
+| **T-18** | Formulário web de comissionamento no painel (`#/comissionamento`) | Frontend | ✅ **Implementada** — wizard 4 passos em `app.js` | 3, 9 |
+| **T-19** | Template de impressão CSS `@media print` para Ficha Técnica / PDF (`#/laudo`) | Frontend | ✅ **Implementada** — `@media print` em `estilo.css` e `laudo` | 3, 9 |
+| **T-20** | Máquina de estados do ciclo de vida da Atalaia com transições automáticas | Backend | ✅ **Implementada** — `007_comissionamento.sql` e `comissionamento.py` | 7, 9 |
+| **T-21** | Cruzamento automático de posição EXIF com declividade FABDEM e suscetibilidade | Backend | ✅ **Implementada** — `comissionamento.py` + PostGIS | 2, 9 |
+| **T-22** | Registro de baseline de comissionamento para manutenção preditiva | Backend | ✅ **Implementada** — `_grava_baseline()` | 7, 9 |
+| **T-23** | Design system de formulários (inputs, botões, stepper, accordion, modal, tooltip) no `estilo.css` | Frontend | ✅ **Implementada** — `estilo.css` (+272 linhas) | 10 |
+| **T-24** | Reorganização da navegação: 3 grupos (Operação / Cadastro / Desenvolvimento) no `index.html` | Frontend | ✅ **Implementada** — `index.html` | 10 |
+| **T-25** | Dashboard operacional `#/situacao` com métricas, mapa miniatura e chuva | Frontend | ✅ **Implementada** — `rotas["situacao"]` | 10 |
+| **T-26** | Wizard de comissionamento em 4 passos (`#/comissionamento`) com checklist interativo | Frontend | ✅ **Implementada** — `app.js` (CC <= 10) | 9, 10 |
+| **T-27** | Migração SQL 009: colunas `reconhecido_em`, `reconhecido_por`, `acao_tomada` na tabela `alarme` | Backend | ✅ **Implementada** — `009_reconhecimento_alarme.sql` | 10 |
+| **T-28** | Aba de Alertas com ação (`#/alertas`): reconhecer, despachar, modal de ação | Frontend | ✅ **Implementada** — `rotas["alertas"]` + modal em `app.js` | 7, 10 |
+| **T-29** | Reformulação de linguagem em todas as rotas: substituir termos internos por linguagem operacional | Frontend | ✅ **Implementada** — `app.js` | 10 |
+| **T-30** | Consolidação de abas de desenvolvimento (7 → 3 + colapsável) | Frontend | ✅ **Implementada** — `index.html` + `app.js` | 10 |
+| **T-31** | Lista de Atalaias `#/atalaias` com filtro por estado e linguagem amigável | Frontend | ✅ **Implementada** — `rotas["atalaias"]` | 9, 10 |
+| **T-32** | Tooltips de ajuda contextual `ⓘ` em termos técnicos (RSSI, SNR, Margem, 84h) | Frontend | ✅ **Implementada** — helper `dica()` em `app.js` | 10 |
 
 ---
 
@@ -900,9 +1148,34 @@ Com base na análise de dependências, no caminho crítico mapeado na §4 e no p
 | **2ª** | ~~Frente 1A+1E (Proto com sensor + espaço para auth)~~ | ~~Desbloqueador: sem payload de sensor, nenhuma frente subsequente avança~~ | ✅ **Concluída** |
 | **3ª** | ~~Frente 2 (Tabelas de sensor, alarme e saúde)~~ | ~~O banco precisa existir antes de os dados chegarem~~ | ✅ **Concluída** (migrações 001–006) |
 | **4ª** | ~~Frente 7A–D (Referência distribuída e catálogo de alarmes)~~ | ~~Valor diferencial do produto; implementação no ingestor~~ | ✅ **Concluída** (migração 004/005) |
-| **5ª** | **Frente 9A–J (Comissionamento, Checklist & Máquina de Estados)** | **Próxima prioridade:** garantia de qualidade de instalação + ativação formal no mapa | 🔜 Pronta para implementar |
-| **6ª** | Frente 8A–C (Secure OTA & Dual Boot) | Atualização segura em campo sem deslacrar invólucro | ⚠️ Depende de RAK3172 |
-| **7ª** | ~~Frente 3C + 5 (Aba de sensor no painel + mapa)~~ | ~~Visualização~~ | ✅ **Concluída** (painel + Leaflet + rotas GIS) |
-| **8ª** | ~~Frente 4 + 6 (QGIS + Gestor Autônomo)~~ | ~~Infraestrutura de apoio~~ | ✅ **Concluída** (`gestor_autonomo.py`) |
-| **9ª** | P-006 (Homologação Anatel) | Maior salto de valor unitário, mas independente do firmware | ⚠️ Pendente |
+| **5ª** | ~~Frente 9A–J (Comissionamento, Checklist & Máquina de Estados)~~ | ~~Garantia de qualidade de instalação + ativação formal no mapa~~ | ✅ **Concluída** (migração 007 + `comissionamento.py`) |
+| **6ª** | ~~Frente 10A–J (Painel de Operações)~~ | ~~Central de operações — formulários, dashboard, alertas com ação~~ | ✅ **Concluída** (migração 009 + wizard + modal) |
+| **7ª** | Frente 8A–C (Secure OTA & Dual Boot) | Atualização segura em campo sem deslacrar invólucro | ⚠️ Depende de RAK3172 |
+| **8ª** | ~~Frente 3C + 5 (Aba de sensor no painel + mapa)~~ | ~~Visualização~~ | ✅ **Concluída** (painel + Leaflet + rotas GIS) |
+| **9ª** | ~~Frente 4 + 6 (QGIS + Gestor Autônomo)~~ | ~~Infraestrutura de apoio~~ | ✅ **Concluída** (`gestor_autonomo.py`) |
+| **10ª** | P-006 (Homologação Anatel) | Maior salto de valor unitário, mas independente do firmware | ⚠️ Pendente |
+
+---
+
+## 10. Registro do Log de Execução e Homologação (01/08/2026)
+
+### 10.1. Sumário Executivo do Registro
+
+Em 01/08/2026, foi concluído com sucesso o ciclo de desenvolvimento das **Frentes 9 e 10**, transformando a interface e o backend do Sentinela de um protótipo de acompanhamento em uma **Central de Operações Completa e Funcional**.
+
+### 10.2. Log de Alterações por Componente
+
+1. **Frontend / UI (`tools/painel/static/`)**:
+   - `estilo.css`: Adicionado o design system de formulários (+272 linhas) cobrindo `.campo`, `.entrada`, `.btn`, `.stepper`, `.expansivel`, `.modal`, `.dica` e feedbacks visuais.
+   - `index.html`: Reestruturação da barra lateral em 3 grupos de navegação (Operação, Cadastro e Campo, Desenvolvimento colapsável). Título oficializado para **"central de operações"**.
+   - `app.js`: Implementação das novas rotas `#/situacao`, `#/chuva`, `#/alertas`, `#/atalaias`, `#/progresso` e do wizard de 4 passos `#/comissionamento`.
+
+2. **Backend & Banco de Dados (`backend/` & `tools/painel/`)**:
+   - `migracoes/009_reconhecimento_alarme.sql`: Criada tabela/alterações com colunas `reconhecido_em`, `reconhecido_por`, `acao_tomada`, `despacho_equipe`, `nota_operador` e procedure `reconhecer_alarme()`.
+   - `banco.py`: Adicionada a função `reconhece_alarme()` para interface com o PostgreSQL.
+   - `servidor.py`: Adicionada a rota POST `/api/alarme/reconhecer`.
+
+3. **Garantia de Qualidade & Regras de Código**:
+   - **Complexidade Ciclomática (McCabe)**: 282 funções auditadas via `tools/complexidade.py`. Média de **3.2** e máxima de **10**. Nenhuma função violou o limite estabelecido no projeto.
+   - **Sintaxe**: Validação estática executada com 100% de aprovação para JavaScript (Node) e Python (`py_compile`).
 

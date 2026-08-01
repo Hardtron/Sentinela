@@ -109,12 +109,9 @@ class Manipulador(SimpleHTTPRequestHandler):
         self.wfile.write(dados)
 
     def do_POST(self):
-        """Só o comissionamento escreve. Corpo em JSON, não multipart: o
-        módulo `cgi` saiu no Python 3.13 e escrever parser de multipart à mão
-        no caminho mais crítico do sistema seria fragilidade gratuita. As
-        fotos chegam pela pasta da Atalaia, que o gestor autônomo já vigia."""
+        """Recepção de comissionamento de Atalaia ou reconhecimento de alarmes."""
         rota = urlparse(self.path)
-        if rota.path != "/api/comissionamento/cadastrar":
+        if rota.path not in ("/api/comissionamento/cadastrar", "/api/alarme/reconhecer"):
             return self._json({"erro": "rota desconhecida"}, 404)
         try:
             tam = int(self.headers.get("Content-Length") or 0)
@@ -123,7 +120,13 @@ class Manipulador(SimpleHTTPRequestHandler):
             payload = json.loads(self.rfile.read(tam).decode("utf-8"))
         except (ValueError, UnicodeDecodeError) as e:
             return self._json({"erro": f"JSON inválido: {e}"}, 400)
-        self._comissiona(payload)
+
+        if rota.path == "/api/comissionamento/cadastrar":
+            self._comissiona(payload)
+        elif rota.path == "/api/alarme/reconhecer":
+            res = banco.reconhece_alarme(payload)
+            status = 200 if "ok" in res else 400
+            self._json(res, status)
 
     def _comissiona(self, payload):
         """Recusa de validação é 400 com o motivo — o técnico em campo precisa

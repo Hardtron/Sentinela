@@ -302,3 +302,31 @@ def gis_ensaios():
     saida = _geojson(linhas)
     saida["erro"] = _estado["erro"]
     return saida
+
+
+def reconhece_alarme(payload):
+    """Executa a chamada da procedure SQL 009 de reconhecimento de alarme."""
+    alarme_id = payload.get("alarme_id")
+    operador = str(payload.get("operador") or "").strip()
+    acao = str(payload.get("acao_tomada") or "RECONHECIDO").strip()
+    despacho = bool(payload.get("despacho_equipe", False))
+    nota = payload.get("nota_operador")
+
+    if not alarme_id:
+        return {"erro": "alarme_id é obrigatório"}
+    if not operador:
+        return {"erro": "operador é obrigatório"}
+    if not acao:
+        return {"erro": "ação tomada é obrigatória"}
+
+    sql = "SELECT reconhecer_alarme(%s, %s, %s, %s, %s)"
+    if psycopg is None:
+        return {"erro": "psycopg não instalado"}
+    try:
+        with psycopg.connect(**_dsn(), connect_timeout=5) as con:
+            with con.cursor() as cur:
+                cur.execute(sql, (int(alarme_id), operador, acao, despacho, nota))
+                con.commit()
+        return {"ok": True, "alarme_id": alarme_id, "reconhecido_por": operador}
+    except Exception as e:                            # noqa: BLE001
+        return {"erro": str(e).strip().split("\n")[0]}

@@ -1,4 +1,4 @@
-/* Sentinela — painel de controle.
+/* Sentinela — central de operações.
    Roteamento por hash, uma função de render por rota. Cada render recebe dados
    já prontos do servidor e só monta HTML — mantém a complexidade baixa e o
    estado fora da view.
@@ -181,24 +181,133 @@ function grafPerdas(serie) {
 
 /* ----------------------------------------------------------------- rotas */
 
+/* T-32: Helper de tooltip contextual. Renderiza um ⓘ com texto de ajuda. */
+const dica = (texto) => `<span class="dica">
+  <span class="dica-icone">ⓘ</span>
+  <span class="dica-conteudo">${esc(texto)}</span></span>`;
+
+/* T-28: POST JSON sem multipart. */
+async function postJSON(rota, corpo) {
+  const r = await fetch(rota, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(corpo),
+  });
+  return r.json();
+}
+
+/* Converte segundos em texto legível para o operador. */
+function tempoAtras(s) {
+  if (s == null) return "—";
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.round(s / 60)} min`;
+  if (s < 86400) return `${Math.round(s / 3600)} h`;
+  return `${Math.round(s / 86400)} dias`;
+}
+
+/* Estado da Atalaia em linguagem operacional. */
+const NOMES_ESTADO = {
+  REGISTRADA: "Cadastrada",
+  INSTALADA: "Instalada em campo",
+  COMISSIONANDO: "Em ativação",
+  VALIDANDO_ENLACE: "Testando comunicação…",
+  OPERACIONAL: "Operacional",
+  FALHA_ENLACE: "Falha na comunicação",
+  MANUTENCAO: "Em manutenção",
+  DESATIVADA: "Desativada",
+};
+
 const rotas = {};
 
-rotas["visao-geral"] = async () => {
-  const [v, g] = await Promise.all([dados("/api/visao-geral"), dados("/api/git")]);
-  const m = v.modelo;
-  const ccClasse = v.cc_maxima > v.cc_limite ? "erro" : "ok";
+/* ================================================= T-25: DASHBOARD (Situação)
+   Tela principal do operador — substitui a antiga "Visão geral" que mostrava
+   fases do PLANO.md e commits. Aqui só há informação de operação. */
 
-  return cabecalho("Visão geral", `Estado do projeto em ${v.gerado_em.replace("T", " ")}.`)
+rotas["situacao"] = async () => {
+  const [sit, com, tel] = await Promise.all([
+    api("/api/situacao").catch(() => null),
+    api("/api/comissionamento").catch(() => null),
+    api("/api/telemetria").catch(() => null),
+  ]);
+
+  const estacoes = sit?.estacoes || [];
+  const atalaias = com?.atalaias || [];
+  const oper = atalaias.filter((a) => a.estado === "OPERACIONAL").length;
+  const alertas = (com?.transicoes || []).length;
+  const chuvaMax = estacoes.reduce((m, e) => Math.max(m, e.mm_84h || 0), 0);
+  const mqttOk = tel?.ligacao?.conectado;
+
+  return cabecalho("Situação",
+    "Resumo operacional do sistema de monitoramento.")
+    + `<div class="grade g4">
+      ${metrica("Atalaias operacionais", `${oper}/${atalaias.length}`,
+        oper ? "em campo" : "nenhuma ativa ainda",
+        oper ? "ok" : "")}
+      ${metrica("Comunicação", mqttOk ? "conectada" : "sem conexão",
+        mqttOk ? `${tel.amostras} amostras na janela` : "broker MQTT fora do ar",
+        mqttOk ? "ok" : "erro")}
+      ${metrica("Chuva 84h máxima",
+        chuvaMax ? chuvaMax + " mm" : "—",
+        `${estacoes.length} estações oficiais`,
+        chuvaMax > 80 ? "atencao" : "")}
+      ${metrica("Estações oficiais", estacoes.length || "—",
+        "CEMADEN / INMET")}
+    </div>`
+
+    + (estacoes.length ? secao("Chuva acumulada — rede oficial")
+      + tabela([
+        { rot: "Estação", val: (e) => `<strong>${esc(e.nome || e.codigo)}</strong>` },
+        { rot: "Município", val: (e) => esc(e.municipio || "—") },
+        { rot: "24h", val: (e) => (e.mm_24h ?? "—") + " mm", classe: "num" },
+        { rot: "72h", val: (e) => (e.mm_72h ?? "—") + " mm", classe: "num" },
+        { rot: "84h", val: (e) => `<strong>${e.mm_84h ?? "—"} mm</strong>`, classe: "num" },
+      ], estacoes)
+      + `<p class="nota">Acumulados em janela móvel. 84 h é a referência
+        da Serra do Mar. ${dica("Baseado na envoltória de Tatizana et al. (1987), referência fundacional para correlação chuva-deslizamento na Serra do Mar.")}</p>`
+      : "")
+
+    + secao("Atalaias")
+    + (atalaias.length ? tabela([
+      { rot: "Atalaia", val: (a) => `<strong>${esc(a.placa)}</strong>` },
+      { rot: "Estado", val: (a) => `<span class="tag ${CORES_ESTADO_TAG[a.estado] || "neutro"}">${esc(NOMES_ESTADO[a.estado] || a.estado)}</span>` },
+      { rot: "Posição", val: (a) => a.tem_posicao
+        ? `<span class="tag ok">sim</span>`
+        : `<span class="tag neutro">não</span>` },
+      { rot: "Enlace", val: (a) => a.teste_enlace_aprovado === true
+        ? `<span class="tag ok">aprovado</span>`
+        : a.teste_enlace_aprovado === false
+        ? `<span class="tag erro">reprovado</span>`
+        : `<span class="tag neutro">—</span>` },
+    ], atalaias.slice(0, 10))
+    + (atalaias.length > 10 ? `<p class="nota"><a href="#/atalaias">Ver todas as ${atalaias.length} Atalaias →</a></p>` : "")
+    : `<div class="vazio">Nenhuma Atalaia cadastrada no sistema.</div>`);
+};
+
+/* Alias: rota padrão é "situacao", não mais "visao-geral" */
+rotas["visao-geral"] = rotas["situacao"];
+
+/* ================================================= T-30: PROGRESSO (consolida visão geral + pendências + timeline) */
+
+rotas["progresso"] = async () => {
+  const [v, g, p] = await Promise.all([
+    dados("/api/visao-geral"), dados("/api/git"), dados("/api/pendencias"),
+  ]);
+  const m = v.modelo;
+  const abertas = p.filter((i) => !i.resolvida);
+
+  return cabecalho("Progresso do Projeto",
+    `Estado do desenvolvimento — para a equipe de engenharia.`)
     + `<div class="grade g4">
       ${metrica("Fase", v.fase.split("—")[0].trim(), v.fase.split("—")[1] || "")}
-      ${metrica("Pendências abertas", v.pendencias_abertas,
-        `de ${v.pendencias_total} registradas`,
-        v.pendencias_abertas > 8 ? "atencao" : "")}
-      ${metrica("Complexidade máx.", v.cc_maxima,
-        `limite ${v.cc_limite} · média ${v.cc_media}`, ccClasse)}
+      ${metrica("Pendências abertas", abertas.length,
+        `de ${p.length} registradas`,
+        abertas.length > 8 ? "atencao" : "")}
+      ${metrica("CC máxima", v.cc_maxima,
+        `limite ${v.cc_limite} · média ${v.cc_media}`,
+        v.cc_maxima > v.cc_limite ? "erro" : "ok")}
       ${metrica("Documentação", v.linhas_doc.toLocaleString("pt-BR"),
         `${v.documentos} documentos`)}
     </div>`
+
     + secao("Progresso por fase")
     + `<div class="cartao">${(v.fases || []).map((f) => {
         const tot = f.feitos + f.parciais + f.abertos || 1;
@@ -218,11 +327,8 @@ rotas["visao-geral"] = async () => {
           </div>
         </div>`;
       }).join("")}
-      <p class="nota">Contado das caixas do <code>PLANO.md</code>, não escrito à
-      mão — verde é concluído, âmbar é parcial. O trabalho corre em mais de uma
-      fase ao mesmo tempo: a Fase 2 fechou enquanto a Fase 0 ainda tem o ensaio
-      de campo de SF em aberto.</p>
     </div>`
+
     + secao("Modelo de propagação medido")
     + `<div class="grade g4">
       ${metrica("Expoente n", m.expoente_n, `RMS ${m.rms_db} dB`, "ok")}
@@ -232,55 +338,151 @@ rotas["visao-geral"] = async () => {
         "atencao")}
       ${metrica("Literatura", m.referencia_literatura.floresta_tropical,
         "floresta tropical, 923 MHz")}
-    </div>
-    <p class="nota">O expoente medido (3,28) é praticamente idêntico ao publicado
-    para floresta tropical (3,22) — alvenaria esparsa e mata atenuam de forma
-    comparável.</p>`
+    </div>`
+
+    + secao("Pendências abertas")
+    + `<div id="lista-pend"></div>`
+
     + secao("Atividade recente")
     + `<div class="cartao"><div class="linha-tempo">
-      ${g.commits.slice(0, 6).map((c) => `
-        <div class="evento">
-          <div class="quando">${c.data}</div>
-          <div class="oque">${esc(c.assunto)}</div>
-        </div>`).join("")}
-    </div></div>`;
-};
-
-rotas["pendencias"] = async () => {
-  const p = await dados("/api/pendencias");
-  const abertas = p.filter((i) => !i.resolvida);
-  const grupos = [...new Set(p.map((i) => i.grupo))];
-
-  return cabecalho("Pendências",
-    "Consolidado de todos os documentos. Itens resolvidos ficam registrados para rastreabilidade.")
-    + `<div class="filtros">
-        <button class="filtro ativo" data-f="abertas">Abertas (${abertas.length})</button>
-        <button class="filtro" data-f="todas">Todas (${p.length})</button>
-        ${grupos.map((g) => `<button class="filtro" data-f="${g}">${g}</button>`).join("")}
-      </div><div id="lista-pend"></div>`;
-};
-
-function renderPendencias(itens) {
-  el("lista-pend").innerHTML = tabela([
-    { rot: "ID", val: (i) => `<span class="tag ${i.resolvida ? "neutro" : "acento"}">${i.id}</span>` },
-    { rot: "Descrição", val: (i) => esc(i.descricao), classe: "livre" },
-    { rot: "Situação", val: (i) => esc(i.situacao), classe: "livre" },
-    { rot: "Origem", val: (i) => `<code>${i.origem.replace("docs/", "")}</code>` },
-  ], itens);
-}
-
-rotas["timeline"] = async () => {
-  const g = await dados("/api/git");
-  return cabecalho("Linha do tempo",
-    `Histórico do repositório — branch <code>${g.branch}</code>.`)
-    + `<div class="cartao"><div class="linha-tempo">
-      ${g.commits.map((c) => `
+      ${g.commits.slice(0, 10).map((c) => `
         <div class="evento">
           <div class="quando">${c.data} · <span class="hash">${c.hash}</span></div>
           <div class="oque">${esc(c.assunto)}</div>
         </div>`).join("")}
     </div></div>`;
 };
+
+/* Mantém rotas antigas como alias para não quebrar bookmarks */
+rotas["pendencias"] = rotas["progresso"];
+rotas["timeline"] = rotas["progresso"];
+
+/* ================================================= T-29/T-30: CHUVA E SENSORES (renomeia "sensor") */
+
+rotas["chuva"] = async () => {
+  const [s, sit] = await Promise.all([
+    api("/api/sensor"), api("/api/situacao").catch(() => null)]);
+  const cab = cabecalho("Chuva e Sensores",
+    `Chuva: dados oficiais da rede CEMADEN/INMET. Umidade de solo e
+     inclinação: sensores locais da Atalaia.`);
+
+  if (!s.leituras.length) {
+    return cab + blocoChuvaOficial(sit) + semDado(
+      "Nenhuma leitura de sensor local no banco ainda.")
+      + `<p class="nota">Os sensores locais passam a mostrar dados
+      quando a primeira Atalaia com sensor entrar em operação.</p>`;
+  }
+
+  const chuva = Object.fromEntries(s.chuva.map((c) => [c.node_id, c]));
+  return cab + blocoChuvaOficial(sit) + secao("Sensores locais — última leitura")
+    + tabela([
+      { rot: "Atalaia", val: (l) => `<strong>${esc(l.placa || l.node_id)}</strong>` },
+      { rot: "Chuva 1h", val: (l) => l.chuva_valida
+        ? `${l.chuva_1h_mm} mm` : `<span class="tag neutro">sem leitura</span>` },
+      { rot: "24h", val: (l) => (chuva[l.node_id]?.mm_24h ?? "—") + " mm", classe: "num" },
+      { rot: "72h", val: (l) => (chuva[l.node_id]?.mm_72h ?? "—") + " mm", classe: "num" },
+      { rot: "Inclinação", val: (l) => l.inclin_valida
+        ? `${l.pitch_graus}° / ${l.roll_graus}°`
+        : `<span class="tag neutro">sem leitura</span>` },
+      { rot: "Solo", val: (l) => l.solo_valido
+        ? `${l.umidade_solo}%` : `<span class="tag neutro">—</span>` },
+      { rot: "Bateria", val: (l) => `${l.bateria_mv} mV`, classe: "num" },
+    ], s.leituras);
+};
+
+/* Alias: "sensor" antigo aponta para "chuva" */
+rotas["sensor"] = rotas["chuva"];
+
+/* ================================================= T-31: ATALAIAS CADASTRADAS */
+
+rotas["atalaias"] = async () => {
+  const c = await api("/api/comissionamento");
+  if (c.erro) return cabecalho("Atalaias Cadastradas", "") + semDado("Banco indisponível.", c.erro);
+
+  return cabecalho("Atalaias Cadastradas",
+    `Todas as Atalaias registradas no sistema, do cadastro à operação.`)
+    + `<div class="grade g4">
+      ${metrica("Total", c.atalaias.length, "cadastradas")}
+      ${metrica("Operacionais", c.atalaias.filter((a) => a.estado === "OPERACIONAL").length,
+        "", "ok")}
+      ${metrica("Em manutenção",
+        c.atalaias.filter((a) => a.estado === "MANUTENCAO").length, "", "atencao")}
+      ${metrica("Com falha",
+        c.atalaias.filter((a) => a.estado === "FALHA_ENLACE").length, "", "erro")}
+    </div>`
+    + `<div class="filtros">
+        <button class="filtro ativo" data-e="todas">Todas (${c.atalaias.length})</button>
+        <button class="filtro" data-e="OPERACIONAL">Operacionais</button>
+        <button class="filtro" data-e="MANUTENCAO">Em manutenção</button>
+        <button class="filtro" data-e="FALHA_ENLACE">Com falha</button>
+      </div><div id="lista-atalaias"></div>`;
+};
+
+function renderAtalaias(itens) {
+  el("lista-atalaias").innerHTML = tabela([
+    { rot: "Atalaia", val: (a) => `<strong>${esc(a.placa)}</strong>` },
+    { rot: "Estado", val: (a) =>
+      `<span class="tag ${CORES_ESTADO_TAG[a.estado] || "neutro"}">${esc(NOMES_ESTADO[a.estado] || a.estado)}</span>` },
+    { rot: "Posição", val: (a) => a.tem_posicao
+      ? `<span class="tag ok">sim</span>`
+      : `<span class="tag neutro">não</span>` },
+    { rot: "Suscetibilidade", val: (a) => esc(a.classe_suscetibilidade || "—") },
+    { rot: "Estação mais próxima", val: (a) => a.distancia_estacao_m
+      ? `${Math.round(a.distancia_estacao_m)} m` : "—", classe: "num" },
+    { rot: "Enlace", val: (a) => a.teste_enlace_aprovado === true
+      ? `<span class="tag ok">aprovado</span>`
+      : a.teste_enlace_aprovado === false
+      ? `<span class="tag erro">reprovado</span>`
+      : `<span class="tag neutro">—</span>` },
+    { rot: "Responsável", val: (a) => esc(a.responsavel_campo || "—"), classe: "livre" },
+    { rot: "Ficha", val: (a) => a.checklist_em
+      ? `<a href="#/laudo?no=${a.node_id}">ver laudo</a>` : "—" },
+  ], itens);
+}
+
+/* ================================================= T-28: ALERTAS COM AÇÃO */
+
+rotas["alertas"] = async () => {
+  const f = await dados("/api/frota");
+  const sev = f.por_severidade;
+  const grupos = [...new Set(f.alarmes.map((a) => a.grupo))];
+
+  return cabecalho("Alertas",
+    `Alarmes do sistema de monitoramento. Uma Atalaia fora do ar é um
+     talude sem monitoramento — por isso silêncio é classificado como crítico.`)
+    + `<div class="grade g4">
+      ${metrica("Críticos", sev.CRITICO || 0, "ação imediata", "erro")}
+      ${metrica("Urgentes", sev.URGENTE || 0, "dias de margem", "atencao")}
+      ${metrica("Atenção", sev.ATENCAO || 0, "semanas de margem")}
+      ${metrica("Atalaias monitoradas", f.operando, `${f.previstos} previstas`)}
+    </div>`
+
+    + secao("O que cada padrão de energia revela")
+    + tabela([
+      { rot: "O que se observa", val: (a) => esc(a.padrao), classe: "livre" },
+      { rot: "Diagnóstico provável", val: (a) => `<strong>${esc(a.diagnostico)}</strong>`, classe: "livre" },
+      { rot: "Ação recomendada", val: (a) => esc(a.acao) },
+    ], f.assinaturas)
+    + `<p class="nota">Sujeira reduz a captação uniformemente; sombra atua em
+       janela horária específica. A forma da curva separa as duas.
+       ${dica("A comparação é feita contra a mediana das Atalaias vizinhas, eliminando a variável climática sem sensor de referência.")}</p>`
+
+    + secao("Catálogo de alarmes")
+    + `<div class="filtros">
+        <button class="filtro ativo" data-g="todos">Todos (${f.alarmes.length})</button>
+        ${grupos.map((g) => `<button class="filtro" data-g="${g}">${g}</button>`).join("")}
+      </div><div id="lista-alarmes"></div>`
+
+    + secao("Como se calcula o índice de saúde")
+    + `<div class="cartao">${grafBarras(f.pesos_saude.map((p) => ({
+        rot: `${p.componente} — ${p.entra_com}`, valor: p.peso })))}
+      <p class="nota">Faixas: 90–100 saudável · 70–89 observar · 50–69 agendar ·
+      abaixo de 50 intervir. Qualquer alarme crítico zera o índice.
+      ${dica("Uma Atalaia muda com bateria cheia não é 70% saudável — é inútil. Por isso alarme crítico zera o índice inteiro.")}</p>
+    </div>`;
+};
+
+/* Alias: "frota" mantém compatibilidade com bookmarks antigos */
 
 /* ------------------------------------------------- monitoramento ao vivo */
 
@@ -293,11 +495,9 @@ const NOMES_VEREDITO = {
   "sem dados": "sem dados",
 };
 
-rotas["monitor"] = async () => cabecalho("Monitoramento em tempo real",
-  `Telemetria ao vivo da rede LoRa, direto do broker MQTT. Atualiza sozinho a
-   cada 2 s. <strong>Subida</strong> é o nó falando com o gateway;
-   <strong>descida</strong> é o gateway respondendo — medir os dois sentidos é
-   o que revela enlace assimétrico.`)
+rotas["monitor"] = async () => cabecalho("Rede ao Vivo",
+  `Comunicação em tempo real com as Atalaias. Atualiza a cada 2 segundos.
+   ${dica("Subida é o nó falando com o gateway. Descida é o gateway respondendo. Medir os dois sentidos revela assimetrias no enlace.")}`)
   + `<div id="mon-estado"></div>
      <div id="mon-metricas"></div>
      <div id="mon-graficos"></div>
@@ -504,47 +704,7 @@ function blocoChuvaOficial(sit) {
         técnico a um palpite.</p></div>` : "");
 }
 
-rotas["sensor"] = async () => {
-  const [s, sit] = await Promise.all([
-    api("/api/sensor"), api("/api/situacao").catch(() => null)]);
-  const cab = cabecalho("Sensores",
-    `Duas escalas, cada uma na fonte em que é confiável (ADR-009):
-     <strong>chuva</strong> vem da rede oficial, que é regional e certificada;
-     <strong>umidade de solo e inclinação</strong> vêm da Atalaia, que é o
-     único instrumento naquele talude. Acumulados sempre em janela móvel — é o
-     acumulado que prediz deslizamento, não a chuva da hora cheia.`);
-
-  if (!s.leituras.length) {
-    return cab + blocoChuvaOficial(sit) + semDado(
-      "Nenhuma leitura de sensor local no banco ainda.", s.erro)
-      + `<p class="nota">Esperado neste momento: o payload de sensor
-      (<code>lib/proto/</code>) já existe e o banco já tem a tabela, mas
-      <strong>nenhum sensor foi adquirido</strong> (P-013) — a rede em campo
-      hoje transmite só telemetria de enlace. Esta aba passa a mostrar dado
-      assim que a primeira Atalaia com pluviômetro entrar em operação.</p>`;
-  }
-
-  const chuva = Object.fromEntries(s.chuva.map((c) => [c.node_id, c]));
-  return cab + blocoChuvaOficial(sit) + secao("Sensores locais — última leitura")
-    + tabela([
-      { rot: "Nó", val: (l) => `<strong>${esc(l.placa || l.node_id)}</strong>` },
-      { rot: "Chuva 1h", val: (l) => l.chuva_valida
-        ? `${l.chuva_1h_mm} mm` : `<span class="tag neutro">sem leitura</span>` },
-      { rot: "24h", val: (l) => (chuva[l.node_id]?.mm_24h ?? "—") + " mm", classe: "num" },
-      { rot: "72h", val: (l) => (chuva[l.node_id]?.mm_72h ?? "—") + " mm", classe: "num" },
-      { rot: "Inclinação", val: (l) => l.inclin_valida
-        ? `${l.pitch_graus}° / ${l.roll_graus}°`
-        : `<span class="tag neutro">sem leitura</span>` },
-      { rot: "Solo", val: (l) => l.solo_valido
-        ? `${l.umidade_solo}%` : `<span class="tag neutro">—</span>` },
-      { rot: "Bateria", val: (l) => `${l.bateria_mv} mV`, classe: "num" },
-      { rot: "Fonte", val: (l) => `<span class="tag ${l.fonte === "sentinela"
-        ? "acento" : "neutro"}">${esc(l.fonte)}</span>` },
-    ], s.leituras);
-};
-
-
-/* ------------------------------------------- comissionamento (Frente 9) */
+/* ------------------------------------------- comissionamento (Frente 9/10) */
 
 const CORES_ESTADO_TAG = {
   REGISTRADA: "neutro", INSTALADA: "acento", COMISSIONANDO: "atencao",
@@ -553,72 +713,238 @@ const CORES_ESTADO_TAG = {
 };
 
 const selEstado = (e) =>
-  `<span class="tag ${CORES_ESTADO_TAG[e] || "neutro"}">${esc(e || "—")}</span>`;
+  `<span class="tag ${CORES_ESTADO_TAG[e] || "neutro"}">${esc(NOMES_ESTADO[e] || e || "—")}</span>`;
 
+/* T-26: Definição do checklist — 6 seções com itens e ajuda. */
+const CHECKLIST = [
+  { id: "secao_a_identificacao", titulo: "A — Identificação", campos: [
+    { chave: "codigo", tipo: "text", rot: "Código da Atalaia", ajuda: "Ex: ATL-CGB-001", obg: true },
+    { chave: "farol", tipo: "text", rot: "Farol de referência", ajuda: "Marco geográfico próximo" },
+  ]},
+  { id: "secao_b_mecanica", titulo: "B — Estabilidade mecânica", campos: [
+    { chave: "ancoragem", tipo: "select", rot: "Ancoragem da haste", ajuda: "A haste está firme no solo, sem folga?" },
+    { chave: "separacao", tipo: "select", rot: "Separação da vegetação", ajuda: "Vegetação encostando pode causar falsos alarmes de movimento" },
+    { chave: "folga_veg", tipo: "select", rot: "Folga mínima 50 cm", ajuda: "Distância da vegetação mais próxima" },
+    { chave: "profundidade", tipo: "text", rot: "Profundidade (cm)", ajuda: "Quanto da haste está enterrada" },
+  ]},
+  { id: "secao_c_energia", titulo: "C — Energia fotovoltaica", campos: [
+    { chave: "orientacao", tipo: "select", rot: "Orientação do painel", ajuda: "O painel está voltado para o norte?" },
+    { chave: "sombra", tipo: "select", rot: "Livre de sombreamento", ajuda: "Nenhuma sombra sobre o painel nas horas de sol" },
+    { chave: "tensao_v", tipo: "text", rot: "Tensão aberta (V)", ajuda: "Medida com multímetro, painel desconectado" },
+  ]},
+  { id: "secao_d_estanqueidade", titulo: "D — Estanqueidade", campos: [
+    { chave: "oring", tipo: "select", rot: "O-ring presente e sem dano", ajuda: "Borracha de vedação da tampa" },
+    { chave: "prensacabos", tipo: "select", rot: "Prensa-cabos apertados", ajuda: "Passagem de cabos vedada" },
+    { chave: "umidade_pct", tipo: "text", rot: "Umidade interna (%)", ajuda: "Sensor BME280 interno, leitura via display" },
+    { chave: "silica", tipo: "select", rot: "Sílica-gel presente", ajuda: "Sachê absorvente dentro do invólucro" },
+  ]},
+  { id: "secao_e_sensoriamento", titulo: "E — Sensoriamento", campos: [
+    { chave: "ref_zero", tipo: "select", rot: "Referência zero do inclinômetro", ajuda: "O inclinômetro foi zerado com a haste nivelada?" },
+    { chave: "prof_solo", tipo: "text", rot: "Profundidade sensores de solo (cm)", ajuda: "A que profundidade os sensores de umidade foram enterrados" },
+    { chave: "temp_base", tipo: "text", rot: "Temperatura baseline (°C)", ajuda: "Temperatura do BME280 no momento da instalação" },
+  ]},
+  { id: "secao_f_radio", titulo: "F — Conectividade rádio", campos: [
+    { chave: "antena", tipo: "select", rot: "Antena externa conectada", ajuda: "A antena de 6 dBi está conectada ao pigtail?" },
+    { chave: "conector_selado", tipo: "select", rot: "Conector selado", ajuda: "Vedação do conector SMA na passagem pelo invólucro" },
+    { chave: "obs_radio", tipo: "area", rot: "Observações de conectividade", ajuda: "Obstáculos, linha de visada, distância ao gateway" },
+  ]},
+];
+
+/* Monta um item de formulário. CC = 3 */
+function campoForm(c) {
+  const req = c.obg ? '<span class="obrigatorio">*</span>' : "";
+  const ajuda = c.ajuda ? `<span class="campo-ajuda">${esc(c.ajuda)}</span>` : "";
+  const id = `chk-${c.chave}`;
+  let input;
+  if (c.tipo === "select") {
+    input = `<select class="entrada" id="${id}" name="${c.chave}">
+      <option value="">— selecionar —</option>
+      <option value="SIM">Conforme</option>
+      <option value="NAO">Não conforme</option>
+    </select>`;
+  } else if (c.tipo === "area") {
+    input = `<textarea class="entrada" id="${id}" name="${c.chave}" placeholder="${esc(c.ajuda || "")}"></textarea>`;
+  } else {
+    input = `<input class="entrada" id="${id}" name="${c.chave}" type="text" placeholder="${esc(c.ajuda || "")}">`;
+  }
+  return `<div class="campo">
+    <label class="campo-label" for="${id}">${esc(c.rot)} ${req}</label>
+    ${ajuda}${input}
+    <span class="campo-erro">Este campo é obrigatório</span></div>`;
+}
+
+/* Monta uma seção do checklist como accordion. CC = 1 */
+function secaoChecklist(s) {
+  return `<div class="expansivel" data-secao="${s.id}">
+    <div class="expansivel-cab">${esc(s.titulo)}
+      <span class="expansivel-status pendente">pendente</span></div>
+    <div class="expansivel-corpo">
+      <div class="campo-grupo">${s.campos.map(campoForm).join("")}</div>
+    </div></div>`;
+}
+
+/* T-26: Wizard — renderizador de cada passo. CC = 2 */
+function wizardPasso1(atalaias) {
+  const opts = atalaias
+    .filter((a) => ["REGISTRADA", "INSTALADA", "FALHA_ENLACE"].includes(a.estado))
+    .map((a) => `<option value="${a.node_id}">${esc(a.placa)} — ${esc(NOMES_ESTADO[a.estado] || a.estado)}</option>`);
+  return `<div class="campo">
+    <label class="campo-label" for="wiz-atalaia">Selecione a Atalaia ${dica("Escolha a Atalaia que a equipe de campo acabou de instalar ou que precisa ser recomissionada.")}</label>
+    <select class="entrada" id="wiz-atalaia"><option value="">— selecionar —</option>${opts.join("")}</select>
+  </div>
+  <div class="campo-grupo">
+    <div class="campo"><label class="campo-label" for="wiz-resp">Responsável de campo (CRT) <span class="obrigatorio">*</span></label>
+      <input class="entrada" id="wiz-resp" placeholder="Nome do técnico responsável"></div>
+    <div class="campo"><label class="campo-label" for="wiz-geo">Responsável geotécnico (CREA)</label>
+      <input class="entrada" id="wiz-geo" placeholder="Eng. geotécnico ou geólogo"></div>
+    <div class="campo"><label class="campo-label" for="wiz-autor">Submetido por <span class="obrigatorio">*</span></label>
+      <input class="entrada" id="wiz-autor" placeholder="Quem está cadastrando agora"></div>
+  </div>`;
+}
+
+function wizardPasso2() {
+  return CHECKLIST.map(secaoChecklist).join("");
+}
+
+function wizardPasso3() {
+  return `<div class="campo">
+    <label class="campo-label" for="wiz-lat">Latitude ${dica("Coordenada da instalação. Se a foto georeferenciada estiver na pasta da Atalaia, o sistema usa o EXIF automaticamente.")}</label>
+    <input class="entrada" id="wiz-lat" type="text" placeholder="-23.5754 (opcional se há foto com GPS)"></div>
+  <div class="campo">
+    <label class="campo-label" for="wiz-lon">Longitude</label>
+    <input class="entrada" id="wiz-lon" type="text" placeholder="-45.3305 (opcional se há foto com GPS)"></div>
+  <div class="campo">
+    <label class="campo-label" for="wiz-just">Justificativa da posição ${dica("Obrigatória quando lat/lon é digitada manualmente, sem foto EXIF.")}</label>
+    <textarea class="entrada" id="wiz-just" placeholder="Obrigatória se a posição foi digitada manualmente"></textarea></div>
+  <div class="campo">
+    <label class="campo-label" for="wiz-obs">Observações gerais</label>
+    <textarea class="entrada" id="wiz-obs" placeholder="Condições do terreno, acesso, notas relevantes"></textarea></div>
+  <p class="nota">As fotos da instalação devem ser copiadas para a pasta da Atalaia
+    no servidor. O sistema lê automaticamente o GPS do EXIF.
+    ${dica("Pasta padrão: /DATA/Projects/Sentinela-Media/Atalaias/<código>/fotos/")}</p>`;
+}
+
+/* Monta resumo do checklist preenchido. CC = 3 */
+function wizardPasso4Resumo() {
+  const dados = coletaChecklist();
+  let html = '<div class="grade g3">';
+  html += metrica("Atalaia", dados.placa || "—", "");
+  html += metrica("Responsável", dados.responsavel_campo || "—", "");
+  html += metrica("Submetido por", dados.submetido_por || "—", "");
+  html += "</div>";
+  CHECKLIST.forEach((s) => {
+    const secDados = dados[s.id] || {};
+    const total = s.campos.length;
+    const preenchidos = s.campos.filter((c) => secDados[c.chave]).length;
+    const cor = preenchidos === total ? "ok" : "atencao";
+    html += `<p><span class="tag ${cor}">${preenchidos}/${total}</span> ${esc(s.titulo)}</p>`;
+  });
+  return html;
+}
+
+/* Coleta os dados de todos os campos do wizard. CC = 5 */
+function coletaChecklist() {
+  const v = (id) => (el(id)?.value || "").trim();
+  const dados = {
+    node_id: parseInt(v("wiz-atalaia")) || null,
+    placa: el("wiz-atalaia")?.selectedOptions?.[0]?.textContent?.split(" — ")[0] || "",
+    submetido_por: v("wiz-autor"),
+    responsavel_campo: v("wiz-resp"),
+    responsavel_geotecnico: v("wiz-geo"),
+    lat: parseFloat(v("wiz-lat")) || null,
+    lon: parseFloat(v("wiz-lon")) || null,
+    justificativa_posicao: v("wiz-just"),
+    observacoes: v("wiz-obs"),
+  };
+  CHECKLIST.forEach((s) => {
+    const sec = {};
+    s.campos.forEach((c) => { sec[c.chave] = v(`chk-${c.chave}`); });
+    dados[s.id] = sec;
+  });
+  return dados;
+}
+
+/* Envia o comissionamento ao backend. CC = 4 */
+async function enviaComissionamento() {
+  const dados = coletaChecklist();
+  if (!dados.node_id) return exibeFeedback("erro", "Selecione a Atalaia no passo 1.");
+  if (!dados.submetido_por) return exibeFeedback("erro", "Informe quem está submetendo.");
+  if (!dados.responsavel_campo) return exibeFeedback("erro", "Informe o responsável de campo.");
+  el("wiz-enviar").disabled = true;
+  el("wiz-enviar").textContent = "Enviando…";
+  const r = await postJSON("/api/comissionamento/cadastrar", dados);
+  el("wiz-enviar").disabled = false;
+  el("wiz-enviar").textContent = "Submeter comissionamento";
+  if (r.erro) return exibeFeedback("erro", r.erro);
+  exibeFeedback("ok", `Comissionamento registrado com sucesso. ${r.estado ? "Estado: " + (NOMES_ESTADO[r.estado] || r.estado) : ""}`);
+}
+
+function exibeFeedback(tipo, msg) {
+  const alvo = el("wiz-feedback");
+  if (!alvo) return;
+  const cls = tipo === "ok" ? "aviso-sucesso" : "aviso-erro";
+  alvo.innerHTML = `<div class="${cls}"><strong>${tipo === "ok" ? "✓" : "✗"}</strong> ${esc(msg)}</div>`;
+}
+
+/* T-26: Rota principal do wizard. CC = 2 */
 rotas["comissionamento"] = async () => {
   const c = await api("/api/comissionamento");
-  const cab = cabecalho("Comissionamento",
-    `Ciclo de vida da Atalaia, de <em>REGISTRADA</em> a <em>OPERACIONAL</em>.
-     Uma Atalaia comissionada sem validação é fonte de falso positivo ou falso
-     negativo — os dois perigosos num sistema de alerta. As pré-condições de
-     cada transição são verificadas <strong>no banco</strong>, não só aqui.`);
+  if (c.erro) return cabecalho("Nova Atalaia", "") + semDado("Banco indisponível.", c.erro);
 
-  if (c.erro) return cab + semDado("Banco indisponível.", c.erro);
-
-  const oper = c.atalaias.filter((a) => a.estado === "OPERACIONAL").length;
-  return cab
-    + `<div class="grade g4">
-        ${metrica("Operacionais", oper, `de ${c.atalaias.length} cadastradas`,
-          oper ? "ok" : "")}
-        ${metrica("Com posição", c.atalaias.filter((a) => a.tem_posicao).length,
-          "coordenada validada")}
-        ${metrica("Com checklist", c.atalaias.filter((a) => a.checklist_em).length,
-          "submetido")}
-        ${metrica("Transições", c.transicoes.length, "registradas (auditoria)")}
-      </div>`
-    + secao("Estado das Atalaias")
-    + tabela([
-      { rot: "Atalaia", val: (a) => `<strong>${esc(a.placa)}</strong>` },
-      { rot: "Estado", val: (a) => selEstado(a.estado) },
-      { rot: "Posição", val: (a) => a.tem_posicao
-        ? `<span class="tag ok">sim</span>`
-        : `<span class="tag neutro">não</span>` },
-      { rot: "Suscetib.", val: (a) => esc(a.classe_suscetibilidade || "—") },
-      { rot: "Estação", val: (a) => a.distancia_estacao_m
-        ? `${Math.round(a.distancia_estacao_m)} m` : "—", classe: "num" },
-      { rot: "Enlace", val: (a) => a.teste_enlace_aprovado === true
-        ? `<span class="tag ok">aprovado</span>`
-        : a.teste_enlace_aprovado === false
-        ? `<span class="tag erro">reprovado</span>`
-        : `<span class="tag neutro">—</span>` },
-      { rot: "Responsável", val: (a) => esc(a.responsavel_campo || "—"), classe: "livre" },
-      { rot: "Laudo", val: (a) => a.checklist_em
-        ? `<a href="#/laudo?no=${a.node_id}">ficha</a>` : "—" },
-    ], c.atalaias)
-
-    + secao("Critérios de aceite")
-    + tabela([
-      { rot: "Critério", val: (k) => `<code>${esc(k.chave)}</code>` },
-      { rot: "Valor", val: (k) => `${k.valor} ${esc(k.unidade || "")}`, classe: "num" },
-      { rot: "Fonte", val: (k) => `<span class="tag acento">${esc(k.fonte)}</span>` },
-      { rot: "Por quê", val: (k) => esc(k.descricao || ""), classe: "livre" },
-    ], c.criterios)
-    + `<p class="nota">Os limiares vêm do <strong>ensaio 02 [M]</strong> e dos
-       critérios de campo já usados no display (<code>ui_dev.h</code>) — não são
-       números novos. Ficam em tabela para poderem ser ajustados sem alterar
-       código, mas com a origem registrada.</p>`
-
-    + secao("Trilha de auditoria")
-    + tabela([
-      { rot: "Quando", val: (x) => esc((x.ocorrida_em || "").replace("T", " ").slice(0, 19)) },
-      { rot: "Atalaia", val: (x) => esc(x.placa) },
-      { rot: "Transição", val: (x) => `${esc(x.de || "—")} → ${selEstado(x.para)}` },
-      { rot: "Autor", val: (x) => esc(x.autor) },
-      { rot: "Motivo", val: (x) => esc(x.motivo || ""), classe: "livre" },
-    ], c.transicoes)
-    + `<p class="nota">Quem ativou cada Atalaia e quando — é a pergunta que a
-       Defesa Civil vai fazer se um alerta for contestado (RC-10).</p>`;
+  return cabecalho("Nova Atalaia",
+    `Cadastro e comissionamento de uma Atalaia. O sistema valida automaticamente cada etapa.
+     ${dica("Uma Atalaia comissionada sem validação é fonte de falso positivo ou negativo — os dois perigosos num sistema de alerta.")}`)
+    + `<div class="stepper">
+        <div class="passo passo-ativo" data-p="1">Selecionar</div>
+        <div class="passo" data-p="2">Checklist</div>
+        <div class="passo" data-p="3">Posição</div>
+        <div class="passo" data-p="4">Revisão</div>
+      </div>
+      <div class="passo-conteudo visivel" id="wiz-p1">${wizardPasso1(c.atalaias)}</div>
+      <div class="passo-conteudo" id="wiz-p2">${wizardPasso2()}</div>
+      <div class="passo-conteudo" id="wiz-p3">${wizardPasso3()}</div>
+      <div class="passo-conteudo" id="wiz-p4">
+        <div id="wiz-resumo"></div>
+        <div id="wiz-feedback"></div>
+      </div>
+      <div class="acoes-barra">
+        <button class="btn btn-secundario" id="wiz-ant" disabled>← Anterior</button>
+        <span class="espaco"></span>
+        <button class="btn btn-primario" id="wiz-prox">Próximo →</button>
+        <button class="btn btn-primario" id="wiz-enviar" style="display:none">Submeter comissionamento</button>
+      </div>`;
 };
+
+/* Liga wizard — navegação de passos e accordions. CC = 7 */
+function ligaWizard() {
+  let pAtual = 1;
+  const passos = document.querySelectorAll(".stepper .passo");
+  const ant = el("wiz-ant"), prox = el("wiz-prox"), enviar = el("wiz-enviar");
+
+  function vaiPara(n) {
+    pAtual = n;
+    passos.forEach((p, i) => {
+      p.classList.toggle("passo-ativo", i + 1 === n);
+      p.classList.toggle("passo-feito", i + 1 < n);
+    });
+    for (let i = 1; i <= 4; i++) {
+      const d = el(`wiz-p${i}`);
+      if (d) d.classList.toggle("visivel", i === n);
+    }
+    ant.disabled = n === 1;
+    prox.style.display = n < 4 ? "" : "none";
+    enviar.style.display = n === 4 ? "" : "none";
+    if (n === 4) el("wiz-resumo").innerHTML = wizardPasso4Resumo();
+  }
+
+  prox.onclick = () => { if (pAtual < 4) vaiPara(pAtual + 1); };
+  ant.onclick = () => { if (pAtual > 1) vaiPara(pAtual - 1); };
+  enviar.onclick = enviaComissionamento;
+
+  document.querySelectorAll(".expansivel-cab").forEach((cab) => {
+    cab.onclick = () => cab.parentElement.classList.toggle("aberto");
+  });
+}
 
 /* -------------------------------------------- laudo de homologação (§H) */
 
@@ -842,50 +1168,8 @@ rotas["rede"] = async () => {
 
 const CORES_SEV = { CRITICO: "erro", URGENTE: "atencao", ATENCAO: "acento", INFO: "neutro" };
 
-rotas["frota"] = async () => {
-  const f = await dados("/api/frota");
-  const sev = f.por_severidade;
-  const grupos = [...new Set(f.alarmes.map((a) => a.grupo))];
-
-  return cabecalho("Frota e alarmes",
-    `Saúde das <strong>Atalaias</strong> em campo. Nenhuma operando ainda —
-     o catálogo existe para ser revisado antes da implantação.`)
-    + `<div class="grade g4">
-      ${metrica("Atalaias operando", f.operando, `${f.previstos} previstas`)}
-      ${metrica("Alarmes críticos", sev.CRITICO || 0, "lacuna de cobertura", "erro")}
-      ${metrica("Alarmes urgentes", sev.URGENTE || 0, "dias de margem", "atencao")}
-      ${metrica("Alarmes de atenção", sev.ATENCAO || 0, "semanas de margem")}
-    </div>
-    <p class="nota"><strong>Atalaia fora do ar é talude sem monitoramento</strong>
-    — lacuna de cobertura num sistema de alerta, não indisponibilidade de
-    serviço. É isso que põe o silêncio como CRÍTICO.</p>`
-
-    + secao("Assinaturas de energia — o que a curva de carga revela")
-    + tabela([
-      { rot: "Padrão observado", val: (a) => esc(a.padrao), classe: "livre" },
-      { rot: "Diagnóstico provável", val: (a) => `<strong>${esc(a.diagnostico)}</strong>`, classe: "livre" },
-      { rot: "Ação", val: (a) => esc(a.acao) },
-    ], f.assinaturas)
-    + `<p class="nota">Sujeira reduz a captação de forma uniforme ao longo do dia;
-       sombra atua em janela horária específica. É a <em>forma</em> da curva que
-       separa as duas — por isso a janela de carga é registrada junto com a
-       energia. A comparação é feita contra a mediana das Atalaias vizinhas, o
-       que elimina a variável climática sem sensor de referência.</p>`
-
-    + secao("Catálogo de alarmes")
-    + `<div class="filtros">
-        <button class="filtro ativo" data-g="todos">Todos (${f.alarmes.length})</button>
-        ${grupos.map((g) => `<button class="filtro" data-g="${g}">${g}</button>`).join("")}
-      </div><div id="lista-alarmes"></div>`
-
-    + secao("Composição do índice de saúde")
-    + `<div class="cartao">${grafBarras(f.pesos_saude.map((p) => ({
-        rot: `${p.componente} — ${p.entra_com}`, valor: p.peso })))}
-      <p class="nota">Faixas: 90–100 saudável · 70–89 observar · 50–69 agendar ·
-      abaixo de 50 intervir. <strong>Qualquer alarme crítico zera o índice</strong>
-      — Atalaia muda com bateria cheia não é 70% saudável, é inútil.</p>
-    </div>`;
-};
+/* A rota "frota" agora é alias para "alertas" — mantém compatibilidade */
+rotas["frota"] = rotas["alertas"];
 
 function renderAlarmes(itens) {
   el("lista-alarmes").innerHTML = tabela([
@@ -893,8 +1177,83 @@ function renderAlarmes(itens) {
       `<span class="tag ${CORES_SEV[a.severidade]}">${a.severidade}</span>` },
     { rot: "Alarme", val: (a) => `<strong>${esc(a.nome)}</strong>` },
     { rot: "Gatilho", val: (a) => esc(a.gatilho), classe: "livre" },
-    { rot: "Ação de manutenção", val: (a) => esc(a.acao), classe: "livre" },
+    { rot: "Ação recomendada", val: (a) => esc(a.acao), classe: "livre" },
+    { rot: "Atendimento", val: (a) => a.reconhecido_em
+      ? `<span class="tag ok" title="Por ${esc(a.reconhecido_por || "operador")}">✓ Reconhecido</span>`
+      : `<button class="btn btn-sm btn-secundario btn-rec-alarme" data-id="${a.id || 0}" data-nome="${esc(a.nome)}">Reconhecer</button>` },
   ], itens);
+}
+
+function abrirModalReconhecimento(id, nome) {
+  let modal = el("modal-rec-alarme");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-rec-alarme";
+    modal.className = "modal-fundo";
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<div class="modal">
+    <div class="modal-cab">
+      <span>Reconhecer Alarme — ${esc(nome)}</span>
+      <button onclick="fecharModalReconhecimento()">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="campo">
+        <label class="campo-label" for="rec-operador">Operador / Agente <span class="obrigatorio">*</span></label>
+        <input class="entrada" id="rec-operador" placeholder="Seu nome ou código de agente">
+      </div>
+      <div class="campo">
+        <label class="campo-label" for="rec-acao">Ação tomada</label>
+        <select class="entrada" id="rec-acao">
+          <option value="RECONHECIDO">Ciente / Monitorando</option>
+          <option value="DESPACHO_CAMPO">Despachar Equipe de Campo</option>
+          <option value="MANUTENCAO_AGENDADA">Agendar Manutenção</option>
+          <option value="FALSO_POSITIVO">Falso Positivo / Teste</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label class="campo-label" for="rec-nota">Nota de atendimento</label>
+        <textarea class="entrada" id="rec-nota" placeholder="Observações para o diário de operações..."></textarea>
+      </div>
+      <div id="modal-rec-feedback"></div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn btn-secundario" onclick="fecharModalReconhecimento()">Cancelar</button>
+      <button class="btn btn-primario" onclick="submeterReconhecimento(${id})">Confirmar</button>
+    </div>
+  </div>`;
+  modal.classList.add("visivel");
+}
+
+function fecharModalReconhecimento() {
+  const modal = el("modal-rec-alarme");
+  if (modal) modal.classList.remove("visivel");
+}
+
+async function submeterReconhecimento(alarmeId) {
+  const op = el("rec-operador")?.value?.trim();
+  if (!op) {
+    el("modal-rec-feedback").innerHTML = `<div class="aviso-erro">Informe o nome do operador.</div>`;
+    return;
+  }
+  const acao = el("rec-acao")?.value || "RECONHECIDO";
+  const nota = el("rec-nota")?.value?.trim() || "";
+  const despacho = acao === "DESPACHO_CAMPO";
+
+  const res = await postJSON("/api/alarme/reconhecer", {
+    alarme_id: alarmeId,
+    operador: op,
+    acao_tomada: acao,
+    despacho_equipe: despacho,
+    nota_operador: nota,
+  });
+
+  if (res.erro) {
+    el("modal-rec-feedback").innerHTML = `<div class="aviso-erro">${esc(res.erro)}</div>`;
+  } else {
+    fecharModalReconhecimento();
+    navega();
+  }
 }
 
 rotas["firmware"] = async () => {
@@ -1029,16 +1388,21 @@ rotas["referencias"] = async () => {
 /* -------------------------------------------------------------- roteador */
 
 function partesDaRota() {
-  const bruto = location.hash.replace(/^#\/?/, "") || "visao-geral";
+  const bruto = location.hash.replace(/^#\/?/, "") || "situacao";
   const [nome, query] = bruto.split("?");
-  return { nome: nome || "visao-geral", params: new URLSearchParams(query || "") };
+  return { nome: nome || "situacao", params: new URLSearchParams(query || "") };
 }
 
 async function navega() {
   const { nome, params } = partesDaRota();
-  const render = rotas[nome] || rotas["visao-geral"];
+  const render = rotas[nome] || rotas["situacao"];
 
   paraMonitor();   // sair da aba encerra o polling; nada roda em segundo plano
+
+  /* Expande o grupo de desenvolvimento se a rota ativa estiver dentro dele */
+  const rotasDev = ["progresso", "hardware", "rede", "documentos", "referencias",
+                    "pendencias", "timeline", "firmware", "qualidade"];
+  if (rotasDev.includes(nome)) expandeGrupoDev();
 
   document.querySelectorAll("nav a").forEach((a) =>
     a.classList.toggle("ativo", a.dataset.rota === nome));
@@ -1056,11 +1420,13 @@ async function navega() {
 }
 
 async function depoisDeRenderizar(nome, params) {
-  if (nome === "pendencias") return ligaPendencias();
+  if (nome === "progresso") return ligaProgresso();
   if (nome === "documentos") return ligaDocumentos(params);
-  if (nome === "frota") return ligaFrota();
+  if (nome === "alertas" || nome === "frota") return ligaFrota();
   if (nome === "monitor") return ligaMonitor();
   if (nome === "mapa") return ligaMapa();
+  if (nome === "atalaias") return ligaAtalaias();
+  if (nome === "comissionamento") return ligaWizard();
 }
 
 /* ----------------------------------------------------------------- mapa */
@@ -1261,26 +1627,17 @@ async function ligaMonitor() {
 
 async function ligaFrota() {
   const f = await dados("/api/frota");
-  const aplica = (g) => renderAlarmes(
-    g === "todos" ? f.alarmes : f.alarmes.filter((a) => a.grupo === g));
+  const aplica = (g) => {
+    renderAlarmes(g === "todos" ? f.alarmes : f.alarmes.filter((a) => a.grupo === g));
+    document.querySelectorAll(".btn-rec-alarme").forEach((b) => {
+      b.onclick = () => abrirModalReconhecimento(b.dataset.id, b.dataset.nome);
+    });
+  };
   aplica("todos");
   document.querySelectorAll(".filtro").forEach((b) => b.onclick = () => {
     document.querySelectorAll(".filtro").forEach((x) => x.classList.remove("ativo"));
     b.classList.add("ativo");
     aplica(b.dataset.g);
-  });
-}
-
-async function ligaPendencias() {
-  const p = await dados("/api/pendencias");
-  const aplica = (f) => renderPendencias(
-    f === "todas" ? p : f === "abertas" ? p.filter((i) => !i.resolvida)
-      : p.filter((i) => i.grupo === f));
-  aplica("abertas");
-  document.querySelectorAll(".filtro").forEach((b) => b.onclick = () => {
-    document.querySelectorAll(".filtro").forEach((x) => x.classList.remove("ativo"));
-    b.classList.add("ativo");
-    aplica(b.dataset.f);
   });
 }
 
@@ -1330,7 +1687,57 @@ function iniciaTema() {
   };
 }
 
+/* --------------------------------------------- grupo colapsável */
+
+function expandeGrupoDev() {
+  const g = el("nav-dev-grupo");
+  const i = el("nav-dev-itens");
+  if (g && i) { g.classList.remove("fechado"); i.classList.remove("nav-colapsado"); }
+}
+
+function iniciaNavColapsavel() {
+  const g = el("nav-dev-grupo");
+  const i = el("nav-dev-itens");
+  if (!g || !i) return;
+  g.addEventListener("click", () => {
+    g.classList.toggle("fechado");
+    i.classList.toggle("nav-colapsado");
+  });
+}
+
+/* -------------------------------------------- hooks de rotas novas */
+
+async function ligaAtalaias() {
+  const c = await api("/api/comissionamento").catch(() => ({ atalaias: [] }));
+  const aplica = (e) => renderAtalaias(
+    e === "todas" ? c.atalaias : c.atalaias.filter((a) => a.estado === e));
+  aplica("todas");
+  document.querySelectorAll(".filtro").forEach((b) => b.onclick = () => {
+    document.querySelectorAll(".filtro").forEach((x) => x.classList.remove("ativo"));
+    b.classList.add("ativo");
+    aplica(b.dataset.e);
+  });
+}
+
+async function ligaProgresso() {
+  const p = await dados("/api/pendencias");
+  const abertas = p.filter((i) => !i.resolvida);
+  renderPendencias(abertas);
+}
+
+function renderPendencias(itens) {
+  const alvo = el("lista-pend");
+  if (!alvo) return;
+  alvo.innerHTML = tabela([
+    { rot: "Tipo", val: (i) => `<span class="tag ${i.resolvida ? "ok" : i.grupo === "[?]" ? "erro" : "atencao"}">${esc(i.grupo)}</span>` },
+    { rot: "Descrição", val: (i) => esc(i.descricao), classe: "livre" },
+    { rot: "Documento", val: (i) => `<code>${esc(i.arquivo)}</code>` },
+    { rot: "Linha", val: (i) => i.linha, classe: "num" },
+  ], itens);
+}
+
 window.addEventListener("hashchange", navega);
 iniciaTema();
+iniciaNavColapsavel();
 navega();
 atualizaSelos();

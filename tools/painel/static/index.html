@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sentinela — painel de controle</title>
+<title>Sentinela — central de operações</title>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="estilo.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
@@ -25,30 +25,32 @@
       </div>
       <div class="marca-texto">
         <strong>Sentinela</strong>
-        <span>painel de controle</span>
+        <span>central de operações</span>
       </div>
     </header>
 
-    <nav aria-label="Seções do projeto">
-      <p class="nav-grupo">Projeto</p>
-      <a href="#/visao-geral" data-rota="visao-geral"><span class="ico">◈</span>Visão geral</a>
-      <a href="#/pendencias"  data-rota="pendencias"><span class="ico">◔</span>Pendências<em class="selo" id="selo-pend"></em></a>
-      <a href="#/timeline"    data-rota="timeline"><span class="ico">◷</span>Linha do tempo</a>
-
-      <p class="nav-grupo">Engenharia</p>
-      <a href="#/monitor"     data-rota="monitor"><span class="ico">◍</span>Monitoramento<em class="selo" id="selo-vivo"></em></a>
+    <nav aria-label="Seções do sistema">
+      <p class="nav-grupo">Operação</p>
+      <a href="#/situacao"    data-rota="situacao"><span class="ico">◈</span>Situação</a>
       <a href="#/mapa"        data-rota="mapa"><span class="ico">◈</span>Mapa</a>
-      <a href="#/sensor"      data-rota="sensor"><span class="ico">◑</span>Sensores</a>
-      <a href="#/comissionamento" data-rota="comissionamento"><span class="ico">✓</span>Comissionamento</a>
-      <a href="#/hardware"    data-rota="hardware"><span class="ico">▤</span>Hardware</a>
-      <a href="#/rede"        data-rota="rede"><span class="ico">◉</span>Rede LoRa</a>
-      <a href="#/frota"       data-rota="frota"><span class="ico">◎</span>Frota e alarmes</a>
-      <a href="#/firmware"    data-rota="firmware"><span class="ico">▣</span>Firmware</a>
-      <a href="#/qualidade"   data-rota="qualidade"><span class="ico">◫</span>Qualidade<em class="selo" id="selo-cc"></em></a>
+      <a href="#/chuva"       data-rota="chuva"><span class="ico">◑</span>Chuva e Sensores</a>
+      <a href="#/alertas"     data-rota="alertas"><span class="ico">◍</span>Alertas<em class="selo" id="selo-alertas"></em></a>
+      <a href="#/monitor"     data-rota="monitor"><span class="ico">◉</span>Rede ao Vivo<em class="selo" id="selo-vivo"></em></a>
+      <a href="#/frota"       data-rota="frota"><span class="ico">◎</span>Saúde da Frota</a>
 
-      <p class="nav-grupo">Conhecimento</p>
-      <a href="#/documentos"  data-rota="documentos"><span class="ico">▥</span>Documentos</a>
-      <a href="#/referencias" data-rota="referencias"><span class="ico">◇</span>Referências</a>
+      <p class="nav-grupo">Cadastro e Campo</p>
+      <a href="#/comissionamento" data-rota="comissionamento"><span class="ico">✓</span>Nova Atalaia</a>
+      <a href="#/atalaias"    data-rota="atalaias"><span class="ico">▤</span>Atalaias Cadastradas</a>
+      <a href="#/laudo"       data-rota="laudo"><span class="ico">▥</span>Ficha Técnica</a>
+
+      <p class="nav-grupo nav-grupo-colapsavel fechado" id="nav-dev-grupo">Desenvolvimento</p>
+      <div id="nav-dev-itens" class="nav-colapsado">
+        <a href="#/progresso"   data-rota="progresso"><span class="ico">◔</span>Progresso<em class="selo" id="selo-pend"></em></a>
+        <a href="#/hardware"    data-rota="hardware"><span class="ico">▣</span>Hardware e Firmware<em class="selo" id="selo-cc"></em></a>
+        <a href="#/rede"        data-rota="rede"><span class="ico">◉</span>Ensaio de Rede</a>
+        <a href="#/documentos"  data-rota="documentos"><span class="ico">▥</span>Documentos</a>
+        <a href="#/referencias" data-rota="referencias"><span class="ico">◇</span>Referências</a>
+      </div>
     </nav>
 
     <footer class="lateral-rodape">

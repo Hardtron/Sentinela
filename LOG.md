@@ -21,6 +21,39 @@ apenas o apontamento.
 
 ---
 
+## 2026-08-01 (24) — Integração auditável de ações sobre alarmes
+
+**Fase:** 3 · **Duração:** curta
+
+### Feito
+
+- A migração 009 passou a registrar cada reconhecimento ou despacho em
+  `alarme_evento`, além de manter o estado resumido no alarme. Assim, uma nova
+  ação não apaga o atendimento anterior.
+- A rota do painel passou a exigir identificação explícita do operador; não
+  existe mais um nome-padrão que reduziria a rastreabilidade exigida por
+  RC-10.
+- Adicionado teste isolado para o registro de atendimento, cobrindo
+  persistência dos dados e recusa de operador ausente.
+- Gates executados: teste do protocolo, decodificação cruzada C++/Python,
+  teste do reconhecimento, validação de sintaxe, complexidade ≤ 10 e build
+  dos ambientes `node_dev`, `bridge` e `bench_02`.
+
+### Decidido
+
+- O histórico operacional é apêndice, não sobrescrita: a tabela `alarme`
+  mantém o retrato atual para consulta rápida e `alarme_evento` preserva a
+  sequência de decisões para auditoria.
+
+### Próximo
+
+1. Versionar e publicar as Frentes 9 e 10 junto da migração 009.
+2. Aplicar a migração no homeserver, reiniciar o painel e verificar a rota
+   sem alterar alarmes reais.
+3. Confirmar o backup do servidor após a publicação.
+
+---
+
 ## 2026-08-01 (23) — Frente 9: comissionamento e ciclo de vida da Atalaia
 
 **Fase:** 2/3 · **Duração:** longa
