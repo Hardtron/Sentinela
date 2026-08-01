@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sentinela — painel de controle</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="estilo.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 </head>
@@ -36,6 +37,8 @@
 
       <p class="nav-grupo">Engenharia</p>
       <a href="#/monitor"     data-rota="monitor"><span class="ico">◍</span>Monitoramento<em class="selo" id="selo-vivo"></em></a>
+      <a href="#/mapa"        data-rota="mapa"><span class="ico">◈</span>Mapa</a>
+      <a href="#/sensor"      data-rota="sensor"><span class="ico">◑</span>Sensores</a>
       <a href="#/hardware"    data-rota="hardware"><span class="ico">▤</span>Hardware</a>
       <a href="#/rede"        data-rota="rede"><span class="ico">◉</span>Rede LoRa</a>
       <a href="#/frota"       data-rota="frota"><span class="ico">◎</span>Frota e alarmes</a>
@@ -61,6 +64,7 @@
 
 </div>
 
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="markdown.js"></script>
 <script src="app.js"></script>
 </body>

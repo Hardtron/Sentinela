@@ -25,6 +25,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
+import banco
 import coletor
 import telemetria
 
@@ -41,6 +42,17 @@ ROTAS = {
     "/api/frota": lambda q: coletor.frota(),
     "/api/complexidade": lambda q: coletor.complexidade(),
     "/api/telemetria": lambda q: telemetria.estado(),
+
+    # Leem o banco (backend/). Degradam sozinhas se o PostgreSQL estiver fora
+    # do ar — devolvem estrutura vazia com o motivo em `erro`, para a aba
+    # dizer que está sem dado em vez de o painel inteiro cair.
+    "/api/sensor": lambda q: banco.sensor(),
+    "/api/frota-saude": lambda q: banco.frota_saude(),
+    "/api/gis/atalaias": lambda q: banco.gis_atalaias(),
+    "/api/gis/suscetibilidade": lambda q: banco.gis_suscetibilidade(),
+    "/api/gis/ensaios": lambda q: banco.gis_ensaios(),
+    "/api/historico": lambda q: banco.historico(
+        int((q.get("no") or ["1"])[0]), int((q.get("horas") or ["72"])[0])),
 }
 
 

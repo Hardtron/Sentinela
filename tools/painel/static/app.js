@@ -454,6 +454,73 @@ function monFrota(t, placas) {
        fica em <code>buffer.jsonl</code> até o broker voltar.</p>`;
 }
 
+/* --------------------------------------------------- sensores (Frente 3C) */
+
+const CORES_FAIXA = {
+  SAUDAVEL: "ok", OBSERVAR: "acento", AGENDAR: "atencao",
+  INTERVIR: "erro", SEM_DADO: "neutro",
+};
+
+/// Banco fora do ar ou aba ainda sem dado: dizer isso, não desenhar zero.
+/// É o RC-07 na interface — número plausível e falso é pior que "sem dado".
+const semDado = (msg, erro) => `<div class="aviso">
+  <strong>${msg}</strong>
+  ${erro ? `<p>Motivo: <code>${esc(erro)}</code></p>` : ""}
+</div>`;
+
+rotas["sensor"] = async () => {
+  const s = await api("/api/sensor");
+  const cab = cabecalho("Sensores",
+    `Leitura de campo das Atalaias — chuva, inclinação, umidade de solo e
+     bateria. Acumulados de 1 h, 24 h e 72 h em janela móvel: é o acumulado
+     que prediz deslizamento, não a chuva da hora cheia.`);
+
+  if (!s.leituras.length) {
+    return cab + semDado(
+      "Nenhuma leitura de sensor no banco ainda.", s.erro)
+      + `<p class="nota">Esperado neste momento: o payload de sensor
+      (<code>lib/proto/</code>) já existe e o banco já tem a tabela, mas
+      <strong>nenhum sensor foi adquirido</strong> (P-013) — a rede em campo
+      hoje transmite só telemetria de enlace. Esta aba passa a mostrar dado
+      assim que a primeira Atalaia com pluviômetro entrar em operação.</p>`;
+  }
+
+  const chuva = Object.fromEntries(s.chuva.map((c) => [c.node_id, c]));
+  return cab + secao("Última leitura por nó")
+    + tabela([
+      { rot: "Nó", val: (l) => `<strong>${esc(l.placa || l.node_id)}</strong>` },
+      { rot: "Chuva 1h", val: (l) => l.chuva_valida
+        ? `${l.chuva_1h_mm} mm` : `<span class="tag neutro">sem leitura</span>` },
+      { rot: "24h", val: (l) => (chuva[l.node_id]?.mm_24h ?? "—") + " mm", classe: "num" },
+      { rot: "72h", val: (l) => (chuva[l.node_id]?.mm_72h ?? "—") + " mm", classe: "num" },
+      { rot: "Inclinação", val: (l) => l.inclin_valida
+        ? `${l.pitch_graus}° / ${l.roll_graus}°`
+        : `<span class="tag neutro">sem leitura</span>` },
+      { rot: "Solo", val: (l) => l.solo_valido
+        ? `${l.umidade_solo}%` : `<span class="tag neutro">—</span>` },
+      { rot: "Bateria", val: (l) => `${l.bateria_mv} mV`, classe: "num" },
+      { rot: "Fonte", val: (l) => `<span class="tag ${l.fonte === "sentinela"
+        ? "acento" : "neutro"}">${esc(l.fonte)}</span>` },
+    ], s.leituras);
+};
+
+/* ------------------------------------------------------- mapa (Frente 5) */
+
+rotas["mapa"] = async () => cabecalho("Mapa",
+  `Centro de comando geoespacial. Roda no navegador, sem exigir QGIS nem
+   software proprietário no computador do operador.`)
+  + `<div class="cartao" style="padding:0;overflow:hidden">
+       <div id="mapa" style="height:min(72vh,640px);width:100%"></div>
+     </div>
+     <div class="legenda" style="margin-top:12px">
+       <span><i class="pt" style="background:var(--ok)"></i>saudável</span>
+       <span><i class="pt" style="background:var(--acento)"></i>observar</span>
+       <span><i class="pt" style="background:var(--atencao)"></i>agendar</span>
+       <span><i class="pt" style="background:var(--erro)"></i>intervir</span>
+       <span><i class="pt" style="background:var(--neutro)"></i>sem dado</span>
+     </div>
+     <div id="mapa-aviso"></div>`;
+
 rotas["hardware"] = async () => {
   const h = await dados("/api/hardware");
   const r = h.radio;
@@ -750,6 +817,100 @@ async function depoisDeRenderizar(nome, params) {
   if (nome === "documentos") return ligaDocumentos(params);
   if (nome === "frota") return ligaFrota();
   if (nome === "monitor") return ligaMonitor();
+  if (nome === "mapa") return ligaMapa();
+}
+
+/* ----------------------------------------------------------------- mapa */
+
+let mapa = null;
+
+const CORES_MAPA = {
+  SAUDAVEL: "#3fb950", OBSERVAR: "#4da3ff", AGENDAR: "#d29922",
+  INTERVIR: "#f85149", SEM_DADO: "#6e7d8f",
+};
+
+/// Fundo do mapa. Tiles online são conveniência; o mapa **precisa** continuar
+/// utilizável sem internet, porque é durante a tempestade — quando o enlace
+/// tende a cair — que o operador mais precisa dele. Por isso o basemap é
+/// opcional e as camadas de dados vêm do banco local.
+function camadaBase() {
+  return L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap, © CARTO" });
+}
+
+function marcador(f) {
+  const p = f.properties || {};
+  const cor = CORES_MAPA[p.faixa] || CORES_MAPA.SEM_DADO;
+  const [lon, lat] = f.geometry.coordinates;
+  return L.circleMarker([lat, lon], {
+    radius: 9, color: cor, fillColor: cor, fillOpacity: 0.75, weight: 2,
+  }).bindPopup(`
+    <strong>${esc(p.placa || p.node_id)}</strong><br>
+    ${esc(p.papel || "")}<br>
+    índice: ${p.indice ?? "sem dado"} (${esc(p.faixa || "—")})<br>
+    comunicação: ${esc(p.estado_comunicacao || "—")}<br>
+    alarmes abertos: ${p.alarmes_abertos ?? 0}`);
+}
+
+function pontoEnsaio(f) {
+  const p = f.properties || {};
+  const [lon, lat] = f.geometry.coordinates;
+  const cor = CORES_VEREDITO[p.veredito] === "ok" ? "#3fb950"
+    : CORES_VEREDITO[p.veredito] === "atencao" ? "#d29922" : "#f85149";
+  return L.circleMarker([lat, lon], {
+    radius: 5, color: cor, fillColor: cor, fillOpacity: 0.6, weight: 1,
+  }).bindPopup(`<strong>${esc(p.ensaio)} · P${p.ponto}</strong><br>
+    ${p.distancia_m} m · RSSI ${p.rssi_med} dBm<br>
+    margem ${p.margem_db} dB · ${esc(p.veredito)}`);
+}
+
+async function ligaMapa() {
+  if (mapa) { mapa.remove(); mapa = null; }
+  mapa = L.map("mapa", { zoomControl: true }).setView([-23.5754, -45.3305], 15);
+  camadaBase().addTo(mapa);
+
+  const [atalaias, ensaios, susc] = await Promise.all([
+    api("/api/gis/atalaias").catch(() => null),
+    api("/api/gis/ensaios").catch(() => null),
+    api("/api/gis/suscetibilidade").catch(() => null),
+  ]);
+
+  const camadas = {};
+  const grupoAtalaias = L.layerGroup();
+  (atalaias?.features || []).forEach((f) => marcador(f).addTo(grupoAtalaias));
+  grupoAtalaias.addTo(mapa);
+  camadas["Atalaias"] = grupoAtalaias;
+
+  const grupoEnsaio = L.layerGroup();
+  (ensaios?.features || []).forEach((f) => pontoEnsaio(f).addTo(grupoEnsaio));
+  camadas["Pontos de ensaio"] = grupoEnsaio;
+
+  if (susc?.features?.length) {
+    const g = L.geoJSON(susc, { style: { color: "#f85149", weight: 1, fillOpacity: 0.2 } });
+    camadas["Suscetibilidade"] = g;
+  }
+  L.control.layers(null, camadas, { collapsed: false }).addTo(mapa);
+
+  const pontos = [...(atalaias?.features || []), ...(ensaios?.features || [])];
+  if (pontos.length) {
+    grupoEnsaio.addTo(mapa);
+    mapa.fitBounds(pontos.map((f) => [f.geometry.coordinates[1],
+                                      f.geometry.coordinates[0]]),
+                   { padding: [40, 40], maxZoom: 17 });
+  }
+
+  const aviso = el("mapa-aviso");
+  const semAtalaia = !(atalaias?.features || []).length;
+  const erro = atalaias?.erro || ensaios?.erro;
+  if (aviso && (semAtalaia || erro)) {
+    aviso.innerHTML = `<p class="nota">${
+      erro ? `Banco indisponível: <code>${esc(erro)}</code>. `
+           : "Nenhuma Atalaia tem coordenada cadastrada ainda — as placas estão "
+             + "em bancada, e <code>no.posicao</code> só é preenchido na "
+             + "instalação em campo. "}
+      Os pontos do ensaio 02 aparecem porque já estão no PostGIS.</p>`;
+  }
 }
 
 /* ------------------------------------------------ monitoramento ao vivo */

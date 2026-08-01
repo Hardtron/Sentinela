@@ -1,3 +1,4 @@
 pyserial
 exifread
 paho-mqtt
+psycopg[binary]
