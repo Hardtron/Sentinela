@@ -24,6 +24,7 @@ import json
 import mimetypes
 import os
 import sys
+from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
@@ -44,6 +45,40 @@ MEDIA = Path(os.environ.get("SENTINELA_MEDIA",
 # que não tem por que sair por HTTP sem autenticação.
 MEDIA_EXTENSOES = {".jpg", ".jpeg", ".png", ".webp"}
 
+
+def operacao():
+    """Retrato auditável da cadeia acessível ao processo do painel.
+
+    Não consulta systemd nem Docker: ausência dessa observação precisa
+    aparecer como limitação, nunca ser convertida em estado de serviço.
+    """
+    tel = telemetria.estado()
+    db = banco.operacao()
+    return {
+        "gerado_em": datetime.now(timezone.utc).isoformat(),
+        "painel": {
+            "classificacao": "OBSERVADO",
+            "disponivel": True,
+            "evidencia": "esta resposta HTTP foi produzida pelo painel",
+        },
+        "mqtt": {
+            "classificacao": "OBSERVADO",
+            "conectado": bool(tel.get("ligacao", {}).get("conectado")),
+            "broker": tel.get("ligacao", {}).get("broker"),
+            "desde_epoch": tel.get("ligacao", {}).get("desde"),
+            "erro": tel.get("ligacao", {}).get("erro"),
+            "amostras_memoria": tel.get("amostras", 0),
+            "ultima_amostra_idade_s": tel.get("janela", {}).get("idade_ultima_s"),
+        },
+        "banco": db,
+        "limitacoes": [
+            "O painel não observa diretamente o estado de systemd ou Docker.",
+            "A atividade do ingestor só pode ser inferida pelo último registro persistido.",
+            "A janela MQTT existe apenas na memória e reinicia com o painel.",
+            "Não há identidade institucional ou RBAC implementados.",
+        ],
+    }
+
 ROTAS = {
     "/api/visao-geral": lambda q: coletor.visao_geral(),
     "/api/documentos": lambda q: coletor.documentos(),
@@ -55,6 +90,9 @@ ROTAS = {
     "/api/frota": lambda q: coletor.frota(),
     "/api/complexidade": lambda q: coletor.complexidade(),
     "/api/telemetria": lambda q: telemetria.estado(),
+    "/api/operacao": lambda q: operacao(),
+    "/api/fontes-externas": lambda q: banco.fontes_externas(),
+    "/api/fontes-observacoes": lambda q: banco.fontes_observacoes(),
 
     # Leem o banco (backend/). Degradam sozinhas se o PostgreSQL estiver fora
     # do ar — devolvem estrutura vazia com o motivo em `erro`, para a aba
@@ -64,6 +102,7 @@ ROTAS = {
     "/api/gis/atalaias": lambda q: banco.gis_atalaias(),
     "/api/gis/suscetibilidade": lambda q: banco.gis_suscetibilidade(),
     "/api/gis/estacoes": lambda q: banco.gis_estacoes(),
+    "/api/gis/fontes-contexto": lambda q: banco.gis_fontes_contexto(),
     "/api/situacao": lambda q: banco.situacao(),
     "/api/comissionamento": lambda q: banco.comissionamento(),
     "/api/laudo": lambda q: banco.laudo(int((q.get("no") or ["1"])[0])),

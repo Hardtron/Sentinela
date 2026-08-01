@@ -1,0 +1,14 @@
+# Cadência técnica de aquisição; não é cadência de decisão nem regra de alerta.
+# Cada execução deduplica o bruto por hash e fontes não configuradas são puladas.
+
+[Unit]
+Description=Sentinela — agenda coleta de fontes externas
+
+[Timer]
+OnCalendar=*:0/15
+RandomizedDelaySec=60
+Persistent=true
+Unit=sentinela-fontes.service
+
+[Install]
+WantedBy=timers.target

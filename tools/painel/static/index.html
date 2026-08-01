@@ -31,11 +31,12 @@
 
     <nav aria-label="Seções do sistema">
       <p class="nav-grupo">Operação</p>
+      <a href="#/operacao"    data-rota="operacao"><span class="ico">◇</span>Cadeia e fontes</a>
       <a href="#/situacao"    data-rota="situacao"><span class="ico">◈</span>Situação</a>
       <a href="#/mapa"        data-rota="mapa"><span class="ico">◈</span>Mapa</a>
       <a href="#/chuva"       data-rota="chuva"><span class="ico">◑</span>Chuva e Sensores</a>
       <a href="#/alertas"     data-rota="alertas"><span class="ico">◍</span>Alertas<em class="selo" id="selo-alertas"></em></a>
-      <a href="#/monitor"     data-rota="monitor"><span class="ico">◉</span>Rede ao Vivo<em class="selo" id="selo-vivo"></em></a>
+      <a href="#/monitor"     data-rota="monitor"><span class="ico">◉</span>Telemetria MQTT<em class="selo" id="selo-vivo"></em></a>
       <a href="#/frota"       data-rota="frota"><span class="ico">◎</span>Saúde da Frota</a>
 
       <p class="nav-grupo">Cadastro e Campo</p>
@@ -62,6 +63,12 @@
   </aside>
 
   <main class="conteudo" id="conteudo" tabindex="-1">
+    <section class="escopo-operacional" aria-label="Escopo de uso">
+      <strong>Apoio à decisão</strong>
+      <span>Dados e evidências para a equipe técnica; não substitui avaliação da Defesa Civil.</span>
+      <span class="tag atencao">sem identidade institucional</span>
+    </section>
+    <div id="estado-interface" class="sr-only" role="status" aria-live="polite"></div>
     <div id="rota"><div class="carregando">carregando…</div></div>
   </main>
 

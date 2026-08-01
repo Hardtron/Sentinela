@@ -13,6 +13,7 @@ Autoria: Matheus Marassi
 """
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
@@ -246,13 +247,126 @@ def situacao():
     }
 
 
+def operacao():
+    """Evidências de funcionamento persistidas, sem inferir serviço online.
+
+    Os quatro ``max`` respondem somente qual foi o registro mais recente de
+    cada etapa no banco. Em particular, dado recente em ``enlace`` é evidência
+    de que a cadeia escreveu no passado, não prova que bridge ou ingestor
+    continuam executando neste instante.
+    """
+    consultado_em = datetime.now(timezone.utc).isoformat()
+    linhas = consulta("""
+        SELECT (SELECT max(recebido_em) FROM enlace)       AS enlace_em,
+               (SELECT max(gerado_em) FROM saude_bridge)  AS bridge_em,
+               (SELECT max(recebido_em) FROM leitura)     AS leitura_em,
+               (SELECT max(recebido_em) FROM saude_atalaia) AS atalaia_em
+    """)
+    erro = _estado["erro"]
+    return {
+        "disponivel": erro is None,
+        "consultado_em": consultado_em,
+        "evidencias": _limpa(linhas)[0] if linhas else {},
+        "erro": erro,
+        "fonte": "PostgreSQL/TimescaleDB",
+        "qualidade": "observado no banco; não confirma processo em execução",
+    }
+
+
+def fontes_externas():
+    """Catálogo e última aquisição, sem converter fonte em alerta.
+
+    A view é criada pela migração 011. Em banco ainda não migrado, ``consulta``
+    devolve a ausência explicitamente e o restante do painel permanece ativo.
+    """
+    fontes = consulta("""
+        SELECT provedor_codigo, provedor, orgao, acesso, exige_cadastro,
+               conjunto_codigo, titulo, classe, variavel, unidade, uso,
+               configuracao_estado, limitacao, ultima_execucao_em,
+               ultima_conclusao_em, ultima_execucao_estado,
+               itens_recebidos, itens_aceitos, itens_rejeitados, erro_resumo,
+               ultimo_ativo_em, ultimo_processado_em, ultimo_observado_em,
+               ultimo_sha256
+          FROM fonte_estado
+         ORDER BY provedor, titulo
+    """)
+    erro = _estado["erro"]
+    quarentena = []
+    if erro is None:
+        quarentena = consulta("""
+            SELECT count(*) AS total, max(registrado_em) AS ultima_em
+              FROM fonte_quarentena
+             WHERE registrado_em > now() - interval '7 days'
+        """)
+        erro = _estado["erro"]
+    return {
+        "fontes": _limpa(fontes),
+        "quarentena_7d": _limpa(quarentena)[0] if quarentena else {},
+        "consultado_em": datetime.now(timezone.utc).isoformat(),
+        "erro": erro,
+        "escopo": (
+            "Dados externos são evidência contextual; não participam de "
+            "alertas automáticos nesta versão."),
+    }
+
+
+def fontes_observacoes():
+    """Última revisão de cada observação externa, sem agregar provedores."""
+    linhas = consulta("""
+        SELECT DISTINCT ON (p.codigo, e.codigo_externo, o.variavel,
+                            coalesce(o.periodo_s, -1))
+               p.codigo AS provedor_codigo, p.nome AS provedor,
+               c.codigo AS conjunto_codigo, c.classe, c.uso,
+               e.codigo_externo, e.nome AS estacao, e.municipio, e.uf,
+               o.medido_em, o.recebido_em, o.variavel, o.valor, o.unidade,
+               o.periodo_s, o.qualificacao_origem, o.revisao,
+               b.sha256, b.fonte_uri
+          FROM fonte_observacao_atual o
+          JOIN fonte_conjunto c ON c.id=o.conjunto_id
+          JOIN fonte_provedor p ON p.codigo=c.provedor_codigo
+          JOIN fonte_estacao e ON e.id=o.estacao_id
+          LEFT JOIN fonte_ativo_bruto b ON b.id=o.ativo_bruto_id
+         ORDER BY p.codigo, e.codigo_externo, o.variavel,
+                  coalesce(o.periodo_s, -1), o.medido_em DESC
+    """)
+    return {
+        "observacoes": _limpa(linhas),
+        "erro": _estado["erro"],
+        "escopo": "observações por estação e período; sem soma entre provedores",
+    }
+
+
+def gis_fontes_contexto():
+    """Feições oficiais externas mais recentes, com proveniência explícita."""
+    linhas = consulta("""
+        SELECT p.codigo AS provedor_codigo, p.nome AS provedor,
+               c.codigo AS conjunto_codigo, c.titulo, c.classe, c.uso,
+               f.identificador, f.propriedades,
+               b.adquirido_em, b.sha256, b.fonte_uri,
+               ST_AsGeoJSON(f.geom) AS geojson
+          FROM fonte_feicao_atual f
+          JOIN fonte_conjunto c ON c.id=f.conjunto_id
+          JOIN fonte_provedor p ON p.codigo=c.provedor_codigo
+          JOIN fonte_ativo_bruto b ON b.id=f.ativo_bruto_id
+         WHERE f.geom IS NOT NULL
+    """)
+    saida = _geojson(linhas)
+    saida["erro"] = _estado["erro"]
+    saida["escopo"] = "contexto oficial externo; não é classificação do Sentinela"
+    return saida
+
+
 def comissionamento():
     """Estado do ciclo de vida de cada Atalaia (Frente 9)."""
     return {
         "atalaias": _limpa(consulta("SELECT * FROM comissionamento_estado")),
         "criterios": _limpa(consulta(
-            "SELECT chave, valor, unidade, fonte, descricao "
-            "FROM criterio_comissionamento ORDER BY chave")),
+            "SELECT chave, valor, unidade, fonte, descricao, "
+            "to_jsonb(c)->>'status' AS status, "
+            "to_jsonb(c)->>'referencia' AS referencia, "
+            "to_jsonb(c)->>'vigente_desde' AS vigente_desde, "
+            "to_jsonb(c)->>'atualizado_por' AS atualizado_por "
+            "FROM criterio_comissionamento c ORDER BY chave")),
         "transicoes": _limpa(consulta("""
             SELECT t.node_id, n.placa, t.de, t.para, t.ocorrida_em, t.autor, t.motivo
               FROM transicao_estado t JOIN no n ON n.node_id = t.node_id
@@ -275,8 +389,15 @@ def laudo(node_id):
         "transicoes": _limpa(consulta(
             "SELECT de, para, ocorrida_em, autor, motivo FROM transicao_estado "
             "WHERE node_id = %s ORDER BY ocorrida_em", (node_id,))),
+        # Para checklists novos, o snapshot é a fonte histórica. O catálogo
+        # corrente segue separado para não fingir que era o vigente em laudos
+        # antigos, anteriores à migração 010.
         "criterios": _limpa(consulta(
-            "SELECT chave, valor, unidade, fonte FROM criterio_comissionamento")),
+            "SELECT chave, valor, unidade, fonte, "
+            "to_jsonb(c)->>'status' AS status, "
+            "to_jsonb(c)->>'referencia' AS referencia, "
+            "to_jsonb(c)->>'vigente_desde' AS vigente_desde "
+            "FROM criterio_comissionamento c")),
         "erro": _estado["erro"],
     }
 

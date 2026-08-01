@@ -20,6 +20,7 @@ Autoria: Matheus Marassi
 import json
 import threading
 import time
+from datetime import datetime, timezone
 from collections import deque
 
 try:
@@ -278,6 +279,22 @@ def estado():
             "margem_min_db": MARGEM_MIN_DB,
             "assimetria_max_db": ASSIMETRIA_MAX_DB,
             "silencio_s": SILENCIO_S,
+            "uso": "ensaio de enlace; não é critério de alerta geotécnico",
+            "proveniencia": "firmware/src/ui_dev.h",
         },
         "gerado_em": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "gerado_em_iso": datetime.now(timezone.utc).isoformat(),
+        "fonte": {
+            "classificacao": "OBSERVADO",
+            "origem": "MQTT sentinela/#",
+            "armazenamento": "memória do processo do painel",
+            "persistente": False,
+        },
+        "janela": {
+            "capacidade_amostras": HISTORICO,
+            "inicio_em_epoch": amostras[0]["t"] if amostras else None,
+            "fim_em_epoch": amostras[-1]["t"] if amostras else None,
+            "idade_ultima_s": round(agora - amostras[-1]["t"], 1)
+            if amostras else None,
+        },
     }

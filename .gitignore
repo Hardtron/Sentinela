@@ -26,6 +26,11 @@ data/raw/
 
 # Estado de execução da bridge — não é código-fonte (gateway/bridge.py)
 gateway/buffer.jsonl
+gateway/.buffer.jsonl.tmp
+gateway/buffer.jsonl.corrompido-*
+backend/quarentena.jsonl
+backend/fontes.env
+data/externos/
 
 # Sistema operacional e editores
 .DS_Store

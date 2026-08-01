@@ -23,6 +23,7 @@ Autoria: Matheus Marassi
 
 import argparse
 import json
+import math
 import os
 import signal
 import sys
@@ -34,6 +35,7 @@ import paho.mqtt.client as mqtt
 import psycopg
 
 RAIZ = Path(__file__).resolve().parent
+QUARENTENA_PATH = RAIZ / "quarentena.jsonl"
 
 SQL_ENLACE = """
 INSERT INTO enlace (recebido_em, node_id, bridge_id, seq, sf, rssi_dbm, snr_db,
@@ -51,7 +53,8 @@ ON CONFLICT DO NOTHING
 """
 
 _encerrar = False
-_estado = {"enlace": 0, "saude": 0, "erros": 0, "ultimo_seq": None}
+_estado = {"enlace": 0, "saude": 0, "erros": 0, "quarentena": 0,
+           "ultimo_seq": None}
 
 
 def _sinal(_signum, _frame):
@@ -84,6 +87,81 @@ def _instante(valor):
         return datetime.fromisoformat(str(valor))
     except ValueError:
         return None
+
+
+def _inteiro(valor, minimo=0, maximo=None):
+    if isinstance(valor, bool) or not isinstance(valor, int):
+        return False
+    return valor >= minimo and (maximo is None or valor <= maximo)
+
+
+def _numero_ou_nulo(valor):
+    return valor is None or (isinstance(valor, (int, float))
+                             and not isinstance(valor, bool)
+                             and math.isfinite(valor))
+
+
+def _valida_radio(d):
+    if d.get("sf") is not None and d["sf"] not in range(7, 13):
+        return "sf inválido"
+    for campo in ("rssi_dbm", "snr_db", "rssi_remoto_dbm", "snr_remoto_db"):
+        if not _numero_ou_nulo(d.get(campo)):
+            return f"{campo} inválido"
+    return None
+
+
+def _valida_contadores(d):
+    for campo in ("enviados", "recebidos", "perdidos"):
+        if d.get(campo) is not None and not _inteiro(d[campo]):
+            return f"{campo} inválido"
+    if (d.get("enviados") is not None and d.get("recebidos") is not None
+            and d["recebidos"] > d["enviados"]):
+        return "recebidos maior que enviados"
+    return None
+
+
+def valida_enlace(d):
+    """Contrato estrutural do CSV de bring-up, sem criar limites de campo."""
+    if not isinstance(d, dict):
+        return "carga não é objeto JSON"
+    if _instante(d.get("recebido_em")) is None:
+        return "recebido_em ausente ou inválido"
+    if not _inteiro(d.get("node_id"), 0, 65535):
+        return "node_id ausente ou fora do contrato uint16"
+    if d.get("seq") is not None and not _inteiro(d["seq"]):
+        return "seq inválido"
+    return _valida_radio(d) or _valida_contadores(d)
+
+
+def valida_saude(d):
+    if not isinstance(d, dict):
+        return "carga não é objeto JSON"
+    if _instante(d.get("gerado_em")) is None:
+        return "gerado_em ausente ou inválido"
+    if not isinstance(d.get("bridge_id"), str) or not d["bridge_id"].strip():
+        return "bridge_id ausente ou inválido"
+    for campo in ("publicados", "fila_pendente"):
+        if d.get(campo) is not None and not _inteiro(d[campo]):
+            return f"{campo} inválido"
+    if d.get("ativo_desde") is not None and _instante(d["ativo_desde"]) is None:
+        return "ativo_desde inválido"
+    return None
+
+
+def registra_quarentena(topico, carga, motivo, caminho=QUARENTENA_PATH):
+    """Preserva entrada recusada sem deixá-la parecer telemetria válida."""
+    registro = {
+        "registrado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "topico": topico,
+        "motivo": motivo,
+        "carga": carga.decode("utf-8", "replace")[:8192],
+    }
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    with open(caminho, "a", encoding="utf-8") as f:
+        f.write(json.dumps(registro, ensure_ascii=False) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    _estado["quarentena"] += 1
 
 
 def monta_enlace(d):
@@ -137,16 +215,25 @@ def trata_mensagem(conexao, topico, carga):
     """Devolve o nome do que foi gravado, ou None se a mensagem foi ignorada."""
     try:
         dados = json.loads(carga.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except (UnicodeDecodeError, json.JSONDecodeError) as e:
+        registra_quarentena(topico, carga, f"JSON inválido: {e}")
         return None
 
     if topico.endswith("/telemetria"):
+        erro = valida_enlace(dados)
+        if erro:
+            registra_quarentena(topico, carga, erro)
+            return None
         linha = monta_enlace(dados)
         if linha:
             grava(conexao, SQL_ENLACE, linha)
             _estado["ultimo_seq"] = linha["seq"]
             return "enlace"
     elif topico.endswith("/saude"):
+        erro = valida_saude(dados)
+        if erro:
+            registra_quarentena(topico, carga, erro)
+            return None
         linha = monta_saude(dados)
         if linha:
             grava(conexao, SQL_SAUDE, linha)
@@ -224,6 +311,7 @@ def main():
             if time.time() >= proximo:
                 print(f"[ingestor] enlace={_estado['enlace']} "
                       f"saude={_estado['saude']} erros={_estado['erros']} "
+                      f"quarentena={_estado['quarentena']} "
                       f"ultimo_seq={_estado['ultimo_seq']}", flush=True)
                 proximo = time.time() + args.relato
             time.sleep(0.5)

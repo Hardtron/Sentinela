@@ -23,6 +23,7 @@ Autoria: Matheus Marassi
 
 import argparse
 import json
+import os
 import re
 import signal
 import sys
@@ -156,7 +157,15 @@ def publica(cliente, node_id, msg):
         return False
     topico = TOPICO_TELEMETRIA.format(node_id=node_id)
     info = cliente.publish(topico, json.dumps(msg, ensure_ascii=False), qos=1)
-    return info.rc == mqtt.MQTT_ERR_SUCCESS
+    if info.rc != mqtt.MQTT_ERR_SUCCESS:
+        return False
+    try:
+        # QoS 1 só está entregue depois do PUBACK. Remover do disco antes
+        # disso abre uma janela de perda se o processo ou o RPi cair.
+        info.wait_for_publish(timeout=5.0)
+        return info.is_published()
+    except (RuntimeError, ValueError):
+        return False
 
 
 def publica_saude(cliente, bridge_id, estado, fila_len):
@@ -177,21 +186,50 @@ def publica_saude(cliente, bridge_id, estado, fila_len):
 # Existe para que uma queda do broker (ou do enlace RPi->homeserver) não perca
 # dado — fica em disco até conseguir publicar. Ver README desta pasta.
 
+def _quarentena_buffer(caminho):
+    instante = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    destino = caminho.with_name(f"{caminho.name}.corrompido-{instante}")
+    sequencia = 1
+    while destino.exists():
+        destino = caminho.with_name(
+            f"{caminho.name}.corrompido-{instante}-{sequencia}")
+        sequencia += 1
+    os.replace(caminho, destino)
+    print(f"[bridge] buffer inválido preservado em {destino}", flush=True)
+
+
 def buffer_carrega(caminho):
     if not caminho.exists():
         return []
     try:
         with open(caminho, encoding="utf-8") as f:
-            return [json.loads(l) for l in f if l.strip()]
-    except (OSError, json.JSONDecodeError):
+            fila = [json.loads(l) for l in f if l.strip()]
+        if not all(isinstance(item, dict) for item in fila):
+            raise ValueError("item do buffer não é objeto JSON")
+        return fila
+    except (json.JSONDecodeError, ValueError):
+        _quarentena_buffer(caminho)
+        return []
+    except OSError as e:
+        print(f"[bridge] não foi possível ler o buffer: {e}", flush=True)
         return []
 
 
 def buffer_grava(caminho, fila):
     caminho.parent.mkdir(parents=True, exist_ok=True)
-    with open(caminho, "w", encoding="utf-8") as f:
+    temporario = caminho.with_name(f".{caminho.name}.tmp")
+    with open(temporario, "w", encoding="utf-8") as f:
         for msg in fila:
             f.write(json.dumps(msg, ensure_ascii=False) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(temporario, caminho)
+    # Garante também a persistência da troca de nome após queda de energia.
+    descritor = os.open(caminho.parent, os.O_RDONLY)
+    try:
+        os.fsync(descritor)
+    finally:
+        os.close(descritor)
 
 
 def tenta_esvaziar_fila(cliente, node_id, fila):

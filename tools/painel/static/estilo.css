@@ -58,6 +58,16 @@ html, body {
 a { color: var(--acento); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 .pular {
   position: absolute; left: -999px; top: 0; z-index: 100;
   background: var(--acento); color: #fff; padding: 10px 16px; border-radius: 0 0 var(--r) 0;
@@ -67,6 +77,7 @@ a:hover { text-decoration: underline; }
 /* ---------------------------------------------------------------- layout */
 
 .app { display: grid; grid-template-columns: var(--lateral-larg) 1fr; min-height: 100vh; }
+.app > * { min-width: 0; }
 
 .lateral {
   background: var(--fundo-2);
@@ -129,6 +140,15 @@ nav a.ativo .ico { color: var(--acento); }
 
 .conteudo { padding: 30px 34px 70px; max-width: 1320px; outline: none; }
 
+.escopo-operacional {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 13px; margin-bottom: 22px; border: 1px solid var(--borda);
+  border-left: 3px solid var(--acento); border-radius: var(--r);
+  background: var(--fundo-2); color: var(--texto-2); font-size: 12.5px;
+}
+.escopo-operacional strong { color: var(--texto); }
+.escopo-operacional .tag { margin-left: auto; }
+
 /* ------------------------------------------------------------ cabeçalhos */
 
 .pagina-cab { margin-bottom: 24px; }
@@ -156,6 +176,24 @@ h2.secao::after { content: ""; flex: 1; height: 1px; background: var(--borda); }
   border-radius: var(--r-g); padding: 16px 17px;
 }
 .cartao.destaque { box-shadow: var(--sombra); }
+
+.cadeia {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+.fonte { min-width: 0; }
+.fonte-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fonte p { color: var(--texto); min-height: 3em; }
+.fonte dl { margin: 0; display: grid; gap: 8px; }
+.fonte dl div { border-top: 1px solid var(--borda); padding-top: 7px; }
+.fonte dt { color: var(--texto-3); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; }
+.fonte dd { margin: 2px 0 0; color: var(--texto-2); font-size: 12px; overflow-wrap: anywhere; }
+
+.confirmacao {
+  display: flex; gap: 9px; align-items: flex-start; margin: 16px 0;
+  color: var(--texto-2); font-size: 12.5px;
+}
+.confirmacao input { margin-top: 3px; }
 
 .metrica .rot {
   font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
@@ -348,13 +386,18 @@ td.livre { white-space: normal; min-width: 250px; }
 
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }
-  .lateral { position: static; height: auto; }
+  .lateral { position: static; height: auto; width: 100%; min-width: 0; }
   nav { display: flex; flex-wrap: wrap; gap: 3px; }
   .nav-grupo { width: 100%; margin: 8px 8px 2px; }
   .conteudo { padding: 20px 16px 60px; }
   .doc-layout { grid-template-columns: 1fr; }
   .doc-lista { position: static; flex-direction: row; flex-wrap: wrap; }
   .doc-lista button { width: auto; }
+  .escopo-operacional .tag { margin-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
 /* ------------------------------------ laudo de homologação (Frente 9) --- */
@@ -367,8 +410,8 @@ td.livre { white-space: normal; min-width: 250px; }
   border: none; border-top: 1px solid var(--borda-forte); margin-bottom: 6px;
 }
 
-/* Impressão: o laudo é documento oficial para Defesa Civil e auditoria, então
-   sai em A4 limpo — sem menu, sem fundo escuro, sem elemento de tela. Fundo
+/* Impressão: a ficha de evidências sai em A4 limpo — sem menu, sem fundo
+   escuro, sem elemento de tela. Fundo
    claro forçado porque impressora não imprime o tema escuro do painel: sairia
    ilegível ou gastaria toner à toa. */
 @media print {

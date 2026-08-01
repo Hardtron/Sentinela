@@ -12,7 +12,7 @@ verificadas livres em 30/07/2026.
 | Componente | Papel |
 |---|---|
 | Mosquitto | Broker MQTT |
-| Ingestor | Decodifica `proto/`, valida, grava, detecta nó silencioso (RC-02) |
+| Ingestor | Valida e grava a telemetria de enlace atual; quadros de sensor ainda não estão conectados |
 | TimescaleDB | Série temporal com agregação contínua dos acumulados |
 | PostGIS | Base geoespacial: taludes, áreas de alcance, exposição |
 | Dashboard | Visão operacional |
@@ -45,6 +45,7 @@ HTC-01 →(LoRa)→ HTC-03/bridge →(MQTT)→ túnel SSH → ingestor → Times
 | Banco | `docker compose` no homeserver, preso em `127.0.0.1:5432` | TimescaleDB 2.29 + PostGIS 3.6 |
 | Túnel MQTT | `sentinela-tunel-mqtt.service` (unidade de **usuário**) | ativo |
 | Ingestor | `sentinela-ingestor.service` (unidade de **usuário**) | ativo |
+| Fontes externas | `sentinela-fontes.timer` + serviço oneshot no homeserver | configurável por provedor |
 
 ```bash
 cd backend && docker compose up -d          # banco
@@ -81,8 +82,35 @@ shell nem encaminha nada além da porta do broker, mesmo se vazar.
 - `saude_bridge` — hypertable de saúde da bridge (RC-02)
 - `ponto_ensaio` — os 7 pontos do ensaio 02 em PostGIS
 
-`leitura` (sensor) **ainda não existe**: entra na Fase 1 com `lib/proto/`.
-Chamar a tabela atual de `leitura` seria mentir sobre o que ela contém.
+O esquema de `leitura` e `saude_atalaia` existe, assim como o decodificador de
+`lib/proto/`, mas o ingestor atual ainda não os conecta ao MQTT. As tabelas não
+devem ser confundidas com uma esteira de sensor em produção.
+
+Mensagens de enlace ou saúde da bridge que violem o contrato estrutural são
+preservadas em `backend/quarentena.jsonl`, com tópico, instante e motivo. Elas
+não entram nas tabelas como se fossem medição válida.
+
+### Parâmetros e evidência
+
+A migração 010 mantém histórico não destrutivo dos critérios, classifica o
+estado de validação e congela um snapshot nos novos checklists. Ela também
+versiona o contrato de evidência de alarmes sem criar regras automáticas. Ver
+[`docs/PARAMETROS.md`](../docs/PARAMETROS.md).
+
+### Dados ambientais e territoriais externos
+
+A migração 011 e `fontes_externas.py` implementam aquisição com execução,
+bruto imutável por SHA-256, revisão, quarentena e estado visível no painel.
+Observação de estação, grade, previsão, radar/satélite e contexto territorial
+permanecem categorias distintas e não alimentam alarmes automaticamente. Veja
+[`docs/FONTES_EXTERNAS.md`](../docs/FONTES_EXTERNAS.md) para contratos,
+configuração e dependências de cadastro/decisão institucional.
+
+### Verificação local sem hardware
+
+```bash
+./tools/venv/bin/python tools/verifica.py
+```
 
 ### Idempotência
 

@@ -34,8 +34,8 @@ const cabecalho = (titulo, desc) => `
 
 const secao = (t) => `<h2 class="secao">${t}</h2>`;
 
-function tabela(colunas, linhas) {
-  if (!linhas.length) return `<div class="vazio">sem registros</div>`;
+function tabela(colunas, linhas, vazio = "sem registros") {
+  if (!linhas.length) return `<div class="vazio">${esc(vazio)}</div>`;
   const th = colunas.map((c) => `<th>${c.rot}</th>`).join("");
   const tr = linhas.map((l) =>
     `<tr>${colunas.map((c) => {
@@ -204,6 +204,24 @@ function tempoAtras(s) {
   return `${Math.round(s / 86400)} dias`;
 }
 
+function dataLegivel(v) {
+  if (!v) return "sem registro";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? esc(v) : d.toLocaleString("pt-BR");
+}
+
+function idadeData(v, agora = Date.now()) {
+  if (!v) return null;
+  const t = new Date(v).getTime();
+  return Number.isNaN(t) ? null : Math.max(0, Math.round((agora - t) / 1000));
+}
+
+const origem = (tipo, texto = tipo) => {
+  const classe = { OBSERVADO: "ok", INFERIDO: "atencao", EXPERIMENTAL: "acento",
+    VALIDADO: "ok", INFORMATIVO: "neutro", SEM_DADO: "neutro" }[tipo] || "neutro";
+  return `<span class="tag ${classe}">${esc(texto)}</span>`;
+};
+
 /* Estado da Atalaia em linguagem operacional. */
 const NOMES_ESTADO = {
   REGISTRADA: "Cadastrada",
@@ -217,6 +235,73 @@ const NOMES_ESTADO = {
 };
 
 const rotas = {};
+
+/* A cadeia separa estado observado de inferência por persistência. Não há
+   corte arbitrário de frescor: a idade é mostrada para decisão contextual. */
+rotas["operacao"] = async () => {
+  const [o, externas] = await Promise.all([
+    api("/api/operacao"),
+    api("/api/fontes-externas").catch((e) => ({ fontes: [], erro: e.message })),
+  ]);
+  const ev = o.banco?.evidencias || {};
+  const fontes = [
+    { nome: "Painel HTTP", tipo: "OBSERVADO", fato: "respondeu a esta consulta",
+      quando: o.gerado_em, limite: "Não prova os demais serviços." },
+    { nome: "Assinante MQTT", tipo: "OBSERVADO",
+      fato: o.mqtt.conectado ? `conectado a ${o.mqtt.broker || "broker não identificado"}`
+        : `sem conexão${o.mqtt.erro ? `: ${o.mqtt.erro}` : ""}`,
+      quando: null, idade: o.mqtt.ultima_amostra_idade_s,
+      limite: `${o.mqtt.amostras_memoria} amostra(s) apenas na memória deste painel.` },
+    { nome: "Bridge", tipo: ev.bridge_em ? "INFERIDO" : "SEM_DADO",
+      fato: ev.bridge_em ? "há saúde da bridge persistida" : "sem saúde persistida",
+      quando: ev.bridge_em, limite: "Registro histórico não confirma serviço ativo agora." },
+    { nome: "Ingestor", tipo: ev.enlace_em || ev.leitura_em ? "INFERIDO" : "SEM_DADO",
+      fato: ev.enlace_em || ev.leitura_em ? "há dado recebido no banco" : "sem dado recebido no banco",
+      quando: ev.leitura_em || ev.enlace_em,
+      limite: "O processo não é observado diretamente pelo painel." },
+    { nome: "Banco", tipo: o.banco.disponivel ? "OBSERVADO" : "SEM_DADO",
+      fato: o.banco.disponivel ? "consulta concluída" : `indisponível: ${o.banco.erro || "motivo não informado"}`,
+      quando: o.banco.consultado_em, limite: o.banco.qualidade },
+  ];
+  const agora = new Date(o.gerado_em).getTime() || Date.now();
+  return cabecalho("Cadeia e fontes",
+    "Estado observável pelo painel nesta consulta. Idade não é convertida automaticamente em normal/falha.")
+    + `<div class="cadeia" role="list">${fontes.map((f) => {
+      const idade = f.idade ?? idadeData(f.quando, agora);
+      return `<article class="cartao fonte" role="listitem">
+        <div class="fonte-cab"><strong>${esc(f.nome)}</strong>${origem(f.tipo)}</div>
+        <p>${esc(f.fato)}</p>
+        <dl><div><dt>Última evidência</dt><dd>${f.quando ? dataLegivel(f.quando) : "sem timestamp"}</dd></div>
+        <div><dt>Idade calculada</dt><dd>${idade == null ? "não disponível" : tempoAtras(idade)}</dd></div>
+        <div><dt>Limitação</dt><dd>${esc(f.limite || "não informada")}</dd></div></dl>
+      </article>`;
+    }).join("")}</div>`
+    + secao("Evidências persistidas")
+    + tabela([
+      { rot: "Sinal", val: (i) => `<strong>${esc(i.nome)}</strong>` },
+      { rot: "Origem", val: () => origem("OBSERVADO", "banco") },
+      { rot: "Último registro", val: (i) => dataLegivel(i.em) },
+      { rot: "Idade", val: (i) => i.em ? tempoAtras(idadeData(i.em, agora)) : "sem dado" },
+    ], [
+      { nome: "Enlace Atalaia → bridge", em: ev.enlace_em },
+      { nome: "Saúde da bridge", em: ev.bridge_em },
+      { nome: "Leitura de sensores", em: ev.leitura_em },
+      { nome: "Saúde da Atalaia", em: ev.atalaia_em },
+    ])
+    + secao("Dados ambientais e territoriais externos")
+    + `<div class="aviso"><p>${esc(externas.escopo ||
+      "A camada de fontes externas ainda não está disponível neste banco.")}</p>
+      ${externas.erro ? `<p><strong>Indisponível:</strong> ${esc(externas.erro)}</p>` : ""}</div>`
+    + tabela([
+      { rot: "Fonte / conjunto", val: (i) => `<strong>${esc(i.provedor)}</strong><br><span class="miudo">${esc(i.titulo)}</span>` },
+      { rot: "Natureza", val: (i) => `${origem(i.classe, i.uso)}<br><span class="miudo">${esc(i.variavel || "produto composto")}${i.unidade ? ` · ${esc(i.unidade)}` : ""}</span>` },
+      { rot: "Aquisição", val: (i) => `${origem(i.ultima_execucao_estado || i.configuracao_estado)}<br><span class="miudo">${i.ultima_conclusao_em ? dataLegivel(i.ultima_conclusao_em) : "nunca executada"}</span>` },
+      { rot: "Último dado", val: (i) => i.ultimo_observado_em ? `${dataLegivel(i.ultimo_observado_em)}<br><span class="miudo">${tempoAtras(idadeData(i.ultimo_observado_em, agora))}</span>` : "não informado pelo produto" },
+      { rot: "Limitação", val: (i) => esc(i.limitacao) },
+    ], externas.fontes || [], "Nenhum conjunto externo catalogado. A migração 011 pode estar pendente.")
+    + secao("Limitações desta visão")
+    + `<div class="aviso"><ul>${(o.limitacoes || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+};
 
 /* ================================================= T-25: DASHBOARD (Situação)
    Tela principal do operador — substitui a antiga "Visão geral" que mostrava
@@ -232,8 +317,8 @@ rotas["situacao"] = async () => {
   const estacoes = sit?.estacoes || [];
   const atalaias = com?.atalaias || [];
   const oper = atalaias.filter((a) => a.estado === "OPERACIONAL").length;
-  const alertas = (com?.transicoes || []).length;
-  const chuvaMax = estacoes.reduce((m, e) => Math.max(m, e.mm_84h || 0), 0);
+  const chuvaVals = estacoes.map((e) => e.mm_84h).filter((v) => v != null);
+  const chuvaMax = chuvaVals.length ? Math.max(...chuvaVals) : null;
   const mqttOk = tel?.ligacao?.conectado;
 
   return cabecalho("Situação",
@@ -243,12 +328,11 @@ rotas["situacao"] = async () => {
         oper ? "em campo" : "nenhuma ativa ainda",
         oper ? "ok" : "")}
       ${metrica("Comunicação", mqttOk ? "conectada" : "sem conexão",
-        mqttOk ? `${tel.amostras} amostras na janela` : "broker MQTT fora do ar",
-        mqttOk ? "ok" : "erro")}
+        mqttOk ? `${tel.amostras} amostras em memória` : (tel?.ligacao?.erro || "sem resposta do MQTT"),
+        mqttOk ? "ok" : "")}
       ${metrica("Chuva 84h máxima",
-        chuvaMax ? chuvaMax + " mm" : "—",
-        `${estacoes.length} estações oficiais`,
-        chuvaMax > 80 ? "atencao" : "")}
+        chuvaMax == null ? "sem dado" : chuvaMax + " mm",
+        `${estacoes.length} estações oficiais · sem classificação automática`)}
       ${metrica("Estações oficiais", estacoes.length || "—",
         "CEMADEN / INMET")}
     </div>`
@@ -261,8 +345,9 @@ rotas["situacao"] = async () => {
         { rot: "72h", val: (e) => (e.mm_72h ?? "—") + " mm", classe: "num" },
         { rot: "84h", val: (e) => `<strong>${e.mm_84h ?? "—"} mm</strong>`, classe: "num" },
       ], estacoes)
-      + `<p class="nota">Acumulados em janela móvel. 84 h é a referência
-        da Serra do Mar. ${dica("Baseado na envoltória de Tatizana et al. (1987), referência fundacional para correlação chuva-deslizamento na Serra do Mar.")}</p>`
+      + `<p class="nota">Acumulados armazenados pelo backend. A tela não aplica
+        limiar geral: critérios decisórios dependem de parametrização registrada,
+        validação aplicável ao município e avaliação técnica.</p>`
       : "")
 
     + secao("Atalaias")
@@ -360,21 +445,23 @@ rotas["timeline"] = rotas["progresso"];
 /* ================================================= T-29/T-30: CHUVA E SENSORES (renomeia "sensor") */
 
 rotas["chuva"] = async () => {
-  const [s, sit] = await Promise.all([
-    api("/api/sensor"), api("/api/situacao").catch(() => null)]);
+  const [s, sit, externas] = await Promise.all([
+    api("/api/sensor"), api("/api/situacao").catch(() => null),
+    api("/api/fontes-observacoes").catch((e) => ({ observacoes: [], erro: e.message }))]);
   const cab = cabecalho("Chuva e Sensores",
     `Chuva: dados oficiais da rede CEMADEN/INMET. Umidade de solo e
      inclinação: sensores locais da Atalaia.`);
 
   if (!s.leituras.length) {
-    return cab + blocoChuvaOficial(sit) + semDado(
+    return cab + blocoChuvaOficial(sit) + blocoObservacoesExternas(externas) + semDado(
       "Nenhuma leitura de sensor local no banco ainda.")
       + `<p class="nota">Os sensores locais passam a mostrar dados
       quando a primeira Atalaia com sensor entrar em operação.</p>`;
   }
 
   const chuva = Object.fromEntries(s.chuva.map((c) => [c.node_id, c]));
-  return cab + blocoChuvaOficial(sit) + secao("Sensores locais — última leitura")
+  return cab + blocoChuvaOficial(sit) + blocoObservacoesExternas(externas)
+    + secao("Sensores locais — última leitura")
     + tabela([
       { rot: "Atalaia", val: (l) => `<strong>${esc(l.placa || l.node_id)}</strong>` },
       { rot: "Chuva 1h", val: (l) => l.chuva_valida
@@ -443,43 +530,38 @@ function renderAtalaias(itens) {
 /* ================================================= T-28: ALERTAS COM AÇÃO */
 
 rotas["alertas"] = async () => {
-  const f = await dados("/api/frota");
-  const sev = f.por_severidade;
-  const grupos = [...new Set(f.alarmes.map((a) => a.grupo))];
+  const [catalogo, operacional] = await Promise.all([
+    dados("/api/frota"), api("/api/frota-saude").catch((e) => ({ alarmes: [], erro: e.message })),
+  ]);
+  const alarmes = operacional.alarmes || [];
+  const sev = alarmes.reduce((r, a) => ({ ...r, [a.severidade]: (r[a.severidade] || 0) + 1 }), {});
+  const grupos = [...new Set(alarmes.map((a) => a.grupo).filter(Boolean))];
 
   return cabecalho("Alertas",
-    `Alarmes do sistema de monitoramento. Uma Atalaia fora do ar é um
-     talude sem monitoramento — por isso silêncio é classificado como crítico.`)
+    `Ocorrências abertas persistidas no banco. Reconhecer registra ciência;
+     não encerra a ocorrência e não substitui protocolo institucional.`)
+    + (operacional.erro ? semDado("Não foi possível consultar ocorrências abertas.", operacional.erro) : "")
     + `<div class="grade g4">
-      ${metrica("Críticos", sev.CRITICO || 0, "ação imediata", "erro")}
-      ${metrica("Urgentes", sev.URGENTE || 0, "dias de margem", "atencao")}
-      ${metrica("Atenção", sev.ATENCAO || 0, "semanas de margem")}
-      ${metrica("Atalaias monitoradas", f.operando, `${f.previstos} previstas`)}
+      ${metrica("Críticos abertos", sev.CRITICO || 0, "registros no banco", sev.CRITICO ? "erro" : "")}
+      ${metrica("Urgentes abertos", sev.URGENTE || 0, "registros no banco", sev.URGENTE ? "atencao" : "")}
+      ${metrica("Atenção abertos", sev.ATENCAO || 0, "registros no banco")}
+      ${metrica("Total aberto", alarmes.length, operacional.erro ? "consulta indisponível" : "consulta atual")}
     </div>`
-
-    + secao("O que cada padrão de energia revela")
-    + tabela([
-      { rot: "O que se observa", val: (a) => esc(a.padrao), classe: "livre" },
-      { rot: "Diagnóstico provável", val: (a) => `<strong>${esc(a.diagnostico)}</strong>`, classe: "livre" },
-      { rot: "Ação recomendada", val: (a) => esc(a.acao) },
-    ], f.assinaturas)
-    + `<p class="nota">Sujeira reduz a captação uniformemente; sombra atua em
-       janela horária específica. A forma da curva separa as duas.
-       ${dica("A comparação é feita contra a mediana das Atalaias vizinhas, eliminando a variável climática sem sensor de referência.")}</p>`
-
-    + secao("Catálogo de alarmes")
+    + secao("Ocorrências abertas")
     + `<div class="filtros">
-        <button class="filtro ativo" data-g="todos">Todos (${f.alarmes.length})</button>
+        <button class="filtro ativo" data-g="todos">Todos (${alarmes.length})</button>
         ${grupos.map((g) => `<button class="filtro" data-g="${g}">${g}</button>`).join("")}
       </div><div id="lista-alarmes"></div>`
-
-    + secao("Como se calcula o índice de saúde")
-    + `<div class="cartao">${grafBarras(f.pesos_saude.map((p) => ({
-        rot: `${p.componente} — ${p.entra_com}`, valor: p.peso })))}
-      <p class="nota">Faixas: 90–100 saudável · 70–89 observar · 50–69 agendar ·
-      abaixo de 50 intervir. Qualquer alarme crítico zera o índice.
-      ${dica("Uma Atalaia muda com bateria cheia não é 70% saudável — é inútil. Por isso alarme crítico zera o índice inteiro.")}</p>
-    </div>`;
+    + secao("Catálogo documentado — não são ocorrências")
+    + `<p class="nota">${origem("EXPERIMENTAL")} Hipóteses e regras registradas em
+      <code>docs/MANUTENCAO.md</code>. A presença nesta tabela não afirma que foram
+      implementadas, validadas em campo ou disparadas.</p>`
+    + tabela([
+      { rot: "Severidade proposta", val: (a) => `<span class="tag ${CORES_SEV[a.severidade] || "neutro"}">${esc(a.severidade)}</span>` },
+      { rot: "Nome", val: (a) => `<strong>${esc(a.nome)}</strong>` },
+      { rot: "Gatilho documentado", val: (a) => esc(a.gatilho), classe: "livre" },
+      { rot: "Ação documentada", val: (a) => esc(a.acao), classe: "livre" },
+    ], catalogo.alarmes || []);
 };
 
 /* Alias: "frota" mantém compatibilidade com bookmarks antigos */
@@ -495,8 +577,8 @@ const NOMES_VEREDITO = {
   "sem dados": "sem dados",
 };
 
-rotas["monitor"] = async () => cabecalho("Rede ao Vivo",
-  `Comunicação em tempo real com as Atalaias. Atualiza a cada 2 segundos.
+rotas["monitor"] = async () => cabecalho("Telemetria MQTT",
+  `Janela em memória consultada por polling HTTP a cada 2 segundos; não é um fluxo persistente no navegador.
    ${dica("Subida é o nó falando com o gateway. Descida é o gateway respondendo. Medir os dois sentidos revela assimetrias no enlace.")}`)
   + `<div id="mon-estado"></div>
      <div id="mon-metricas"></div>
@@ -506,8 +588,10 @@ rotas["monitor"] = async () => cabecalho("Rede ao Vivo",
 function monEstado(t) {
   const lig = t.ligacao;
   if (lig.conectado) {
-    return `<div class="ao-vivo"><i></i>conectado a <code>${esc(lig.broker)}</code>
-      · ${t.amostras} amostras na janela · atualizado ${esc(t.gerado_em.slice(11))}</div>`;
+    return `<div class="ao-vivo"><i></i>${origem("OBSERVADO")} conectado a <code>${esc(lig.broker)}</code>
+      · ${t.amostras} amostras na memória · última amostra ${t.janela?.idade_ultima_s == null
+        ? "sem timestamp" : `há ${tempoAtras(t.janela.idade_ultima_s)}`}
+      · consulta ${dataLegivel(t.gerado_em_iso || t.gerado_em)}</div>`;
   }
   const causa = lig.erro
     ? `<code>${esc(lig.erro)}</code>`
@@ -526,7 +610,9 @@ function monMetricas(t) {
   const m = t.metricas, lim = t.limiares;
   const cor = CORES_VEREDITO_ENLACE[m.veredito] || "neutro";
   const md = (e, suf = "") => (e ? e.media + suf : "—");
-  return `<div class="grade g4">
+  return `<p class="nota">${origem("EXPERIMENTAL")} Critérios de enlace espelhados de
+    <code>${esc(lim.proveniencia || "firmware")}</code>. ${esc(lim.uso || "")}</p>
+    <div class="grade g4">
     ${metrica("Estado do enlace", NOMES_VEREDITO[m.veredito] || m.veredito,
       `margem atual ${m.margem_atual ?? "—"} dB`, cor + " texto")}
     ${metrica("Margem — subida", md(m.margem_sobe, " dB"),
@@ -702,6 +788,33 @@ function blocoChuvaOficial(sit) {
         <strong>acumula e mostra, mas não dispara alerta de chuva</strong>
         (RC-18). Pôr um número aqui sem calibração daria aparência de critério
         técnico a um palpite.</p></div>` : "");
+}
+
+function periodoLegivel(segundos) {
+  if (segundos == null) return "instantânea/não informado";
+  if (segundos % 86400 === 0) return `${segundos / 86400} d`;
+  if (segundos % 3600 === 0) return `${segundos / 3600} h`;
+  return `${segundos} s`;
+}
+
+function blocoObservacoesExternas(dados) {
+  const titulo = secao("Aquisição externa auditável");
+  if (!dados || !dados.observacoes?.length) {
+    return titulo + semDado(
+      "Nenhuma observação externa normalizada foi adquirida ainda.", dados?.erro)
+      + `<p class="nota">Produtos brutos, previsões, grades e contexto territorial
+        aparecem em <strong>Cadeia e fontes</strong>. Ausência aqui não é zero.</p>`;
+  }
+  return titulo + `<p class="nota">${esc(dados.escopo)}. Cada período permanece
+    separado; o painel não soma estações, modelos ou provedores.</p>`
+    + tabela([
+      { rot: "Provedor / estação", val: (o) => `<strong>${esc(o.provedor)}</strong><br><span class="miudo">${esc(o.estacao || o.codigo_externo)}</span>` },
+      { rot: "Município", val: (o) => esc([o.municipio, o.uf].filter(Boolean).join("/") || "não informado") },
+      { rot: "Grandeza", val: (o) => `${esc(o.variavel)}<br><span class="miudo">período ${periodoLegivel(o.periodo_s)}</span>` },
+      { rot: "Valor observado", val: (o) => `<strong>${esc(o.valor)} ${esc(o.unidade)}</strong>`, classe: "num" },
+      { rot: "Medido em", val: (o) => `${dataLegivel(o.medido_em)}<br><span class="miudo">recebido ${dataLegivel(o.recebido_em)}</span>` },
+      { rot: "Qualidade / evidência", val: (o) => `${esc(o.qualificacao_origem || "sem código de qualidade")}${o.sha256 ? `<br><span class="hash">sha256 ${esc(o.sha256.slice(0, 12))}…</span>` : ""}` },
+    ], dados.observacoes);
 }
 
 /* ------------------------------------------- comissionamento (Frente 9/10) */
@@ -1176,8 +1289,8 @@ function renderAlarmes(itens) {
     { rot: "Severidade", val: (a) =>
       `<span class="tag ${CORES_SEV[a.severidade]}">${a.severidade}</span>` },
     { rot: "Alarme", val: (a) => `<strong>${esc(a.nome)}</strong>` },
-    { rot: "Gatilho", val: (a) => esc(a.gatilho), classe: "livre" },
-    { rot: "Ação recomendada", val: (a) => esc(a.acao), classe: "livre" },
+    { rot: "Aberto em", val: (a) => dataLegivel(a.aberto_em) },
+    { rot: "Origem", val: () => origem("OBSERVADO", "banco") },
     { rot: "Atendimento", val: (a) => a.reconhecido_em
       ? `<span class="tag ok" title="Por ${esc(a.reconhecido_por || "operador")}">✓ Reconhecido</span>`
       : `<button class="btn btn-sm btn-secundario btn-rec-alarme" data-id="${a.id || 0}" data-nome="${esc(a.nome)}">Reconhecer</button>` },
@@ -1192,10 +1305,10 @@ function abrirModalReconhecimento(id, nome) {
     modal.className = "modal-fundo";
     document.body.appendChild(modal);
   }
-  modal.innerHTML = `<div class="modal">
+  modal.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="rec-titulo">
     <div class="modal-cab">
-      <span>Reconhecer Alarme — ${esc(nome)}</span>
-      <button onclick="fecharModalReconhecimento()">×</button>
+      <span id="rec-titulo">Reconhecer Alarme — ${esc(nome)}</span>
+      <button aria-label="Fechar" onclick="fecharModalReconhecimento()">×</button>
     </div>
     <div class="modal-corpo">
       <div class="campo">
@@ -1203,7 +1316,7 @@ function abrirModalReconhecimento(id, nome) {
         <input class="entrada" id="rec-operador" placeholder="Seu nome ou código de agente">
       </div>
       <div class="campo">
-        <label class="campo-label" for="rec-acao">Ação tomada</label>
+        <label class="campo-label" for="rec-acao">Registro declarado</label>
         <select class="entrada" id="rec-acao">
           <option value="RECONHECIDO">Ciente / Monitorando</option>
           <option value="DESPACHO_CAMPO">Despachar Equipe de Campo</option>
@@ -1212,9 +1325,13 @@ function abrirModalReconhecimento(id, nome) {
         </select>
       </div>
       <div class="campo">
-        <label class="campo-label" for="rec-nota">Nota de atendimento</label>
+        <label class="campo-label" for="rec-nota">Motivo / nota de atendimento <span class="obrigatorio">*</span></label>
         <textarea class="entrada" id="rec-nota" placeholder="Observações para o diário de operações..."></textarea>
       </div>
+      <label class="confirmacao"><input type="checkbox" id="rec-confirmar">
+        Confirmo que este registro expressa apenas ciência/atendimento e não encerra o alarme.</label>
+      <div class="aviso"><strong>Identidade não verificada.</strong> O nome informado
+        é declaratório; autenticação e autorização institucional ainda não existem.</div>
       <div id="modal-rec-feedback"></div>
     </div>
     <div class="modal-rodape">
@@ -1223,6 +1340,7 @@ function abrirModalReconhecimento(id, nome) {
     </div>
   </div>`;
   modal.classList.add("visivel");
+  el("rec-operador")?.focus();
 }
 
 function fecharModalReconhecimento() {
@@ -1238,6 +1356,14 @@ async function submeterReconhecimento(alarmeId) {
   }
   const acao = el("rec-acao")?.value || "RECONHECIDO";
   const nota = el("rec-nota")?.value?.trim() || "";
+  if (!nota) {
+    el("modal-rec-feedback").innerHTML = `<div class="aviso-erro">Informe o motivo ou a nota do atendimento.</div>`;
+    return;
+  }
+  if (!el("rec-confirmar")?.checked) {
+    el("modal-rec-feedback").innerHTML = `<div class="aviso-erro">Confirme o escopo do registro antes de continuar.</div>`;
+    return;
+  }
   const despacho = acao === "DESPACHO_CAMPO";
 
   const res = await postJSON("/api/alarme/reconhecer", {
@@ -1388,14 +1514,14 @@ rotas["referencias"] = async () => {
 /* -------------------------------------------------------------- roteador */
 
 function partesDaRota() {
-  const bruto = location.hash.replace(/^#\/?/, "") || "situacao";
+  const bruto = location.hash.replace(/^#\/?/, "") || "operacao";
   const [nome, query] = bruto.split("?");
-  return { nome: nome || "situacao", params: new URLSearchParams(query || "") };
+  return { nome: nome || "operacao", params: new URLSearchParams(query || "") };
 }
 
 async function navega() {
   const { nome, params } = partesDaRota();
-  const render = rotas[nome] || rotas["situacao"];
+  const render = rotas[nome] || rotas["operacao"];
 
   paraMonitor();   // sair da aba encerra o polling; nada roda em segundo plano
 
@@ -1409,13 +1535,16 @@ async function navega() {
 
   const alvo = el("rota");
   alvo.innerHTML = `<div class="carregando">carregando…</div>`;
+  el("estado-interface").textContent = `Carregando ${nome}`;
   window.scrollTo({ top: 0 });
   try {
     alvo.innerHTML = await render(params);
   } catch (e) {
     alvo.innerHTML = `<div class="vazio">falha ao carregar: ${esc(e.message)}</div>`;
+    el("estado-interface").textContent = `Falha ao carregar ${nome}: ${e.message}`;
     return;
   }
+  el("estado-interface").textContent = `${nome} atualizado`;
   await depoisDeRenderizar(nome, params);
 }
 
@@ -1525,11 +1654,12 @@ async function ligaMapa() {
   mapa = L.map("mapa", { zoomControl: true }).setView([-23.5754, -45.3305], 15);
   camadaBase().addTo(mapa);
 
-  const [atalaias, ensaios, susc, estacoes] = await Promise.all([
+  const [atalaias, ensaios, susc, estacoes, contexto] = await Promise.all([
     api("/api/gis/atalaias").catch(() => null),
     api("/api/gis/ensaios").catch(() => null),
     api("/api/gis/suscetibilidade").catch(() => null),
     api("/api/gis/estacoes").catch(() => null),
+    api("/api/gis/fontes-contexto").catch(() => null),
   ]);
 
   const camadas = {};
@@ -1570,6 +1700,22 @@ async function ligaMapa() {
   if (susc?.features?.length) {
     const g = L.geoJSON(susc, { style: { color: "#f85149", weight: 1, fillOpacity: 0.2 } });
     camadas["Suscetibilidade"] = g;
+  }
+  if (contexto?.features?.length) {
+    const g = L.geoJSON(contexto, {
+      style: { color: "#d29922", weight: 1.5, dashArray: "5 4", fillOpacity: 0.08 },
+      onEachFeature: (f, camada) => {
+        const p = f.properties || {};
+        const d = p.propriedades || {};
+        camada.bindPopup(`<strong>${esc(p.provedor)} — ${esc(p.titulo)}</strong><br>
+          ${esc(d.munic || d.local || p.identificador || "feição oficial")}<br>
+          ${d.grau_risco ? `grau_risco da fonte: ${esc(d.grau_risco)}<br>` : ""}
+          <span class="miudo">Contexto do provedor; não é classificação do Sentinela.<br>
+          Adquirido em ${dataLegivel(p.adquirido_em)} · sha256 ${esc((p.sha256 || "").slice(0, 12))}…</span>`);
+      },
+    }).addTo(mapa);
+    g.bringToBack();
+    camadas["Contexto oficial externo"] = g;
   }
   L.control.layers(null, camadas, { collapsed: false }).addTo(mapa);
 
@@ -1626,7 +1772,7 @@ async function ligaMonitor() {
 }
 
 async function ligaFrota() {
-  const f = await dados("/api/frota");
+  const f = await api("/api/frota-saude").catch(() => ({ alarmes: [] }));
   const aplica = (g) => {
     renderAlarmes(g === "todos" ? f.alarmes : f.alarmes.filter((a) => a.grupo === g));
     document.querySelectorAll(".btn-rec-alarme").forEach((b) => {

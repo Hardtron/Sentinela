@@ -15,9 +15,12 @@ acionável sobre risco iminente de deslizamento.
 
 ## Estado atual
 
-**Fase 0 — bring-up do rádio.** Nenhum hardware além do já disponível foi
-adquirido. Ver [LOG.md](LOG.md) para o andamento e
-[ERROS.md](ERROS.md) para armadilhas já mapeadas.
+O bring-up de rádio e a esteira de enlace estão operacionais, e o repositório
+já contém banco, GIS, painel, chuva oficial e comissionamento. Isso não equivale
+a um piloto de sensores: a ingestão dos quadros de sensor, a decisão local e a
+abertura automática de alarmes ainda não estão conectadas ponta a ponta. Ver
+[LOG.md](LOG.md) para a cronologia e [docs/PARAMETROS.md](docs/PARAMETROS.md)
+para a fronteira entre valores experimentais e decisórios.
 
 ## Documentação
 
@@ -37,6 +40,7 @@ adquirido. Ver [LOG.md](LOG.md) para o andamento e
 | [docs/RESPONSABILIDADE_TECNICA.md](docs/RESPONSABILIDADE_TECNICA.md) | Habilitação profissional e camadas de responsabilidade |
 | [docs/REFERENCIAS.md](docs/REFERENCIAS.md) | **Política de proveniência** e bibliografia central |
 | [docs/QUALIDADE_CODIGO.md](docs/QUALIDADE_CODIGO.md) | **Complexidade ciclomática** e padrões de código |
+| [docs/PARAMETROS.md](docs/PARAMETROS.md) | Proveniência, status, histórico e uso decisório de parâmetros |
 | [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
 | **[docs/NEGOCIO.md](docs/NEGOCIO.md)** | **Índice das cinco frentes de negócio** |
 | [docs/MERCADO_MUNICIPIOS.md](docs/MERCADO_MUNICIPIOS.md) | Frente 1 — mercado municipal |
@@ -148,9 +152,28 @@ consultar o banco, usar o painel) funciona igual dos dois lados.
 
 Reúne visão geral, pendências consolidadas de todos os documentos, hardware,
 ensaios de rede com gráfico, builds do firmware, complexidade ciclomática, a
-documentação renderizada e o **monitoramento em tempo real** da rede LoRa
+documentação renderizada e uma **janela MQTT em memória**, consultada pelo
+navegador a cada 2 segundos, para observar a rede LoRa
 (margem de enlace nos dois sentidos, RSSI, SNR, assimetria, perda de pacotes,
 estado de cada placa e da bridge).
+
+A página **Cadeia e fontes** distingue evidência observada, inferência e falta
+de dado, sempre com timestamp/idade quando disponível. Registro recente no
+banco não é apresentado como prova de que um serviço continua ativo. Os
+critérios do monitor MQTT são experimentais e servem ao ensaio de enlace; não
+são critérios de alerta geotécnico.
+
+**Limites operacionais atuais:** o painel não observa diretamente systemd ou
+Docker, a janela MQTT reinicia com o processo, e ainda não existem identidade
+institucional, RBAC, operação multiusuário coordenada ou protocolo formal de
+incidentes. O nome informado em ações é declaratório. Essas lacunas impedem
+tratar o painel como pronto para operação crítica institucional.
+
+A mesma página cataloga aquisições ambientais e territoriais externas e exibe
+configuração, última execução, último dado e limitação. A esteira preserva o
+bruto e a proveniência, mas não mistura observação, estimativa, previsão ou
+contexto e não cria regras automáticas de alerta. Operação e fontes oficiais:
+[`docs/FONTES_EXTERNAS.md`](docs/FONTES_EXTERNAS.md).
 
 #### Como está montado
 
@@ -205,9 +228,11 @@ que só existem lá) continua funcionando pelo terminal, em outra porta:
 ### Verificação de qualidade
 
 ```bash
-./tools/venv/bin/python tools/complexidade.py --limite 10
+./tools/venv/bin/python tools/verifica.py
 ```
 
+O comando executa contratos de protocolo, decodificação, robustez do fluxo,
+reconhecimento de alarmes, contratos do painel e a verificação de complexidade.
 Nenhuma função pode passar de 10 — ver [QUALIDADE_CODIGO.md](docs/QUALIDADE_CODIGO.md).
 
 ### Coleta do ensaio de campo

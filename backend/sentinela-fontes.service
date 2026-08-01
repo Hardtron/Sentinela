@@ -1,0 +1,15 @@
+# Sentinela — aquisição auditável de fontes externas (Home Server).
+# Unidade oneshot de usuário. Sem configuração, conclui sem alterar dados.
+
+[Unit]
+Description=Sentinela — coleta de fontes ambientais externas
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/DATA/Projects/Sentinela/backend
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/DATA/Projects/Sentinela/backend/fontes.env
+ExecStart=/DATA/Projects/Sentinela/backend/venv/bin/python /DATA/Projects/Sentinela/backend/fontes_externas.py
+UMask=0077

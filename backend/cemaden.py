@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""Sentinela — importa chuva da rede oficial (ADR-009).
+"""Sentinela — importa CSV de chuva da rede oficial (ADR-009).
 
-**Por que CSV e não API.** O Cemaden disponibiliza os dados dos pluviômetros
-automáticos pelo Mapa Interativo, com download a partir de 2013 e transmissão
-de acumulado a cada 10 minutos. **Não há API REST pública documentada** — o
-que existe é a exportação pelo mapa. Este módulo consome exatamente isso.
-
-Deliberadamente **não se inventa endpoint**: chutar uma URL de órgão público
-produziria um importador que ou falha silenciosamente ou, pior, traz dado de
-outra coisa. Enquanto a P-004 não confirmar um canal programático oficial, o
-caminho é exportar do mapa e apontar este importador para o arquivo.
+Este é o caminho manual/legado para exportações CSV. A API PED oficial do
+CEMADEN foi confirmada e sua aquisição auditável vive em
+``backend/fontes_externas.py``. O importador continua útil para arquivos
+históricos e contingência, mas não registra o bruto, a execução e a revisão
+completos da migração 011; preferir a nova esteira em operação contínua.
 
 O importador é idempotente: reimportar o mesmo arquivo não duplica acumulado —
 e duplicata aqui inflaria justamente o preditor de risco.

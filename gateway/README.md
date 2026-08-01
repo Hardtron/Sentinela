@@ -25,8 +25,9 @@ confundidas com bugs nossos.
 ## Estado atual
 
 - [x] **`bridge.py`** — serial → MQTT, com reconexão automática de ambos os
-      lados e **buffer em disco** (`buffer.jsonl`) que sobrevive a reinício do
-      processo, testado sem broker no ar.
+      lados e **buffer atômico em disco** (`buffer.jsonl`). Mensagem QoS 1 só
+      sai da fila após confirmação do broker; arquivo corrompido é preservado
+      com sufixo `corrompido-*`, nunca tratado como fila vazia válida.
 - [x] **`sentinela-bridge.service`** — unidade systemd, reinicia sozinha em
       falha.
 - [x] Publicação de saúde da própria bridge em `sentinela/bridge/<id>/saude`
