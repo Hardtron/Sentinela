@@ -34,7 +34,13 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 
 # MANUTENCAO.md §1: ATL-<município>-<sequencial>, ex. ATL-CGB-014.
-MEDIA = Path(os.environ.get("SENTINELA_MEDIA", "/DATA/Media/Sentinela/Atalaias"))
+# Onde ficam as pastas por Atalaia. O plano previa /DATA/Media/Sentinela, mas
+# /DATA/Media pertence ao root no homeserver e o sudo de lá pede senha — criar
+# lá exigiria intervenção manual só para o sistema subir. O padrão aponta para
+# um caminho que o serviço já pode escrever; para usar /DATA/Media basta criá-lo
+# com o dono certo (uma vez, com sudo) e apontar SENTINELA_MEDIA para ele.
+MEDIA = Path(os.environ.get("SENTINELA_MEDIA",
+                            "/DATA/Projects/Sentinela-Media/Atalaias"))
 TILES = Path(os.environ.get("SENTINELA_TILES", "/DATA/Tiles"))
 
 SUBPASTAS = ("fotos", "dados", "documentos", "manutencao")
