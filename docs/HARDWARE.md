@@ -48,8 +48,8 @@ receber antena de novo.
 |---|---|---|---|
 | `HTC-01` | Nó de desenvolvimento — PINGER (**placa substituta**, ver §troca) | `bench_01` **até o enlace ser confirmado**; depois `node_dev` | Bancada, USB do MacBook |
 | `HTC-02` | Nó par de alcance — PONGER | `bench_02` — **sem antena desde 31/07/2026** (remanejada para HTC-03) | Bancada |
-| `HTC-03` | Bridge do Raspberry Pi 4 (fase 2) | `bridge` — **RF-ativo, com antena desde 31/07/2026** | USB do RPi 4 |
-| `HTC-04` | **Display defeituoso** — firmware headless (`lib/app`/`lib/hal`) | `bench_04` até sensor disponível | Bancada, protoboard |
+| `HTC-03` | Gateway/Farol — PONGER (**placa de display defeituoso**, ver §troca-03) | `bridge` — RF-ativo, **com antena** | USB do RPi 4, destino: telhado |
+| `HTC-04` | Nó de campo (display funcional) — **aguarda antena** | `bench_04` **obrigatório** enquanto não houver antena (A-003) | Solta na bancada |
 | `HTC-05` | **Única reserva restante** — a outra virou `HTC-01` | `bench_05` até antena disponível | — |
 | ~~`HTC-06`~~ | **Não existe placa física** — a designação era de uma das duas reservas, agora promovida a `HTC-01` | — | — |
 
@@ -69,8 +69,8 @@ como `/dev/cu.usbserial-0001`. O que identifica cada placa é o **MAC do ESP32**
 | `HTC-01` | `3c:71:bf:8c:33:a8` | 4 MB | **placa substituta desde 31/07/2026** |
 | ~~`HTC-01` (antiga)~~ | `3c:71:bf:8c:2c:d0` | 4 MB | **DANIFICADA — fora do projeto** |
 | `HTC-02` | `3c:71:bf:8c:2f:9c` | 4 MB | bancada, sem antena |
-| `HTC-03` | `3c:71:bf:8c:31:70` | 4 MB | bridge do RPi, com antena |
-| `HTC-04` | `3c:71:bf:8c:2f:a4` | 4 MB | bancada, display defeituoso |
+| `HTC-03` | `3c:71:bf:8c:2f:a4` | 4 MB | **gateway desde 31/07/2026** — display defeituoso, irrelevante no telhado |
+| `HTC-04` | `3c:71:bf:8c:31:70` | 4 MB | **liberada para campo** — display funcional; **sem antena** |
 | `HTC-05` | **[?]** a identificar na primeira gravação | — | única reserva restante |
 
 Ao gravar cada placa nova pela primeira vez, registrar o MAC aqui — é o que
@@ -204,23 +204,45 @@ que justifique confirmação absoluta, abrir a placa com defeito de display
 (abaixo) para inspecionar a trilha sob a bobina é o próximo passo, já que essa
 placa está reservada para intervenção física.
 
-## Placa com display defeituoso — reservada para firmware sem tela
+## Troca da placa do posto `HTC-03` — 31/07/2026 {#troca-03}
 
-Uma das 6 placas tem o **display OLED com defeito** (identificado em
-31/07/2026 — tela permanece escura/sem imagem). Em vez de ser uma perda,
-resolve um problema real do projeto: **o nó de campo definitivo não tem
-display** (`ui_dev.h`, ADR-004) — o firmware de bring-up depende da tela hoje,
-mas `lib/app/` e `lib/hal/` precisam funcionar sem ela.
+Uma das 6 placas tem o **display OLED com defeito** (tela permanece
+escura/sem imagem). Ela era a `HTC-04`, de bancada. **Passou a ocupar o posto
+do gateway (`HTC-03`)**, e a placa que estava no gateway (display funcional)
+foi liberada para campo.
 
-**Decisão:** esta placa vira `HTC-04`, dedicada ao desenvolvimento do firmware
-**headless** — `lib/app/` e `lib/hal/esp32/` sem qualquer dependência de
-`ui_dev.h`. Como ela fisicamente não pode mostrar nada, força a validação real
-de que o caminho de campo não depende de tela — em vez de "esquecer" de testar
-sem OLED numa placa saudável.
+**O raciocínio é bom e vale registrar:** o gateway vai ficar **no telhado**.
+Display ali não é só dispensável — é inútil, porque ninguém vai subir para
+olhar a tela. Já o nó de campo é carregado na mão pelo operador, que **lê o
+RSSI e o veredito na tela enquanto caminha** (ROTEIRO_CAMPO.md). Ou seja: a
+placa defeituosa foi para o único posto onde o defeito não custa nada, e a
+boa foi para o posto onde a tela é ferramenta de trabalho. Nada foi
+desperdiçado.
 
-Diagnóstico só por serial e pelo LED nessa placa; útil também para simular,
-desde já, como o nó de campo vai se comportar quando o display for removido
-por completo no hardware definitivo (STM32WLE5, ADR-004).
+| Posto | Placa (MAC) | Display | Papel |
+|---|---|---|---|
+| `HTC-03` | `3c:71:bf:8c:2f:a4` | **defeituoso** | gateway no telhado — não precisa de tela |
+| `HTC-04` | `3c:71:bf:8c:31:70` | funcional | nó de campo — a tela é o instrumento |
+
+### O que isso muda no plano de firmware headless
+
+A `HTC-04` existia para forçar a validação do firmware **sem tela**
+(`lib/app/`, `lib/hal/esp32/` sem depender de `ui_dev.h`, ADR-004) — o nó de
+campo definitivo não terá display. Essa exigência **não sumiu: mudou de posto
+e ficou mais forte.**
+
+Agora quem não tem tela utilizável é o **gateway**, e ele vai para um telhado,
+onde diagnóstico presencial é caro. Isso torna obrigatório o que antes era
+exercício: **a `HTC-03` precisa ser inteiramente diagnosticável à distância**
+— por serial, LED e, principalmente, pela telemetria de saúde que ela já
+publica em `sentinela/bridge/<id>/saude` (RC-02).
+
+**⚠ Risco pendente:** a placa `31:70` saiu do gateway **ainda com o firmware
+`bridge` gravado, que é RF-ativo**, e está **sem antena** (as duas antenas
+estão na `HTC-01` e na `HTC-03`). Ligá-la nessa condição transmite sem carga e
+degrada o PA (A-003) — foi exatamente assim que se perdeu uma placa no E-007.
+**Gravar `bench_04` nela antes de energizá-la**, e só voltar a papel RF-ativo
+quando houver uma terceira antena (P-011).
 
 ## Rádio
 

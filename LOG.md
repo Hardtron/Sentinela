@@ -21,6 +21,54 @@ apenas o apontamento.
 
 ---
 
+## 2026-07-31 (20) — Troca de placas nos postos HTC-01 e HTC-03
+
+**Fase:** 0/2 · **Duração:** média
+
+### Feito
+
+- **Posto `HTC-01`:** a placa original (`3c:71:bf:8c:2c:d0`) saiu do projeto
+  por dano aparente. Assumiu uma das reservas nunca gravadas,
+  `3c:71:bf:8c:33:a8`. **Enlace confirmado**: 1558 enviados / 1515 recebidos,
+  RSSI −99 dBm subida e −93 dBm descida.
+- **Posto `HTC-03`:** entrou a placa de **display defeituoso**
+  (`3c:71:bf:8c:2f:a4`), e a que estava lá (`3c:71:bf:8c:31:70`, display bom)
+  foi liberada para campo. **A ideia é do usuário e é boa:** o gateway vai
+  para o telhado, onde ninguém sobe para olhar tela; o nó de campo é carregado
+  na mão, e ali a tela é o instrumento de trabalho (ROTEIRO_CAMPO.md). A placa
+  defeituosa foi para o único posto onde o defeito não custa nada.
+- Firmwares regravados **com verificação de MAC nas duas pontas** (E-007):
+  `bridge` na `HTC-03` pela rede, via RPi; `node_dev` na `HTC-01` local.
+- **Esteira validada ponta a ponta com o hardware novo:** 52 amostras em
+  3 min no banco, **zero perdas**, margem 36,3 dB.
+- Atualizados `HARDWARE.md` (as duas tabelas + seção da troca), `coletor.py`,
+  `nos.sql`, banco em produção e o guarda de MAC de `varredura_sf.py`.
+
+### Aprendido
+
+- **A exigência de firmware headless não sumiu com a troca: mudou de posto e
+  ficou mais forte.** A `HTC-04` existia para forçar validação sem tela. Agora
+  quem não tem tela utilizável é o **gateway**, e ele vai para um telhado —
+  onde diagnóstico presencial é caro. O que era exercício virou requisito:
+  a `HTC-03` precisa ser diagnosticável inteiramente à distância, o que
+  valoriza a telemetria de saúde que ela já publica (RC-02).
+- Designações do projeto viraram **postos, não placas**. Já eram assim de
+  fato desde a troca da `HTC-01`; agora está explícito, com MAC e data por
+  posto. Sem isso não haveria como dizer qual hardware produziu o ensaio 02.
+
+### Próximo
+
+1. **⚠ Risco em aberto:** a placa `31:70` saiu do gateway **com firmware
+   `bridge` (RF-ativo) e está sem antena** — as duas antenas estão na
+   `HTC-01` e na `HTC-03`. Energizá-la assim transmite sem carga e degrada o
+   PA (A-003), que é exatamente o E-007. **Gravar `bench_04` antes de
+   ligá-la.** Não pude fazer isso agora porque ela não está conectada a
+   nenhuma máquina.
+2. Ela só volta a papel RF-ativo (campo) quando houver uma terceira antena —
+   P-011 segue sendo o gargalo real do inventário.
+
+---
+
 ## 2026-07-31 (19) — Auditoria do painel: seis desatualizações, quatro delas numéricas
 
 **Fase:** transversal · **Duração:** média
