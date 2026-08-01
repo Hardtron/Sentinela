@@ -154,10 +154,10 @@ def _leva_ate_comissionando(cur, node_id, estado, autor):
     """Avança o ciclo de vida até COMISSIONANDO, seja qual for o ponto de
     partida — recomissionar após FALHA_ENLACE é caso normal, não exceção."""
     if estado == "REGISTRADA":
-        cur.execute("SELECT transita_estado(%s,'INSTALADA',%s)", (node_id, autor))
+        cur.execute("SELECT transita_estado(%s::smallint,'INSTALADA',%s)", (node_id, autor))
         estado = "INSTALADA"
     if estado in ("INSTALADA", "FALHA_ENLACE"):
-        cur.execute("SELECT transita_estado(%s,'COMISSIONANDO',%s)", (node_id, autor))
+        cur.execute("SELECT transita_estado(%s::smallint,'COMISSIONANDO',%s)", (node_id, autor))
 
 
 def _grava_baseline(destino, payload, teste, val):
@@ -207,7 +207,7 @@ def comissiona(payload, foto_oficial=None):
             raise ComissionamentoInvalido(f"node_id {node_id} não cadastrado")
         placa, estado = linha
 
-        cur.execute("SELECT * FROM valida_posicao(%s, %s)", (lon, lat))
+        cur.execute("SELECT * FROM valida_posicao(%s::real, %s::real)", (lon, lat))
         cols = [d[0] for d in cur.description]
         val = dict(zip(cols, cur.fetchone()))
 
@@ -245,7 +245,7 @@ def comissiona(payload, foto_oficial=None):
 
         autor = payload["submetido_por"]
         _leva_ate_comissionando(cur, node_id, estado, autor)
-        cur.execute("SELECT transita_estado(%s,'VALIDANDO_ENLACE',%s)", (node_id, autor))
+        cur.execute("SELECT transita_estado(%s::smallint,'VALIDANDO_ENLACE',%s)", (node_id, autor))
 
         # O teste roda contra o banco, não contra o broker: aprova só se o dado
         # atravessou a esteira inteira até onde a decisão é tomada.
@@ -263,7 +263,7 @@ def comissiona(payload, foto_oficial=None):
              teste["perdas"], teste["amostras"], teste["aprovado"], checklist_id))
 
         estado_final = "OPERACIONAL" if teste["aprovado"] else "FALHA_ENLACE"
-        cur.execute("SELECT transita_estado(%s,%s,%s,%s)",
+        cur.execute("SELECT transita_estado(%s::smallint,%s,%s,%s)",
                     (node_id, estado_final, autor, teste["motivo"]))
 
         _grava_baseline(destino, payload, teste, val)
