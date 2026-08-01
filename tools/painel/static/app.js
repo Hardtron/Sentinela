@@ -468,16 +468,53 @@ const semDado = (msg, erro) => `<div class="aviso">
   ${erro ? `<p>Motivo: <code>${esc(erro)}</code></p>` : ""}
 </div>`;
 
+function blocoChuvaOficial(sit) {
+  if (!sit || !sit.estacoes.length) {
+    return secao("Chuva — rede oficial")
+      + semDado("Nenhuma estação oficial importada ainda.", sit?.erro)
+      + `<p class="nota">A chuva do sistema vem de rede oficial
+        (CEMADEN/INMET, <strong>[G]</strong>) e não de pluviômetro próprio —
+        ver ADR-009. Importe com
+        <code>backend/cemaden.py --estacoes … --chuva …</code>.</p>`;
+  }
+  const semLimiar = sit.atalaias.some((a) => a.limiar_calibrado === false);
+  return secao("Chuva — rede oficial [G]")
+    + tabela([
+      { rot: "Estação", val: (e) => `<strong>${esc(e.nome || e.codigo)}</strong>` },
+      { rot: "Rede", val: (e) => `<span class="tag acento">${esc(e.rede)}</span>` },
+      { rot: "Município", val: (e) => esc(e.municipio || "—") },
+      { rot: "1h", val: (e) => (e.mm_1h ?? "—") + " mm", classe: "num" },
+      { rot: "24h", val: (e) => (e.mm_24h ?? "—") + " mm", classe: "num" },
+      { rot: "72h", val: (e) => (e.mm_72h ?? "—") + " mm", classe: "num" },
+      { rot: "84h", val: (e) => `<strong>${e.mm_84h ?? "—"} mm</strong>`, classe: "num" },
+    ], sit.estacoes)
+    + `<p class="nota"><strong>Por que 84 h.</strong> É a janela da envoltória
+      de Tatizana et al. (1987) para a Serra do Mar <strong>[L]</strong>,
+      referência fundacional brasileira do tema. 24 h e 72 h acompanham porque
+      são as janelas com que o CEMADEN opera limiares por município
+      <strong>[G]</strong>.</p>`
+    + (semLimiar ? `<div class="aviso">
+        <strong>Limiar automático desligado — e isso é proposital.</strong>
+        <p>A envoltória precisa ser <em>calibrada com o histórico de
+        ocorrências do próprio município</em>; os coeficientes de Cubatão não
+        valem para outro lugar, e a própria literatura exige atualização
+        contínua. Enquanto não houver calibração local, o sistema
+        <strong>acumula e mostra, mas não dispara alerta de chuva</strong>
+        (RC-18). Pôr um número aqui sem calibração daria aparência de critério
+        técnico a um palpite.</p></div>` : "");
+}
+
 rotas["sensor"] = async () => {
-  const s = await api("/api/sensor");
+  const [s, sit] = await Promise.all([
+    api("/api/sensor"), api("/api/situacao").catch(() => null)]);
   const cab = cabecalho("Sensores",
     `Leitura de campo das Atalaias — chuva, inclinação, umidade de solo e
      bateria. Acumulados de 1 h, 24 h e 72 h em janela móvel: é o acumulado
      que prediz deslizamento, não a chuva da hora cheia.`);
 
   if (!s.leituras.length) {
-    return cab + semDado(
-      "Nenhuma leitura de sensor no banco ainda.", s.erro)
+    return cab + blocoChuvaOficial(sit) + semDado(
+      "Nenhuma leitura de sensor local no banco ainda.", s.erro)
       + `<p class="nota">Esperado neste momento: o payload de sensor
       (<code>lib/proto/</code>) já existe e o banco já tem a tabela, mas
       <strong>nenhum sensor foi adquirido</strong> (P-013) — a rede em campo
@@ -486,7 +523,7 @@ rotas["sensor"] = async () => {
   }
 
   const chuva = Object.fromEntries(s.chuva.map((c) => [c.node_id, c]));
-  return cab + secao("Última leitura por nó")
+  return cab + blocoChuvaOficial(sit) + secao("Sensores locais — última leitura")
     + tabela([
       { rot: "Nó", val: (l) => `<strong>${esc(l.placa || l.node_id)}</strong>` },
       { rot: "Chuva 1h", val: (l) => l.chuva_valida
@@ -870,10 +907,11 @@ async function ligaMapa() {
   mapa = L.map("mapa", { zoomControl: true }).setView([-23.5754, -45.3305], 15);
   camadaBase().addTo(mapa);
 
-  const [atalaias, ensaios, susc] = await Promise.all([
+  const [atalaias, ensaios, susc, estacoes] = await Promise.all([
     api("/api/gis/atalaias").catch(() => null),
     api("/api/gis/ensaios").catch(() => null),
     api("/api/gis/suscetibilidade").catch(() => null),
+    api("/api/gis/estacoes").catch(() => null),
   ]);
 
   const camadas = {};
@@ -885,6 +923,31 @@ async function ligaMapa() {
   const grupoEnsaio = L.layerGroup();
   (ensaios?.features || []).forEach((f) => pontoEnsaio(f).addTo(grupoEnsaio));
   camadas["Pontos de ensaio"] = grupoEnsaio;
+
+  // Rede oficial de chuva (ADR-009). Quadrado, não círculo: distinguir de
+  // relance o que é instrumento nosso do que é dado de terceiro importa —
+  // são escalas de confiança diferentes (regional vs. talude).
+  const grupoEstacoes = L.layerGroup();
+  (estacoes?.features || []).forEach((f) => {
+    const p = f.properties || {};
+    const [lon, lat] = f.geometry.coordinates;
+    L.marker([lat, lon], {
+      icon: L.divIcon({
+        className: "",
+        html: `<div style="width:13px;height:13px;background:#4da3ff;
+               border:2px solid #fff;border-radius:2px"></div>`,
+        iconSize: [13, 13], iconAnchor: [7, 7],
+      }),
+    }).bindPopup(`<strong>${esc(p.nome || p.codigo)}</strong><br>
+      ${esc(p.rede)} · ${esc(p.municipio || "")}<br>
+      24h: ${p.mm_24h ?? "—"} mm · 72h: ${p.mm_72h ?? "—"} mm<br>
+      <strong>84h: ${p.mm_84h ?? "—"} mm</strong> (janela de Tatizana)`)
+      .addTo(grupoEstacoes);
+  });
+  if ((estacoes?.features || []).length) {
+    grupoEstacoes.addTo(mapa);
+    camadas["Chuva oficial (CEMADEN)"] = grupoEstacoes;
+  }
 
   if (susc?.features?.length) {
     const g = L.geoJSON(susc, { style: { color: "#f85149", weight: 1, fillOpacity: 0.2 } });

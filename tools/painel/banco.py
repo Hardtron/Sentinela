@@ -173,6 +173,48 @@ def gis_atalaias():
     return saida
 
 
+def gis_estacoes():
+    """Rede oficial de pluviômetros, com o acumulado corrente."""
+    linhas = consulta("""
+        SELECT e.codigo, e.nome, e.municipio, e.rede, e.altitude_m,
+               round(a.mm_24h::numeric, 1) AS mm_24h,
+               round(a.mm_72h::numeric, 1) AS mm_72h,
+               round(a.mm_84h::numeric, 1) AS mm_84h,
+               ST_AsGeoJSON(e.geom::geometry) AS geojson
+          FROM estacao_externa e
+          LEFT JOIN chuva_oficial_acumulada a ON a.codigo = e.codigo
+         WHERE e.ativa
+    """)
+    saida = _geojson(linhas)
+    saida["erro"] = _estado["erro"]
+    return saida
+
+
+def situacao():
+    """Visão combinada: chuva regional oficial + sensores locais da Atalaia.
+
+    É a materialização do ADR-009 — cada fonte na escala em que é confiável, e
+    a distância até a estação viajando junto com o número.
+    """
+    return {
+        "atalaias": _limpa(consulta(
+            "SELECT * FROM situacao_atalaia ORDER BY node_id")),
+        "estacoes": _limpa(consulta("""
+            SELECT e.codigo, e.nome, e.municipio, e.rede,
+                   round(a.mm_1h::numeric,1)  AS mm_1h,
+                   round(a.mm_24h::numeric,1) AS mm_24h,
+                   round(a.mm_72h::numeric,1) AS mm_72h,
+                   round(a.mm_84h::numeric,1) AS mm_84h,
+                   a.ate
+              FROM estacao_externa e
+              LEFT JOIN chuva_oficial_acumulada a ON a.codigo = e.codigo
+             WHERE e.ativa ORDER BY e.nome
+        """)),
+        "limiares": _limpa(consulta("SELECT * FROM limiar_municipio")),
+        "erro": _estado["erro"],
+    }
+
+
 def gis_suscetibilidade():
     linhas = consulta("""
         SELECT id, municipio, classe, fonte, referencia,

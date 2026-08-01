@@ -50,6 +50,8 @@ ROTAS = {
     "/api/frota-saude": lambda q: banco.frota_saude(),
     "/api/gis/atalaias": lambda q: banco.gis_atalaias(),
     "/api/gis/suscetibilidade": lambda q: banco.gis_suscetibilidade(),
+    "/api/gis/estacoes": lambda q: banco.gis_estacoes(),
+    "/api/situacao": lambda q: banco.situacao(),
     "/api/gis/ensaios": lambda q: banco.gis_ensaios(),
     "/api/historico": lambda q: banco.historico(
         int((q.get("no") or ["1"])[0]), int((q.get("horas") or ["72"])[0])),
