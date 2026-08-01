@@ -1,0 +1,21 @@
+# Sentinela — agenda do gestor autônomo.
+#
+# 03:00 diariamente: fora da janela em que alguém está trabalhando no painel, e
+# depois da passagem noturna dos satélites de órbita polar.
+#
+# `Persistent=true` faz o ciclo perdido rodar assim que a máquina voltar. Sem
+# isso, um reboot às 02:55 pularia o dia inteiro sem ninguém notar — e insumo
+# defasado em silêncio é o modo de falha que este gestor existe para evitar.
+#
+# Autoria: Matheus Marassi
+
+[Unit]
+Description=Sentinela — dispara o gestor autônomo diariamente
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

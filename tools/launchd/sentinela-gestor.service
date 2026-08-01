@@ -1,0 +1,26 @@
+# Sentinela — gestor autônomo de insumos (Frente 6).
+#
+# Unidade de **usuário**, como as demais do homeserver: não precisa de
+# privilégio e o sudo de lá pede senha.
+#
+# Disparado pelo timer, não por `Restart=always`: é tarefa periódica que
+# termina, não serviço que fica no ar.
+#
+#   cp tools/launchd/sentinela-gestor.service ~/.config/systemd/user/
+#   cp tools/launchd/sentinela-gestor.timer   ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now sentinela-gestor.timer
+#   journalctl --user -u sentinela-gestor -f
+#
+# Autoria: Matheus Marassi
+
+[Unit]
+Description=Sentinela — gestor autônomo de insumos
+
+[Service]
+Type=oneshot
+WorkingDirectory=/DATA/Projects/Sentinela
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/DATA/Projects/Sentinela/tools/venv/bin/python /DATA/Projects/Sentinela/tools/gestor_autonomo.py
+StandardOutput=journal
+StandardError=journal
