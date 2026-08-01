@@ -172,7 +172,58 @@ static void teste_reserva_de_autenticacao() {
            "RC-11: byte de autenticacao reservado no cabecalho");
 }
 
-int main() {
+/// Emite quadros conhecidos em hexadecimal, para o decodificador Python do
+/// servidor conferir contra a MESMA fonte de bytes. É o que impede o C++ e o
+/// Python de divergirem silenciosamente — divergência aqui grava número errado
+/// no banco sem levantar erro nenhum.
+static void emite_vetores() {
+  proto::Sensor s;
+  s.node_id = 4097;
+  s.seq = 65535;
+  s.instante = 1785540000u;
+  s.chuva_1h = 1234;
+  s.pitch = -1250;
+  s.roll = 875;
+  s.umidade_solo = 174;
+  s.bateria = proto::bateria_para_byte(3710);
+  s.flags = proto::FLAG_CHUVA_OK | proto::FLAG_INCLIN_OK | proto::FLAG_SOLO_OK;
+
+  uint8_t buf[64];
+  size_t n = proto::codifica_sensor(s, buf, sizeof(buf));
+  std::printf("SENSOR ");
+  for (size_t i = 0; i < n; i++) std::printf("%02x", buf[i]);
+  std::printf("\n");
+
+  proto::Saude h;
+  h.node_id = 14;
+  h.seq = 7;
+  h.instante = 1785540000u;
+  h.energia_dia = 1500;
+  h.t_ini = 400;
+  h.t_fim = 1050;
+  h.corrente_pico = 820;
+  h.v_min = 3400;
+  h.v_fim = 4050;
+  h.dod = 35;
+  h.temp_interna = -8;
+  h.umidade_interna = 62;
+  h.reinicios = 2;
+  h.watchdogs = 1;
+  h.heap_livre_kb = 180;
+  h.sensores_validos = 0x0F;
+  h.versao_firmware = 3;
+
+  n = proto::codifica_saude(h, buf, sizeof(buf));
+  std::printf("SAUDE ");
+  for (size_t i = 0; i < n; i++) std::printf("%02x", buf[i]);
+  std::printf("\n");
+}
+
+int main(int argc, char **argv) {
+  if (argc > 1 && std::strcmp(argv[1], "--vetores") == 0) {
+    emite_vetores();
+    return 0;
+  }
   std::printf("Sentinela — testes do protocolo (host)\n");
   teste_sensor_ida_volta();
   teste_saude_ida_volta();
