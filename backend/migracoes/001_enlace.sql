@@ -1,6 +1,8 @@
 -- Sentinela — esquema do banco (Fase 2/3).
 --
--- Roda uma vez, na criação do container (docker-entrypoint-initdb.d).
+-- Migração 001 — base de enlace. Aplicada por backend/migra.py, e também na
+-- criação do container (o diretório migracoes/ é montado em
+-- docker-entrypoint-initdb.d, que roda os .sql em ordem alfabética).
 --
 -- O que existe hoje é telemetria de **enlace** (RSSI/SNR/sequência do
 -- ping-pong de bring-up). Leitura de sensor ainda não existe: entra na Fase 1
