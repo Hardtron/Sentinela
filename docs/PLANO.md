@@ -143,7 +143,7 @@ e alimentação.
 | ~~P-001~~ | ~~Publicar o repositório~~ | **Resolvida em 30/07/2026** — `github.com/Hardtron/Sentinela`, privado |
 | P-002 | Definir municípios-piloto e contato na Defesa Civil | Fase 5 |
 | P-003 | Definir licença do projeto | Abrir o repositório |
-| P-004 | Verificar disponibilidade de dados do CEMADEN para calibrar limiares | Fase 3 |
+| P-004 | Verificar disponibilidade de dados do CEMADEN — **subiu de prioridade (ADR-009)**: deixou de ser só calibração e virou a fonte de chuva do sistema. Se não houver estação com cobertura útil do piloto, o pluviômetro local volta ao escopo | **Fase 1/3 — decide P-013** |
 | P-005 | Calibrar o divisor de tensão de bateria da Heltec V2 | Medição de autonomia |
 | P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
@@ -152,6 +152,6 @@ e alimentação.
 | ~~P-010~~ | ~~Configurar acesso SSH ao Raspberry Pi 4~~ | **Resolvida em 31/07/2026** — chave SSH, `sentinelapi@192.168.15.73`, conforme ADR-007 |
 | P-011 | Comprar 4 antenas adicionais — **6 dBi**, não mais que isso (CONFORMIDADE.md §1.1.1: acima de 6 dBi não há ganho extra de transmissão) | Liberar `HTC-02`, `HTC-04`–`06` do modo bancada (antenas hoje só em `HTC-01`/`HTC-03`) |
 | ~~P-012~~ | ~~Comprar bateria(s) para ensaio de autonomia~~ | **Resolvida em 31/07/2026** — 2× NCR18650B (Panasonic, 3,7 V, ~3400 mAh), instaladas em `HTC-01`/`HTC-02`, ver HARDWARE.md |
-| P-013 | Definir e comprar o primeiro sensor (báscula de chuva é o de maior prioridade, ver SENSORES.md) | Fase 1 |
+| P-013 | Definir e comprar o primeiro sensor — **prioridade alterada em 01/08/2026 (ADR-009): umidade de solo, não pluviômetro.** A chuva vem do CEMADEN/INMET **[G]**; o nó mede o que a rede oficial não tem por talude | Fase 1 |
 | A-01 a A-05 | Pendências do projeto de ancoragem | Ver ANCORAGEM.md §10 |
 | R-01 a R-06 | Habilitação profissional e responsabilidade técnica | Ver RESPONSABILIDADE_TECNICA.md §10 |

@@ -81,3 +81,25 @@ Que a instrumentação MEMS de referência declare **baixa dependência térmica
 como característica de projeto **[L]** confirma que o efeito é reconhecido e
 precisa ser tratado. **[?]** Quantificar a deriva do sensor escolhido a partir
 do datasheet — item B-06 em REFERENCIAS.md.
+
+---
+
+## Revisão de prioridade — 01/08/2026 (ADR-009)
+
+**O pluviômetro saiu do escopo do piloto.** A chuva passa a vir da rede
+oficial (CEMADEN/INMET **[G]**), e o primeiro sensor a adquirir passa a ser o
+de **umidade de solo**.
+
+O raciocínio, em uma linha: a rede oficial já mede chuva por município melhor
+do que um sensor nosso mediria, mas **não mede saturação naquele talude** — e
+é a saturação, não a chuva, que rompe a encosta (poropressão, ANCORAGEM.md
+§3). Instrumentar o que já existe é gastar; instrumentar o que falta é o
+produto.
+
+| Grandeza | Quem mede | Por quê |
+|---|---|---|
+| Chuva acumulada 24/72 h | **CEMADEN/INMET [G]** | Já existe, é certificado e é juridicamente mais defensável que medição própria não calibrada |
+| **Umidade de solo** | **Atalaia** | A rede oficial não tem por talude; é a variável mais próxima do mecanismo de ruptura |
+| **Inclinação** | **Atalaia** | Ninguém mede; é o sinal de que o movimento já começou |
+
+Consequência para a decisão local do nó e a releitura do RC-09: ver ADR-009.

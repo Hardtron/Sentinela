@@ -218,3 +218,110 @@ inicialização rápida e superfície de ataque reduzida. Não é o cenário atu
 7. Instalar e habilitar a unidade systemd — ver `gateway/README.md`.
 
 Fecha a pendência P-010 quando executado.
+
+---
+
+## ADR-008 — OTA no nó de campo sem WiFi nem Bluetooth
+
+**Status:** aceito · 01/08/2026
+
+**Contexto.** O RAK3172 (STM32WLE5), alvo de campo do ADR-004, **não tem WiFi
+nem Bluetooth** — só o rádio LoRa. O invólucro é selado (IP67/IP68) e o nó
+fica em encosta, às vezes com acesso por corda (NR-35). Abrir a caixa em campo
+é caro e arrisca a vedação, que é justamente o que o RC-14 monitora.
+
+A pergunta prática: como atualizar firmware se o único canal é o LoRa?
+
+**Os números, medidos contra as taxas do datasheet** (SX1276, tabela 12, 125 kHz)
+para uma imagem estimada em ~80 KB **[E]** (STM32WLE5 sem pilha WiFi/BT):
+
+| SF | Imagem completa (com overhead FUOTA ~1,5×) | Downlink de limiar (10 B) |
+|---|---|---|
+| SF7 | **3,0 min** | 0,01 s |
+| SF9 | 9,3 min | 0,06 s |
+| SF12 | **65,5 min** | **0,32 s** |
+
+**Decisão — três canais, em ordem de preferência, e uma quarta via que é a
+mais importante:**
+
+1. **Não atualizar firmware.** A regra crítica é parametrizada, não compilada:
+   limiares vêm por downlink e persistem em NVS (ADR-006, RC-05/RC-06). Trocar
+   um limiar custa **0,32 s em SF12**; recompilar e reenviar a imagem custa
+   **65 min**. São quatro ordens de grandeza. A maior parte do que na prática
+   se quer mudar em campo é limiar, não lógica — e essa via já está no projeto.
+2. **LoRa P2P do "Farol Portátil"**, para nó individual. O técnico chega à base
+   do talude (até ~100 m), o enlace curto permite **SF7**, e a imagem passa em
+   ~3 min. É o método de campo realista.
+3. **LoRaWAN FUOTA (TR-005)**, multicast Classe C, para campanha de frota.
+   Viável, mas **caro em energia**: Classe C é escuta contínua, e a ~5 mA de RX
+   por 65 min em SF12 gasta vários dias do orçamento diário de um nó solar.
+   Portanto: **agendado, nunca emergencial**, e no melhor SF que o enlace
+   permitir.
+4. **Pogo-pins magnéticos selados (UART/SWD)** como último recurso, para nó
+   travado — recupera sem abrir a caixa.
+
+**Consequência que orienta o firmware:** o custo do OTA por LoRa empurra o
+projeto para **firmware estável e comportamento parametrizável**, não para
+firmware que se atualiza com frequência. É restrição de projeto, não limitação
+a contornar.
+
+**[?] A verificar antes da Fase 4:** limite de *dwell time* da AU915 sob a
+Anatel 680/2017. Em SF12 o tempo no ar de um único quadro já é da ordem de 1 s,
+e regimes derivados do FCC Part 15.247 costumam limitar permanência por canal —
+o que afetaria diretamente a viabilidade do FUOTA em SF alto.
+
+---
+
+## ADR-009 — Chuva vem de rede oficial; o nó mede o que ela não mede
+
+**Status:** aceito · 01/08/2026
+
+**Contexto.** O plano previa comprar pluviômetro de báscula como primeiro
+sensor (P-013), por ser a chuva acumulada o preditor de maior peso
+(Tatizana et al., 1987 **[L]**). Mas o próprio SENSORES.md registra que o
+**CEMADEN já opera com limiares de chuva acumulada de 24 h e 72 h por
+município** e monitora umidade de solo **[G]** — e a plataforma Geopixel
+Monitor já consome essas fontes.
+
+**Decisão.** **Não adquirir pluviômetro para o piloto.** A chuva entra como
+dado de fonte oficial (CEMADEN/INMET, **[G]**), e o nó instrumenta o que essa
+rede **não** tem: inclinação e umidade de solo **no talude específico**.
+
+**Justificativa.**
+
+- **Não duplicar o que já existe e é melhor.** Um pluviômetro próprio, não
+  calibrado, mediria pior do que uma estação oficial — e num sistema que
+  informa decisão de Defesa Civil, dado de órgão certificado é **mais
+  defensável juridicamente** que medição própria sem rastreabilidade
+  metrológica.
+- **Umidade de solo está mais perto do mecanismo físico.** O que rompe a
+  encosta é poropressão (ANCORAGEM.md §3), não a chuva em si. A chuva é o
+  gatilho; a saturação é o estado. Tatizana usa chuva porque chuva era o dado
+  histórico disponível — medir saturação diretamente é medir a variável mais
+  próxima da causa.
+- **Custo por ponto é o diferencial declarado** (NEGOCIO.md §4). Tirar um
+  sensor do BOM melhora exatamente a métrica em que o projeto compete.
+- **Menos manutenção.** Báscula entope com folha e inseto — o próprio
+  MANUTENCAO.md §5 lista "Pluviômetro mudo — desobstruir báscula" como alarme.
+  Sensor que não existe não entope, e a operação em escala é dominada por
+  custo de deslocamento.
+
+**Consequência arquitetural que precisa ser resolvida.** O ADR-006 põe a
+decisão crítica **no nó**, para que ele siga útil com o gateway fora do ar —
+que é o cenário de evento extremo. Se a chuva vem de servidor, ela **não está
+disponível no nó** justamente nesse cenário. Portanto:
+
+- A decisão local do nó passa a se apoiar em **inclinação + umidade de solo**,
+  ambas medidas localmente. O ADR-006 continua íntegro.
+- A chuva oficial entra na **correlação do lado do servidor** e na
+  contextualização do alerta.
+- O **RC-09 (confirmação cruzada)** precisa ser relido: "corroboração com
+  chuva **ou** nó vizinho" passa a ser satisfeito localmente por umidade de
+  solo e por vizinhança, sem depender de chuva no nó. **[?] Confirmar essa
+  releitura antes do piloto.**
+
+**O que reverteria esta decisão.** Se a P-004 mostrar que não há estação
+oficial com cobertura útil do município-piloto — a densidade da rede varia
+muito —, um pluviômetro local volta a ser necessário. O campo `chuva_1h` e a
+coluna `fonte` já existem no protocolo e no banco justamente para permitir as
+duas origens sem mudança de formato.
