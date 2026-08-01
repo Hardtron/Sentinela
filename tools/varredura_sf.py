@@ -86,7 +86,7 @@ SF_PADRAO = [7, 8, 9, 10, 11, 12]
 # HARDWARE.md — checado antes de qualquer gravação RF-ativa. Não é opcional:
 # E-007 foi exatamente gravar node_dev (RF-ativo) na HTC-02 (sem antena) por
 # assumir identidade da placa sem checar o MAC primeiro.
-MAC_HTC01 = "3c:71:bf:8c:2c:d0"
+MAC_HTC01 = "3c:71:bf:8c:33:a8"  # placa substituta desde 31/07/2026
 MAC_HTC03 = "3c:71:bf:8c:31:70"
 
 RE_MAC = re.compile(r"MAC:\s*([0-9a-f:]{17})", re.I)

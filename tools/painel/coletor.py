@@ -149,8 +149,9 @@ def portas_seriais():
 # por MQTT. `antena` decide o que é seguro gravar: papel RF-ativo numa placa
 # sem antena degrada o PA (A-003/A-010).
 PLACAS = [
-    {"id": "HTC-01", "node_id": 1, "mac": "3c:71:bf:8c:2c:d0",
-     "papel": "PINGER", "env": "node_dev", "flash": "4 MB", "antena": True},
+    {"id": "HTC-01", "node_id": 1, "mac": "3c:71:bf:8c:33:a8",
+     "papel": "PINGER — placa substituta (enlace por confirmar)",
+     "env": "bench_01", "flash": "4 MB", "antena": True},
     {"id": "HTC-02", "node_id": 2, "mac": "3c:71:bf:8c:2f:9c",
      "papel": "bancada — sem antena", "env": "bench_02", "flash": "4 MB",
      "antena": False},
@@ -160,11 +161,9 @@ PLACAS = [
     {"id": "HTC-04", "node_id": 4, "mac": "3c:71:bf:8c:2f:a4",
      "papel": "display defeituoso — firmware headless", "env": "bench_04",
      "flash": "4 MB", "antena": False},
-    {"id": "HTC-05", "node_id": 5, "mac": None, "papel": "reserva",
+    {"id": "HTC-05", "node_id": 5, "mac": None,
+     "papel": "única reserva restante — a outra virou HTC-01",
      "env": "bench_05", "flash": "4 MB", "antena": False},
-    {"id": "HTC-06", "node_id": 6, "mac": None,
-     "papel": "segundo Farol (previsto) / reserva", "env": "bench_06",
-     "flash": "4 MB", "antena": False},
 ]
 
 

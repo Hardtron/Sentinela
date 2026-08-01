@@ -7,7 +7,7 @@
 | **6** | Heltec WiFi LoRa 32 **V2** | ESP32-D0WDQ6, SX1276, OLED, 915 MHz |
 | 1 | Raspberry Pi 4 | Bridge/servidor de bancada |
 | **2** | Antena, **2 dBi** | Único par disponível — ver §"Restrição de antenas" |
-| **2** | Bateria, Li-ion **NCR18650B** (Panasonic, 3,7 V, ~3400 mAh nominal) | Instaladas em `HTC-01` e `HTC-02`, 31/07/2026 — ver §"Baterias" |
+| **2** | Bateria, Li-ion **NCR18650B** (Panasonic, 3,7 V, ~3400 mAh nominal) | Instaladas na `HTC-01` **antiga** (retirada) e na `HTC-02`, 31/07/2026 — ver §"Baterias" |
 | 0 | Sensor (qualquer grandeza) | **Não adquirido** |
 | 0 | Concentrador LoRa (SX1302/SX1303) | **Não adquirido** — ver ADR-002 |
 
@@ -46,12 +46,12 @@ receber antena de novo.
 
 | ID | Papel | Firmware | Onde |
 |---|---|---|---|
-| `HTC-01` | Nó de desenvolvimento — PINGER | `node_dev` | Bancada, USB do MacBook, **com antena** |
+| `HTC-01` | Nó de desenvolvimento — PINGER (**placa substituta**, ver §troca) | `bench_01` **até o enlace ser confirmado**; depois `node_dev` | Bancada, USB do MacBook |
 | `HTC-02` | Nó par de alcance — PONGER | `bench_02` — **sem antena desde 31/07/2026** (remanejada para HTC-03) | Bancada |
 | `HTC-03` | Bridge do Raspberry Pi 4 (fase 2) | `bridge` — **RF-ativo, com antena desde 31/07/2026** | USB do RPi 4 |
 | `HTC-04` | **Display defeituoso** — firmware headless (`lib/app`/`lib/hal`) | `bench_04` até sensor disponível | Bancada, protoboard |
-| `HTC-05` | Reserva / par de varredura de SF | `bench_05` até antena disponível | — |
-| `HTC-06` **novo** | Segundo Farol (diversidade multi-gateway, ADR-001) / spare | `bench_06` até antena disponível | — |
+| `HTC-05` | **Única reserva restante** — a outra virou `HTC-01` | `bench_05` até antena disponível | — |
+| ~~`HTC-06`~~ | **Não existe placa física** — a designação era de uma das duas reservas, agora promovida a `HTC-01` | — | — |
 
 O firmware de bancada permite validar **todas as 6 placas hoje** — flash,
 MAC, SPI do rádio, OLED, barramento I2C dos sensores, ADC de bateria, watchdog
@@ -64,18 +64,44 @@ Os CP2102 destas placas **têm todos o mesmo número de série USB (`0001`)**, e
 a porta não distingue uma da outra: com só uma conectada, ela sempre aparece
 como `/dev/cu.usbserial-0001`. O que identifica cada placa é o **MAC do ESP32**.
 
-| ID | MAC | Flash |
-|---|---|---|
-| `HTC-01` | `3c:71:bf:8c:2c:d0` | 4 MB |
-| `HTC-02` | `3c:71:bf:8c:2f:9c` | 4 MB |
-| `HTC-03` | `3c:71:bf:8c:31:70` | 4 MB |
-| `HTC-04` | `3c:71:bf:8c:2f:a4` | 4 MB |
-| `HTC-05` | **[?]** a identificar na primeira gravação | — |
-| `HTC-06` | **[?]** a identificar na primeira gravação | — |
+| ID | MAC | Flash | Situação |
+|---|---|---|---|
+| `HTC-01` | `3c:71:bf:8c:33:a8` | 4 MB | **placa substituta desde 31/07/2026** |
+| ~~`HTC-01` (antiga)~~ | `3c:71:bf:8c:2c:d0` | 4 MB | **DANIFICADA — fora do projeto** |
+| `HTC-02` | `3c:71:bf:8c:2f:9c` | 4 MB | bancada, sem antena |
+| `HTC-03` | `3c:71:bf:8c:31:70` | 4 MB | bridge do RPi, com antena |
+| `HTC-04` | `3c:71:bf:8c:2f:a4` | 4 MB | bancada, display defeituoso |
+| `HTC-05` | **[?]** a identificar na primeira gravação | — | única reserva restante |
 
 Ao gravar cada placa nova pela primeira vez, registrar o MAC aqui — é o que
 resolve a ambiguidade do E-005/A-009 quando várias placas passam pela mesma
 porta ao longo do tempo.
+
+### Troca da placa do posto `HTC-01` — 31/07/2026
+
+A placa original do posto `HTC-01` (`3c:71:bf:8c:2c:d0`) foi **retirada do
+projeto por dano aparente**. Uma das duas reservas nunca gravadas assumiu o
+posto, com MAC `3c:71:bf:8c:33:a8`.
+
+**`HTC-01` passa a designar o posto do PINGER (`NODE_ID=1`, `node_dev`), não
+uma placa física específica.** Os dois MACs ficam registrados acima com data
+porque **os ensaios 01, 01b, 02 e 03a foram feitos com a placa antiga** — sem
+essa distinção não haveria como dizer qual hardware produziu qual medição, e
+o histórico de campo perderia rastreabilidade (a mesma razão de existir a
+tabela de MACs).
+
+**Consequência no inventário:** as designações `HTC-05` e `HTC-06` nunca
+estiveram ligadas a placas físicas (ambas apareciam como **[?]**). Com uma
+delas promovida a `HTC-01`, resta **uma única reserva**, mantida como
+`HTC-05`. **Não há `HTC-06` físico** — o ambiente `bench_06` continua no
+`platformio.ini` como alvo de build, mas não corresponde a placa nenhuma
+hoje.
+
+**[?] Causa do dano na placa antiga não foi diagnosticada.** Ela vinha do
+episódio de alimentação por bateria (E-008) e chegou a rodar `node_dev`
+normalmente depois disso, com enlace fechando. Não há laudo — só o
+comportamento observado pelo usuário. Se voltar a ser útil investigar,
+medir potência de saída é o teste que separa PA degradado de outra falha.
 
 Antes de gravar, conferir qual placa está na porta:
 
