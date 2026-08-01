@@ -21,6 +21,70 @@ apenas o apontamento.
 
 ---
 
+## 2026-08-01 (22) — Chuva oficial integrada: três fontes, cada uma na sua escala
+
+**Fase:** 1/3 · **Duração:** média
+
+### Feito
+
+Implementação do ADR-009 ponta a ponta: chuva de rede oficial **[G]**,
+sensores locais na Atalaia, e as duas coisas sincronizadas por geometria.
+
+- **Migração 006**: `estacao_externa` (PostGIS), `chuva_oficial`
+  (hypertable, idempotente), `limiar_municipio`, e as views
+  `atalaia_estacao`, `chuva_oficial_acumulada` e `situacao_atalaia`.
+- **`backend/cemaden.py`** — importador de CSV com cabeçalho tolerante a
+  sinônimos (o Cemaden já mudou rótulo entre exportações) e falha explícita se
+  nenhuma coluna conhecida aparecer.
+- **Painel e mapa**: bloco de chuva oficial na aba Sensores e camada de
+  estações no mapa — **quadrado, não círculo**, para distinguir de relance
+  instrumento nosso de dado de terceiro; são escalas de confiança diferentes.
+- **Verificado com dados reais de estações do litoral norte**: a associação
+  escolheu corretamente a estação a 2.445 m em vez da do Centro a ~7 km, e o
+  acumulado de 84 h chegou ao painel. Teste feito em transação **revertida**,
+  para não gravar posição falsa de placa que está em bancada.
+
+### Decidido
+
+- **Janela de 84 h, não 72 h.** Ao buscar a fonte de Tatizana et al. (1987)
+  descobri que a envoltória usa **84 horas** — o projeto vinha citando 72 h.
+  As três janelas convivem: 24 h e 72 h porque são as que o CEMADEN opera por
+  município **[G]**, e 84 h porque é a da envoltória **[L]**.
+- **Não inventei API do CEMADEN.** O órgão publica pelo Mapa Interativo, com
+  transmissão a cada 10 min e histórico desde 2013, mas **não há API REST
+  pública documentada**. Chutar uma URL de órgão público produziria um
+  importador que falha em silêncio ou, pior, traz outra coisa. O importador
+  consome a exportação real; o canal programático fica como **[?]** na P-004.
+- **Não inventei os coeficientes da envoltória.** Não consegui verificar os
+  valores originais de Tatizana em fonte primária. `limiar_municipio.coef_a`
+  nasce **NULL** e o alerta automático de chuva fica **desligado** (RC-18) —
+  o sistema acumula e mostra, mas não dispara. Isso não é lacuna de
+  implementação: os coeficientes de Cubatão não valem para outro município, e
+  a literatura exige calibração local com histórico de ocorrências. Número sem
+  calibração daria aparência de critério técnico a um palpite, e afirmação
+  geotécnica nunca pode ser **[E]**.
+
+### Aprendido
+
+- **A distância até a estação é o dado mais importante do conjunto, não um
+  detalhe de metadado.** Chuva na Serra do Mar é orográfica e convectiva
+  (células de 1–5 km); uma estação a 8 km pode ler 20 mm enquanto o talude
+  recebe 80 mm. Por isso `atalaia_estacao` expõe a distância e a interface a
+  mostra. E é exatamente essa limitação que justifica instrumentar **umidade
+  de solo** localmente: ela é o integrador local da chuva e está mais perto do
+  mecanismo de ruptura (poropressão) do que a própria chuva.
+
+### Próximo
+
+1. Calibrar a envoltória com histórico local de ocorrências — é o que liga o
+   alerta automático de chuva.
+2. Confirmar canal programático com o CEMADEN (resto da P-004); hoje a
+   importação é por exportação manual do Mapa Interativo.
+3. Baixar o cadastro real de estações do município-piloto quando a P-002 for
+   decidida.
+
+---
+
 ## 2026-08-01 (21) — Implementação estruturada: Frentes 1, 2, 3C, 5, 6 e 7
 
 **Fase:** 1/2/3 · **Duração:** longa

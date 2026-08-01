@@ -508,9 +508,11 @@ rotas["sensor"] = async () => {
   const [s, sit] = await Promise.all([
     api("/api/sensor"), api("/api/situacao").catch(() => null)]);
   const cab = cabecalho("Sensores",
-    `Leitura de campo das Atalaias — chuva, inclinação, umidade de solo e
-     bateria. Acumulados de 1 h, 24 h e 72 h em janela móvel: é o acumulado
-     que prediz deslizamento, não a chuva da hora cheia.`);
+    `Duas escalas, cada uma na fonte em que é confiável (ADR-009):
+     <strong>chuva</strong> vem da rede oficial, que é regional e certificada;
+     <strong>umidade de solo e inclinação</strong> vêm da Atalaia, que é o
+     único instrumento naquele talude. Acumulados sempre em janela móvel — é o
+     acumulado que prediz deslizamento, não a chuva da hora cheia.`);
 
   if (!s.leituras.length) {
     return cab + blocoChuvaOficial(sit) + semDado(

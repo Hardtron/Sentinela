@@ -103,3 +103,38 @@ produto.
 | **Inclinação** | **Atalaia** | Ninguém mede; é o sinal de que o movimento já começou |
 
 Consequência para a decisão local do nó e a releitura do RC-09: ver ADR-009.
+
+## Como as três fontes se combinam (implementado em 01/08/2026)
+
+| Grandeza | Fonte | Escala | Confiança |
+|---|---|---|---|
+| Chuva 1h/24h/72h/**84h** | CEMADEN/INMET **[G]** | regional (estação a km de distância) | alta na medição, **limitada na representatividade local** |
+| Umidade de solo | Atalaia | o talude | única fonte nessa escala |
+| Inclinação | Atalaia | o talude | única fonte nessa escala |
+
+**A janela de 84 h não é arbitrária.** É a da envoltória de Tatizana et al.
+(1987) para a Serra do Mar **[L]** — a referência fundacional brasileira. As
+janelas de 24 h e 72 h acompanham porque são as que o CEMADEN usa
+operacionalmente por município **[G]**.
+
+### A distância até a estação viaja junto com o número
+
+A view `atalaia_estacao` associa cada Atalaia à estação oficial mais próxima e
+**expõe a distância**. Isso não é enfeite: a chuva na Serra do Mar é orográfica
+e convectiva, com células de 1–5 km. Uma estação a 8 km pode registrar 20 mm
+enquanto o talude recebe 80 mm. Tratar chuva de estação distante como se fosse
+local é o erro que este campo existe para impedir — e é a razão de a umidade de
+solo ser instrumentada localmente: **ela é o integrador local da chuva**, e
+está mais perto do mecanismo de ruptura (poropressão) do que a própria chuva.
+
+### O limiar automático nasce desligado, de propósito
+
+A tabela `limiar_municipio` guarda a envoltória na forma `I = a · Ac^(−b)`, com
+**`coef_a` NULL até haver calibração local**. Enquanto isso, o sistema
+**acumula e exibe, mas não dispara alerta de chuva** (RC-18).
+
+Não é limitação de implementação: os coeficientes de Cubatão não valem para
+outro município, e a própria literatura exige atualização contínua com o
+histórico local de ocorrências. Preencher um número sem calibração daria
+aparência de critério técnico a um palpite — e afirmação geotécnica nunca pode
+ser **[E]** (REFERENCIAS.md §1).

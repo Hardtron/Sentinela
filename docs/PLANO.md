@@ -95,7 +95,9 @@ reinício sem perder acumulado (RC-06).
 - [~] Modelo geoespacial — tabelas `suscetibilidade` e `exposicao` criadas com
       função `exposicao_ao_redor()`; **faltam os dados** (carta do CPRM/SGB e
       setores do IBGE, ver M-01)
-- [ ] Motor de limiar intensidade-duração
+- [~] Motor de limiar intensidade-duração — estrutura pronta (`limiar_municipio`,
+      janelas de 24/72/**84 h** de Tatizana); **desligado até calibração local**
+      com histórico de ocorrências do município (RC-18)
 - [~] Dashboard operacional — abas *Sensores* e *Mapa* (Leaflet local) no ar;
       falta o motor de limiar alimentá-las
 - [ ] Integração QGIS sobre a mesma base
@@ -143,7 +145,7 @@ e alimentação.
 | ~~P-001~~ | ~~Publicar o repositório~~ | **Resolvida em 30/07/2026** — `github.com/Hardtron/Sentinela`, privado |
 | P-002 | Definir municípios-piloto e contato na Defesa Civil | Fase 5 |
 | P-003 | Definir licença do projeto | Abrir o repositório |
-| P-004 | Verificar disponibilidade de dados do CEMADEN — **subiu de prioridade (ADR-009)**: deixou de ser só calibração e virou a fonte de chuva do sistema. Se não houver estação com cobertura útil do piloto, o pluviômetro local volta ao escopo | **Fase 1/3 — decide P-013** |
+| ~~P-004~~ | ~~Verificar disponibilidade de dados do CEMADEN~~ | **Parcialmente resolvida em 01/08/2026** — dado existe (acumulado a cada 10 min, histórico desde 2013, rede instalada junto a áreas de risco) e a ingestão está implementada (`backend/cemaden.py`). **Resta [?]: não há API REST pública documentada** — o acesso é por exportação do Mapa Interativo. Confirmar canal programático com o órgão |
 | P-005 | Calibrar o divisor de tensão de bateria da Heltec V2 | Medição de autonomia |
 | P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
