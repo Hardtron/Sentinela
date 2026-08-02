@@ -281,9 +281,162 @@ def normaliza(requisicao, resposta, ambiente=None):
         return _normaliza_geojson(resposta.dados)
     if requisicao.provedor == "NASA_IMERG":
         return _normaliza_imerg(requisicao, resposta.dados, ambiente)
+    if requisicao.provedor == "REDEMET":
+        return _normaliza_redemet(resposta.dados)
     # ANA e grades ficam brutas até um mapeamento de campos/produto ser
     # validado com resposta real. Isso é ausência explícita, não dado perdido.
     return ConteudoNormalizado(metadados={"normalizado": False})
+
+
+def _normaliza_redemet(dados):
+    """Extrai somente metadados cartográficos declarados pela REDEMET.
+
+    O horário dos produtos chega sem offset no payload. Por isso ele é
+    preservado como texto de origem, sem ser convertido em ``TIMESTAMPTZ``.
+    Imagens também só são aceitas no host estático oficial; a API nunca faz
+    uma URI arbitrária persistida virar recurso carregável pelo painel.
+    """
+    try:
+        objeto = json.loads(dados)
+    except (UnicodeDecodeError, json.JSONDecodeError) as erro:
+        raise ContratoInvalido("REDEMET não retornou JSON válido") from erro
+    if (not isinstance(objeto, dict) or objeto.get("status") is not True
+            or not isinstance(objeto.get("data"), dict)):
+        raise ContratoInvalido("REDEMET: envelope sem status/data reconhecível")
+    payload = objeto["data"]
+    if isinstance(payload.get("radar"), list):
+        return _normaliza_redemet_radar(payload)
+    if isinstance(payload.get("satelite"), list):
+        return _normaliza_redemet_satelite(payload)
+    if isinstance(payload.get("stsc"), list) and isinstance(
+            payload.get("info"), dict):
+        return _normaliza_redemet_stsc(payload)
+    raise ContratoInvalido("REDEMET: produto não reconhecido no payload")
+
+
+def _normaliza_redemet_radar(payload):
+    quadros = _quadros_redemet(payload["radar"], radar=True)
+    if not quadros:
+        raise ContratoInvalido("REDEMET: produto radar sem quadro válido")
+    produto = str(payload.get("tipo") or "radar")
+    return ConteudoNormalizado(metadados={
+        "normalizado": True,
+        "identificador": f"REDEMET_RADAR_{produto.upper()}",
+        "classe": "PRODUTO_RADAR",
+        "produto": produto,
+        "quadros": quadros,
+        "fuso_origem": "não declarado no payload",
+        "limitacao": (
+            "imagem de radar meteorológico de terceiro; cobertura nominal "
+            "não comprova qualidade local nem precipitação na superfície"),
+    })
+
+
+def _normaliza_redemet_satelite(payload):
+    quadros = _quadros_redemet(payload["satelite"], radar=False)
+    bbox = _bbox_redemet(payload.get("lat_lon"))
+    if not quadros or bbox is None:
+        raise ContratoInvalido("REDEMET: satélite sem quadro ou extensão válida")
+    produto = str(payload.get("tipo") or "satelite")
+    for quadro in quadros:
+        quadro["bbox"] = bbox
+    return ConteudoNormalizado(metadados={
+        "normalizado": True,
+        "identificador": f"REDEMET_SATELITE_{produto.upper()}",
+        "classe": "PRODUTO_SATELITE",
+        "produto": produto,
+        "quadros": quadros,
+        "fuso_origem": "não declarado no payload",
+        "limitacao": (
+            "imagem meteorológica de satélite; não é medição de chuva na "
+            "superfície nem regra de alerta"),
+    })
+
+
+def _normaliza_redemet_stsc(payload):
+    pontos = payload["stsc"]
+    if not all(isinstance(grupo, list) for grupo in pontos):
+        raise ContratoInvalido("REDEMET: STSC sem grupos reconhecíveis")
+    quantidade = sum(len(grupo) for grupo in pontos)
+    return ConteudoNormalizado(metadados={
+        "normalizado": True,
+        "identificador": "REDEMET_STSC",
+        "classe": "DETECCAO_DESCARGA_ATMOSFERICA",
+        "produto": "stsc",
+        "instante_origem": payload["info"].get("ultima_ocorrencia"),
+        "fuso_origem": "não declarado no payload",
+        "quantidade_celulas_payload": quantidade,
+        "limitacao": (
+            "contagem do payload nacional; ainda não há recorte espacial "
+            "versionado para exibir ocorrências no mapa piloto"),
+    })
+
+
+def _quadros_redemet(grupos, radar):
+    quadros = []
+    for grupo in grupos:
+        itens = grupo if isinstance(grupo, list) else [grupo]
+        for item in itens:
+            if not isinstance(item, dict):
+                raise ContratoInvalido("REDEMET: quadro não é objeto")
+            caminho = str(item.get("path") or "")
+            if not caminho.startswith(
+                    "https://estatico-redemet.decea.mil.br/"):
+                raise ContratoInvalido("REDEMET: URI de imagem fora do host oficial")
+            quadro = {
+                "instante_origem": item.get("data"),
+                "imagem_url": caminho,
+                "tamanho_origem": item.get("tamanho"),
+            }
+            if radar:
+                bbox = _bbox_redemet(item)
+                centro = _ponto_redemet(item.get("lat_center"),
+                                        item.get("lon_center"))
+                if bbox is None or centro is None:
+                    raise ContratoInvalido("REDEMET: radar sem geometria válida")
+                quadro.update({
+                    "bbox": bbox,
+                    "centro": centro,
+                    "nome": item.get("nome"),
+                    "localidade": item.get("localidade"),
+                    "raio_km": _numero_redemet(item.get("raio")),
+                })
+            quadros.append(quadro)
+    return quadros
+
+
+def _numero_redemet(valor):
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError) as erro:
+        raise ContratoInvalido("REDEMET: coordenada/medida não numérica") from erro
+    if not math.isfinite(numero):
+        raise ContratoInvalido("REDEMET: coordenada/medida não finita")
+    return numero
+
+
+def _bbox_redemet(item):
+    if not isinstance(item, dict):
+        return None
+    try:
+        bbox = [_numero_redemet(item[chave]) for chave in
+                ("lon_min", "lat_min", "lon_max", "lat_max")]
+    except (KeyError, ContratoInvalido):
+        return None
+    if not (-180 <= bbox[0] < bbox[2] <= 180
+            and -90 <= bbox[1] < bbox[3] <= 90):
+        return None
+    return bbox
+
+
+def _ponto_redemet(lat, lon):
+    try:
+        ponto = [_numero_redemet(lon), _numero_redemet(lat)]
+    except ContratoInvalido:
+        return None
+    if not (-180 <= ponto[0] <= 180 and -90 <= ponto[1] <= 90):
+        return None
+    return ponto
 
 
 def _normaliza_cemaden(dados, ambiente):

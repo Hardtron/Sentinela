@@ -1197,10 +1197,35 @@ rotas["laudo"] = async (params) => {
 /* ------------------------------------------------------- mapa (Frente 5) */
 
 rotas["mapa"] = async () => cabecalho("Mapa",
-  `Centro de comando geoespacial. Roda no navegador, sem exigir QGIS nem
-   software proprietário no computador do operador.`)
-  + `<div class="cartao" style="padding:0;overflow:hidden">
-       <div id="mapa" style="height:min(72vh,640px);width:100%"></div>
+  `Contexto geoespacial do piloto de Caraguatatuba. Cada camada mantém sua
+   natureza, origem, instante e limitação; nenhuma combinação gera alerta
+   automático nesta tela.`)
+  + `<div id="mapa-resumo" class="grade g4 mapa-resumo" aria-live="polite">
+       <div class="cartao carregando">consultando fontes armazenadas…</div>
+     </div>
+     <div class="mapa-operacao">
+       <div class="cartao mapa-caixa">
+         <div class="mapa-barra">
+           <div><strong>Recorte municipal piloto</strong><br>
+             <span class="miudo">perímetro IBGE versionado · não é setor de risco</span></div>
+           <button id="mapa-atualizar" class="filtro" type="button">Atualizar consulta</button>
+         </div>
+         <div id="mapa" role="application" aria-label="Mapa operacional de Caraguatatuba"></div>
+       </div>
+       <aside class="cartao mapa-tempo" aria-label="Evolução de produtos meteorológicos">
+         <div class="fonte-cab"><strong>Produto e evolução</strong>${origem("INFORMATIVO", "contexto")}</div>
+         <p class="nota">Quadros já adquiridos pelo Home Server. O controle não
+           simula tempo real e não interpola instantes ausentes.</p>
+         <label for="mapa-produto">Produto</label>
+         <select id="mapa-produto" disabled><option>sem quadro estruturado</option></select>
+         <div class="mapa-tempo-linha">
+           <button id="mapa-anterior" class="btn-icone" type="button" aria-label="Quadro anterior">←</button>
+           <input id="mapa-quadro" type="range" min="0" max="0" value="0" disabled
+             aria-label="Quadro no histórico armazenado">
+           <button id="mapa-proximo" class="btn-icone" type="button" aria-label="Próximo quadro">→</button>
+         </div>
+         <div id="mapa-quadro-info" class="mapa-quadro-info vazio">sem produto selecionado</div>
+       </aside>
      </div>
      <div class="legenda" style="margin-top:12px">
        <span><i class="pt" style="background:#3fb950"></i>operacional</span>
@@ -1208,14 +1233,15 @@ rotas["mapa"] = async () => cabecalho("Mapa",
        <span><i class="pt" style="background:#4da3ff"></i>instalada</span>
        <span><i class="pt" style="background:#f85149"></i>falha de enlace</span>
        <span><i class="pt" style="background:#6e7d8f"></i>registrada</span>
-       <span><i class="pt" style="background:#4da3ff;border-radius:2px"></i>estação de chuva [G]</span>
+       <span><i class="pt" style="background:#4da3ff;border-radius:2px"></i>estação oficial com geometria</span>
+       <span><i class="pt" style="background:#62b5e5;border-radius:0"></i>célula IMERG</span>
+       <span><i class="pt" style="background:transparent;border:2px dashed #d29922"></i>recorte piloto</span>
      </div>
-     <p class="nota">Círculo é Atalaia (instrumento do projeto), quadrado é
-     estação oficial de chuva — escalas de confiança diferentes. A cor da
-     Atalaia vem do <strong>estado do ciclo de vida</strong>, não do índice de
-     saúde: uma Atalaia ainda em comissionamento não é ponto de dado confiável,
-     e mostrá-la verde induziria o operador a confiar em medição não
-     homologada.</p>
+     <p class="nota">Atalaia, pluviômetro, estimativa orbital e imagem de radar
+     são evidências diferentes. A grade IMERG não é pluviômetro; o raio do
+     radar é cobertura nominal publicada, não prova de qualidade em
+     Caraguatatuba. Horários REDEMET permanecem identificados como horário de
+     origem quando o payload não declara fuso.</p>
      <div id="mapa-aviso"></div>`;
 
 rotas["hardware"] = async () => {
@@ -1666,15 +1692,19 @@ function pontoEnsaio(f) {
 
 async function ligaMapa() {
   if (mapa) { mapa.remove(); mapa = null; }
-  mapa = L.map("mapa", { zoomControl: true }).setView([-23.5754, -45.3305], 15);
+  mapa = L.map("mapa", { zoomControl: true }).setView([-23.62, -45.45], 10);
   camadaBase().addTo(mapa);
 
-  const [atalaias, ensaios, susc, estacoes, contexto] = await Promise.all([
+  const [atalaias, ensaios, susc, estacoes, contexto, recorte, camadasFonte,
+    observacoesFonte] = await Promise.all([
     api("/api/gis/atalaias").catch(() => null),
     api("/api/gis/ensaios").catch(() => null),
     api("/api/gis/suscetibilidade").catch(() => null),
     api("/api/gis/estacoes").catch(() => null),
     api("/api/gis/fontes-contexto").catch(() => null),
+    api("/api/gis/recorte-piloto").catch(() => null),
+    api("/api/fontes-camadas").catch((e) => ({ camadas: [], erro: e.message })),
+    api("/api/fontes-observacoes").catch((e) => ({ observacoes: [], erro: e.message })),
   ]);
 
   const camadas = {};
@@ -1709,7 +1739,49 @@ async function ligaMapa() {
   });
   if ((estacoes?.features || []).length) {
     grupoEstacoes.addTo(mapa);
-    camadas["Chuva oficial (CEMADEN)"] = grupoEstacoes;
+    camadas["Estações oficiais com geometria"] = grupoEstacoes;
+  }
+
+  let grupoRecorte = null;
+  if (recorte?.features?.length) {
+    grupoRecorte = L.geoJSON(recorte, {
+      style: { color: "#d29922", weight: 2, dashArray: "7 5", fillOpacity: 0.02 },
+      onEachFeature: (f, camada) => camada.bindPopup(
+        `<strong>${esc(f.properties?.municipio || "Recorte piloto")}</strong><br>
+         código IBGE ${esc(f.properties?.codarea || "—")}<br>
+         <span class="miudo">Perímetro de aquisição IBGE (${esc(recorte.source?.qualidade || "qualidade não informada")}); não é setor de risco.</span>`),
+    }).addTo(mapa);
+    camadas["Recorte piloto (IBGE)"] = grupoRecorte;
+  }
+
+  const registrosCamada = camadasFonte?.camadas || [];
+  const imerg = registrosCamada.find((c) => c.provedor_codigo === "NASA_IMERG"
+    && Array.isArray(c.metadados?.amostras_grade)
+    && c.metadados.amostras_grade.length);
+  if (imerg) {
+    const meta = imerg.metadados;
+    const resolucao = Number(String(meta.resolucao || "").match(/[\d.]+/)?.[0]);
+    const meiaCelula = Number.isFinite(resolucao) ? resolucao / 2 : null;
+    const grupoImerg = L.layerGroup();
+    meta.amostras_grade.forEach((a) => {
+      const lat = Number(a.latitude), lon = Number(a.longitude), valor = Number(a.valor);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(valor)) return;
+      const popup = `<strong>IMERG ${esc(meta.produto || "")}</strong><br>
+        ${valor.toFixed(2)} ${esc(meta.unidade_origem || "unidade não informada")}<br>
+        centro ${lat.toFixed(3)}, ${lon.toFixed(3)}<br>
+        observado ${dataLegivel(meta.observado_de)}<br>
+        <span class="miudo">${esc(meta.limitacao || "Estimativa em grade.")}<br>
+        adquirido ${dataLegivel(imerg.adquirido_em)} · sha256 ${esc((imerg.sha256 || "").slice(0, 12))}…</span>`;
+      const forma = meiaCelula
+        ? L.rectangle([[lat - meiaCelula, lon - meiaCelula],
+                       [lat + meiaCelula, lon + meiaCelula]], {
+            color: "#62b5e5", weight: 1.5, fillColor: "#62b5e5", fillOpacity: 0.24,
+          })
+        : L.circleMarker([lat, lon], { radius: 6, color: "#62b5e5", fillOpacity: 0.4 });
+      forma.bindPopup(popup).addTo(grupoImerg);
+    });
+    grupoImerg.addTo(mapa);
+    camadas["IMERG · estimativa em grade"] = grupoImerg;
   }
 
   if (susc?.features?.length) {
@@ -1735,24 +1807,148 @@ async function ligaMapa() {
   L.control.layers(null, camadas, { collapsed: false }).addTo(mapa);
 
   const pontos = [...(atalaias?.features || []), ...(ensaios?.features || [])];
-  if (pontos.length) {
+  if (grupoRecorte) {
+    mapa.fitBounds(grupoRecorte.getBounds(), { padding: [25, 25], maxZoom: 11 });
+  } else if (pontos.length) {
     grupoEnsaio.addTo(mapa);
     mapa.fitBounds(pontos.map((f) => [f.geometry.coordinates[1],
                                       f.geometry.coordinates[0]]),
                    { padding: [40, 40], maxZoom: 17 });
   }
 
+  const cemaden = (observacoesFonte?.observacoes || [])
+    .filter((o) => o.provedor_codigo === "CEMADEN");
+  const estacoesPed = new Set(cemaden.map((o) => o.codigo_externo)).size;
+  const medidoCemaden = cemaden.map((o) => o.medido_em).filter(Boolean).sort().at(-1);
+  const produtosRedemet = organizaProdutosRedemet(registrosCamada);
+  const agora = Date.now();
+  const resumo = el("mapa-resumo");
+  if (resumo) resumo.innerHTML = [
+    metrica("CEMADEN PED", estacoesPed || "sem dado",
+      estacoesPed ? `estações no recorte · dado mais recente ${dataLegivel(medidoCemaden)}`
+        : "o payload PED não fornece geometria; ausência está explícita"),
+    metrica("IMERG", imerg ? imerg.metadados.amostras_grade.length : "sem dado",
+      imerg ? `células de ${esc(imerg.metadados.resolucao || "resolução não informada")} · ${tempoAtras(idadeData(imerg.metadados.observado_de, agora))}`
+        : "nenhuma grade válida armazenada"),
+    metrica("REDEMET", produtosRedemet.length || "sem dado",
+      produtosRedemet.length ? "produtos com quadros estruturados" : "aguardando aquisição no contrato atualizado"),
+    metrica("Consulta do painel", dataLegivel(camadasFonte?.consultado_em),
+      "snapshot armazenado · atualização manual", "texto"),
+  ].join("");
+
+  ligaEvolucaoMeteorologica(produtosRedemet);
+  const atualizar = el("mapa-atualizar");
+  if (atualizar) atualizar.onclick = () => ligaMapa();
+
   const aviso = el("mapa-aviso");
   const semAtalaia = !(atalaias?.features || []).length;
-  const erro = atalaias?.erro || ensaios?.erro;
-  if (aviso && (semAtalaia || erro)) {
-    aviso.innerHTML = `<p class="nota">${
-      erro ? `Banco indisponível: <code>${esc(erro)}</code>. `
-           : "Nenhuma Atalaia tem coordenada cadastrada ainda — as placas estão "
-             + "em bancada, e <code>no.posicao</code> só é preenchido na "
-             + "instalação em campo. "}
-      Os pontos do ensaio 02 aparecem porque já estão no PostGIS.</p>`;
+  const erros = [atalaias?.erro, ensaios?.erro, camadasFonte?.erro,
+    observacoesFonte?.erro, recorte?.erro].filter(Boolean);
+  if (aviso && (semAtalaia || erros.length || !estacoesPed)) {
+    aviso.innerHTML = `<div class="aviso"><strong>Ausências e limitações desta consulta</strong><ul>
+      ${erros.map((e) => `<li>${esc(e)}</li>`).join("")}
+      ${semAtalaia ? `<li>Nenhuma Atalaia com coordenada cadastrada; os pontos de ensaio são evidência de bancada/campanha.</li>` : ""}
+      ${!estacoesPed ? `<li>Sem observações CEMADEN PED consultáveis no banco.</li>` : ""}
+      ${estacoesPed && !(estacoes?.features || []).length ? `<li>O PED retornou estações e acumulados, mas não coordenadas; elas não são inventadas no mapa.</li>` : ""}
+      </ul></div>`;
   }
+}
+
+function organizaProdutosRedemet(camadasFonte) {
+  const grupos = new Map();
+  camadasFonte.filter((c) => c.provedor_codigo === "REDEMET").forEach((c) => {
+    const meta = c.metadados || {};
+    if (!Array.isArray(meta.quadros) || !meta.quadros.length) return;
+    const chave = `${meta.classe || "PRODUTO"}:${meta.produto || c.identificador}`;
+    if (!grupos.has(chave)) grupos.set(chave, {
+      chave, classe: meta.classe, produto: meta.produto,
+      limitacao: meta.limitacao, fuso: meta.fuso_origem, quadros: [],
+    });
+    meta.quadros.forEach((q) => grupos.get(chave).quadros.push({
+      ...q, adquirido_em: c.adquirido_em, sha256: c.sha256, fonte_uri: c.fonte_uri,
+    }));
+  });
+  grupos.forEach((g) => {
+    const vistos = new Set();
+    g.quadros = g.quadros.filter((q) => q.imagem_url && !vistos.has(q.imagem_url)
+      && vistos.add(q.imagem_url)).sort((a, b) =>
+        String(a.adquirido_em).localeCompare(String(b.adquirido_em)));
+  });
+  return [...grupos.values()].filter((g) => g.quadros.length).sort((a, b) => {
+    const prioridade = (g) => g.classe === "PRODUTO_RADAR"
+      ? (g.produto === "03km" ? 0 : 1) : 2;
+    return prioridade(a) - prioridade(b) || String(a.produto).localeCompare(String(b.produto));
+  });
+}
+
+let camadaProdutoMeteorologico = null;
+let coberturaProdutoMeteorologico = null;
+
+function ligaEvolucaoMeteorologica(produtos) {
+  const seletor = el("mapa-produto"), faixa = el("mapa-quadro");
+  const anterior = el("mapa-anterior"), proximo = el("mapa-proximo");
+  if (!seletor || !faixa) return;
+  if (!produtos.length) {
+    seletor.disabled = faixa.disabled = anterior.disabled = proximo.disabled = true;
+    return;
+  }
+  seletor.innerHTML = produtos.map((p, i) =>
+    `<option value="${i}">${p.classe === "PRODUTO_RADAR" ? "Radar" : "Satélite"} · ${esc(p.produto)}</option>`).join("");
+  seletor.disabled = false;
+
+  const atualizaProduto = () => {
+    const produto = produtos[Number(seletor.value) || 0];
+    faixa.max = String(Math.max(0, produto.quadros.length - 1));
+    faixa.value = faixa.max;
+    faixa.disabled = produto.quadros.length < 2;
+    anterior.disabled = proximo.disabled = produto.quadros.length < 2;
+    mostraQuadroMeteorologico(produto, Number(faixa.value));
+  };
+  seletor.onchange = atualizaProduto;
+  faixa.oninput = () => mostraQuadroMeteorologico(
+    produtos[Number(seletor.value) || 0], Number(faixa.value));
+  anterior.onclick = () => {
+    faixa.value = String(Math.max(0, Number(faixa.value) - 1));
+    faixa.oninput();
+  };
+  proximo.onclick = () => {
+    faixa.value = String(Math.min(Number(faixa.max), Number(faixa.value) + 1));
+    faixa.oninput();
+  };
+  atualizaProduto();
+}
+
+function mostraQuadroMeteorologico(produto, indice) {
+  if (camadaProdutoMeteorologico) mapa.removeLayer(camadaProdutoMeteorologico);
+  if (coberturaProdutoMeteorologico) mapa.removeLayer(coberturaProdutoMeteorologico);
+  camadaProdutoMeteorologico = coberturaProdutoMeteorologico = null;
+  const quadro = produto.quadros[indice];
+  if (!quadro || !Array.isArray(quadro.bbox)) return;
+  const [lonMin, latMin, lonMax, latMax] = quadro.bbox.map(Number);
+  camadaProdutoMeteorologico = L.imageOverlay(
+    quadro.imagem_url, [[latMin, lonMin], [latMax, lonMax]], {
+      opacity: produto.classe === "PRODUTO_RADAR" ? 0.58 : 0.42,
+      alt: `${produto.classe === "PRODUTO_RADAR" ? "Radar" : "Satélite"} ${produto.produto}`,
+      crossOrigin: false,
+    }).addTo(mapa);
+  if (produto.classe === "PRODUTO_RADAR" && Array.isArray(quadro.centro)
+      && Number.isFinite(Number(quadro.raio_km))) {
+    coberturaProdutoMeteorologico = L.circle(
+      [Number(quadro.centro[1]), Number(quadro.centro[0])], {
+        radius: Number(quadro.raio_km) * 1000, color: "#d29922", weight: 1,
+        dashArray: "6 5", fillOpacity: 0,
+      }).addTo(mapa).bindPopup(`Cobertura nominal informada pela REDEMET: ${quadro.raio_km} km.<br>
+        <span class="miudo">Não comprova qualidade local do produto.</span>`);
+  }
+  const info = el("mapa-quadro-info");
+  if (info) info.className = "mapa-quadro-info";
+  if (info) info.innerHTML = `<strong>${produto.classe === "PRODUTO_RADAR" ? "Radar" : "Satélite"} ${esc(produto.produto)}</strong>
+    <dl><div><dt>Quadro</dt><dd>${indice + 1} de ${produto.quadros.length}</dd></div>
+    <div><dt>Instante de origem</dt><dd>${esc(quadro.instante_origem || "não informado")}<br><span class="miudo">fuso ${esc(produto.fuso || "não informado")}</span></dd></div>
+    <div><dt>Adquirido</dt><dd>${dataLegivel(quadro.adquirido_em)} · há ${tempoAtras(idadeData(quadro.adquirido_em))}</dd></div>
+    ${quadro.nome ? `<div><dt>Origem do radar</dt><dd>${esc(quadro.nome)}${quadro.raio_km ? ` · raio nominal ${quadro.raio_km} km` : ""}</dd></div>` : ""}
+    <div><dt>Evidência</dt><dd><code>${esc((quadro.sha256 || "").slice(0, 12))}…</code></dd></div>
+    <div><dt>Limitação</dt><dd>${esc(produto.limitacao || "não informada")}</dd></div></dl>`;
 }
 
 /* ------------------------------------------------ monitoramento ao vivo */

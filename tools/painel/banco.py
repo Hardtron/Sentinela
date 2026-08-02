@@ -342,6 +342,49 @@ def fontes_observacoes():
     }
 
 
+def fontes_camadas():
+    """Histórico recente de camadas estruturadas para exploração no mapa.
+
+    O endpoint não devolve o arquivo bruto nem credenciais. Imagens externas
+    só chegam aqui depois da validação de host feita pelo normalizador.
+    """
+    linhas = consulta("""
+        SELECT p.codigo AS provedor_codigo, p.nome AS provedor,
+               c.codigo AS conjunto_codigo, c.titulo, c.classe AS conjunto_classe,
+               c.uso, b.adquirido_em, b.observado_de, b.observado_ate,
+               b.sha256, b.fonte_uri, fc.identificador, fc.metadados
+          FROM fonte_camada fc
+          JOIN fonte_ativo_bruto b ON b.id=fc.ativo_bruto_id
+          JOIN fonte_conjunto c ON c.id=fc.conjunto_id
+          JOIN fonte_provedor p ON p.codigo=c.provedor_codigo
+         WHERE coalesce((fc.metadados->>'normalizado')::boolean, false)
+         ORDER BY b.adquirido_em DESC, fc.id DESC
+         LIMIT 240
+    """)
+    return {
+        "camadas": _limpa(linhas),
+        "erro": _estado["erro"],
+        "consultado_em": datetime.now(timezone.utc).isoformat(),
+        "escopo": (
+            "produtos contextuais armazenados; não são decisão nem regra de alerta"),
+    }
+
+
+def recorte_piloto():
+    """Perímetro oficial versionado usado para recortar as aquisições."""
+    caminho = RAIZ / "backend" / "recortes" / "3510500.geojson"
+    try:
+        import json
+        objeto = json.loads(caminho.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError) as erro:
+        return {"type": "FeatureCollection", "features": [],
+                "erro": f"recorte piloto indisponível: {erro}"}
+    objeto["erro"] = None
+    objeto["escopo"] = (
+        "perímetro municipal de aquisição; não representa setor de risco")
+    return objeto
+
+
 def gis_fontes_contexto():
     """Feições oficiais externas mais recentes, com proveniência explícita."""
     linhas = consulta("""

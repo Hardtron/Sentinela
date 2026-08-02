@@ -343,6 +343,46 @@ td.livre { white-space: normal; min-width: 250px; }
   background: #d2992222; border-left-color: #d29922;
 }
 
+/* ---------------------------------------------------------- mapa operacional */
+
+.mapa-resumo { margin-bottom: 12px; }
+.mapa-resumo .cartao.carregando { padding: 20px; grid-column: 1 / -1; }
+.mapa-operacao {
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
+  gap: 12px; align-items: stretch;
+}
+.mapa-caixa { padding: 0; overflow: hidden; min-width: 0; }
+.mapa-barra {
+  min-height: 58px; padding: 10px 13px; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--borda);
+}
+.mapa-barra .filtro { flex: none; margin: 0; }
+#mapa { height: min(70vh, 650px); width: 100%; background: #101820; }
+.mapa-tempo { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.mapa-tempo label {
+  color: var(--texto-3); font-size: 10.5px; font-weight: 650;
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.mapa-tempo select {
+  width: 100%; padding: 8px 9px; border-radius: var(--r); border: 1px solid var(--borda);
+  color: var(--texto); background: var(--fundo-3); font: inherit;
+}
+.mapa-tempo-linha { display: grid; grid-template-columns: 30px 1fr 30px; gap: 8px; align-items: center; }
+.mapa-tempo-linha input { width: 100%; accent-color: var(--acento); }
+.mapa-quadro-info { border-top: 1px solid var(--borda); padding-top: 12px; overflow-wrap: anywhere; }
+.mapa-quadro-info.vazio { padding: 22px 8px; }
+.mapa-quadro-info dl { margin: 9px 0 0; display: grid; gap: 8px; }
+.mapa-quadro-info dl div { padding-top: 7px; border-top: 1px solid var(--borda); }
+.mapa-quadro-info dt {
+  color: var(--texto-3); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+}
+.mapa-quadro-info dd { margin: 2px 0 0; font-size: 12px; color: var(--texto-2); }
+
+@media (max-width: 980px) {
+  .mapa-operacao { grid-template-columns: 1fr; }
+  .mapa-tempo { min-height: 0; }
+}
+
 /* --------------------------------------------- monitoramento ao vivo --- */
 
 .grafico .ref { stroke-width: 1; stroke-dasharray: 5 4; opacity: .85; }

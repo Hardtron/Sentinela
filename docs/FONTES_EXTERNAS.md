@@ -115,6 +115,15 @@ publicados. Isso confirma disponibilidade e cobertura nominal da API; não
 demonstra sensibilidade/qualidade sobre Caraguatatuba nem converte refletividade
 em precipitação de superfície.
 
+O normalizador estrutura extensão, centro, raio, caminho da imagem e instante
+textual de cada quadro. Somente imagens sob o host estático oficial da REDEMET
+são aceitas pelo painel. Como o payload observado não declara offset, o horário
+é exibido como **instante de origem com fuso não declarado**, sem conversão
+silenciosa. No mapa, o operador pode percorrer os quadros já armazenados; a
+linha temporal não interpola lacunas nem se apresenta como tempo real. O STSC
+fica resumido por instante/contagem até existir um recorte espacial versionado
+para o piloto.
+
 ### NASA IMERG
 
 O produto fixado é `GPM_3IMERGHHE.07`, IMERG Early V07, precipitação em
@@ -139,6 +148,11 @@ credenciais e corpo de autenticação não entram no plano, log, banco ou Git.
 O próprio CEMADEN declara que seus dados são registrados em UTC/GMT. Por isso
 `datahora` sem sufixo é interpretado exclusivamente como `UTC`, e cada
 observação carrega `fuso_origem=UTC`; configuração em horário local é recusada.
+O payload `acumulados-recentes` observado para o recorte municipal fornece
+código da estação e acumulados, mas não latitude/longitude. Assim, o painel
+mostra quantidade, idade e observações PED, porém não inventa posição para
+essas estações. Marcadores existentes no mapa vêm do cadastro GIS separado e
+são rotulados dessa forma.
 No Home Server, a instalação sem eco é feita diretamente no terminal:
 
 ```bash

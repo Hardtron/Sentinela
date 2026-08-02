@@ -15,6 +15,11 @@ telemetria = importlib.import_module("telemetria")
 servidor = importlib.import_module("servidor")
 
 
+def _contem_todos(texto, trechos):
+    for trecho in trechos:
+        assert trecho in texto
+
+
 def testa_metadados_telemetria():
     estado = telemetria.estado()
     assert estado["fonte"]["classificacao"] == "OBSERVADO"
@@ -67,11 +72,24 @@ def testa_interface_declara_escopo():
 
 def testa_interface_fontes_externas():
     js = (PAINEL / "static" / "app.js").read_text(encoding="utf-8")
-    assert 'api("/api/fontes-observacoes")' in js
-    assert 'api("/api/gis/fontes-contexto")' in js
-    assert "o painel não soma estações, modelos ou provedores" in js
-    assert "centro(s) de célula no recorte" in js
-    assert "/api/fontes-externas" in servidor.ROTAS
+    _contem_todos(js, [
+        'api("/api/fontes-observacoes")', 'api("/api/gis/fontes-contexto")',
+        'api("/api/fontes-camadas")', 'api("/api/gis/recorte-piloto")',
+        "o painel não soma estações, modelos ou provedores",
+        "centro(s) de célula no recorte", "organizaProdutosRedemet",
+        "IMERG · estimativa em grade", "produto.fuso", "Atualizar consulta",
+    ])
+    _contem_todos(servidor.ROTAS, [
+        "/api/fontes-externas", "/api/fontes-camadas",
+        "/api/gis/recorte-piloto",
+    ])
+
+
+def testa_recorte_piloto_e_escopo():
+    recorte = banco.recorte_piloto()
+    assert recorte["features"][0]["properties"]["codarea"] == "3510500"
+    assert recorte["source"]["orgao"] == "IBGE"
+    assert "não representa setor de risco" in recorte["escopo"]
 
 
 if __name__ == "__main__":
@@ -80,4 +98,5 @@ if __name__ == "__main__":
     testa_cadeia_nao_promete_servicos()
     testa_interface_declara_escopo()
     testa_interface_fontes_externas()
+    testa_recorte_piloto_e_escopo()
     print("ok — contratos do painel operacional")

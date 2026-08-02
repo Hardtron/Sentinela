@@ -176,6 +176,46 @@ def testa_redemet_usa_header():
              "chave REDEMET ficou na query/repr")
 
 
+def testa_redemet_normaliza_radar_sem_inventar_fuso():
+    bruto = json.dumps({"status": True, "message": "ok", "data": {
+        "tipo": "03km", "anima": ["01:10"], "radar": [[{
+            "nome": "Radar - São Roque/SP", "localidade": "sr",
+            "raio": 250, "lat_center": "-23.601915",
+            "lon_center": "-47.094063", "lon_min": "-49.58",
+            "lon_max": "-44.60", "lat_min": "-25.84",
+            "lat_max": "-21.34", "data": "2026-08-02 01:10:23",
+            "path": ("https://estatico-redemet.decea.mil.br/radar/"
+                     "2026/08/02/sr/03km/maps/quadro.png"),
+            "tamanho": 747,
+        }]]}}).encode()
+    req = Requisicao("REDEMET", "radar-satelite", "https://x.test")
+    normal = normaliza(req, Resposta(req.url, 200, "application/json", bruto), {})
+    meta = normal.metadados
+    verifica(meta["classe"] == "PRODUTO_RADAR", "radar perdeu sua classe")
+    verifica(meta["produto"] == "03km" and len(meta["quadros"]) == 1,
+             "quadro de radar não foi preservado")
+    verifica(meta["quadros"][0]["bbox"] == [-49.58, -25.84, -44.6, -21.34],
+             "extensão cartográfica do radar foi alterada")
+    verifica(meta["fuso_origem"] == "não declarado no payload",
+             "normalizador inventou fuso para o produto REDEMET")
+
+
+def testa_redemet_recusa_imagem_fora_do_host_oficial():
+    bruto = json.dumps({"status": True, "data": {
+        "tipo": "ir", "lat_lon": {"lon_min": -100, "lat_min": -56,
+                                      "lon_max": -25, "lat_max": 12},
+        "satelite": [{"data": "2026-08-02 01:00:00",
+                       "path": "https://exemplo.invalid/imagem.png"}],
+    }}).encode()
+    req = Requisicao("REDEMET", "radar-satelite", "https://x.test")
+    try:
+        normaliza(req, Resposta(req.url, 200, "application/json", bruto), {})
+    except Exception as erro:  # contrato específico sem acoplar o teste ao texto
+        verifica("host oficial" in str(erro), "recusa não explicou a origem")
+        return
+    raise AssertionError("REDEMET aceitou imagem fora do host oficial")
+
+
 def testa_imerg_descobre_granulo_sem_expor_token():
     consulta = json.dumps({"features": [{"attributes": {
         "objectid": 123, "stdtime": 1785600000000,

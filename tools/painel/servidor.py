@@ -93,6 +93,7 @@ ROTAS = {
     "/api/operacao": lambda q: operacao(),
     "/api/fontes-externas": lambda q: banco.fontes_externas(),
     "/api/fontes-observacoes": lambda q: banco.fontes_observacoes(),
+    "/api/fontes-camadas": lambda q: banco.fontes_camadas(),
 
     # Leem o banco (backend/). Degradam sozinhas se o PostgreSQL estiver fora
     # do ar — devolvem estrutura vazia com o motivo em `erro`, para a aba
@@ -103,6 +104,7 @@ ROTAS = {
     "/api/gis/suscetibilidade": lambda q: banco.gis_suscetibilidade(),
     "/api/gis/estacoes": lambda q: banco.gis_estacoes(),
     "/api/gis/fontes-contexto": lambda q: banco.gis_fontes_contexto(),
+    "/api/gis/recorte-piloto": lambda q: banco.recorte_piloto(),
     "/api/situacao": lambda q: banco.situacao(),
     "/api/comissionamento": lambda q: banco.comissionamento(),
     "/api/laudo": lambda q: banco.laudo(int((q.get("no") or ["1"])[0])),
