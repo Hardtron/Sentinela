@@ -108,8 +108,12 @@ para o piloto foi selecionada e verificada a área `sr`, Radar São Roque/SP.
 O coletor preserva `03km` (CAPPI a 3,1 km, raio publicado de 250 km) e
 `maxcappi` (máximo na coluna, raio publicado de 400 km). Em 01/08/2026 os dois
 endpoints responderam com produto, radar, localidade, raio, instante e caminho
-de imagem. Isso confirma disponibilidade da API; não demonstra qualidade sobre
-Caraguatatuba nem converte refletividade em precipitação de superfície.
+de imagem. Com o centro devolvido pela API (`-23.601915, -47.094063`) e os
+vértices do perímetro IBGE, a distância geodésica calculada varia de 140,1 a
+186,1 km; portanto o município está geometricamente dentro dos dois raios
+publicados. Isso confirma disponibilidade e cobertura nominal da API; não
+demonstra sensibilidade/qualidade sobre Caraguatatuba nem converte refletividade
+em precipitação de superfície.
 
 ### NASA IMERG
 
