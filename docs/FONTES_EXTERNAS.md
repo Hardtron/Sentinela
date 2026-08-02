@@ -53,6 +53,33 @@ armazenamento; ultrapassar o teto envia a aquisição à quarentena.
 | CHIRPS | GeoTIFF/NetCDF/COG | aquisição de URL oficial fixada | produto e período; uso histórico |
 | NOAA GOES/GLM | NetCDF/cloud/CLASS | aquisição de URL oficial fixada | coleção/setor e processamento definidos |
 
+### Decisão sobre os conjuntos ainda inativos
+
+O município-piloto permite fixar o **onde**, mas não autoriza confundir
+produtos. A triagem de 01/08/2026 deixou estas decisões registradas no catálogo:
+
+- **ANA:** é a próxima observação pontual; aguarda a credencial solicitada e a
+  seleção das estações, que deve ser feita pelo inventário oficial, não por
+  proximidade presumida.
+- **SGB:** pausado porque a camada oficial não publica Caraguatatuba. Não há
+  integração substituta automática.
+- **INPE MERGE:** o `HOURLY_NOW` é pertinente, mas o GRIB2 real inspecionado
+  apresentou `rdp`/`prmsl`, enquanto o README descreve `prec`/`nest`. O bruto
+  não será rotulado como chuva até o mapeamento ser esclarecido com o CPTEC.
+- **INPE WRF e NOAA GFS:** permanecem previsão. Variáveis, rodada, horizonte e
+  validação precisam ser escolhidos como política de produto antes da coleta;
+  ativar um arquivo arbitrário apenas aumentaria volume sem significado.
+- **INMET:** aguarda um feed oficial estável e a seleção de estações úteis ao
+  piloto. Não é duplicado por raspagem de páginas.
+- **CHIRPS:** reservado à série histórica e calibração; não representa estado
+  corrente. Período e método de recorte ainda precisam ser definidos.
+- **GOES/GLM:** raio e detecção de descargas são contexto diferente de chuva;
+  coleção, setor e processamento exigem validação própria.
+
+Esses estados são lacunas explícitas, não falhas do timer. A aquisição não é
+ativada até que o dado possa chegar ao painel com variável, unidade, tempo,
+recorte e limitação rastreáveis.
+
 “Aquisição de URL fixada” preserva o produto escolhido; não significa que o
 Sentinela interpreta seu GRIB2/NetCDF. A interpretação só deve ser adicionada
 depois de validar variável, unidade, grade, calendário, rodada e licença do

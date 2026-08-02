@@ -46,6 +46,11 @@ apenas o apontamento.
   relógio UTC, conforme a declaração oficial do órgão. A interpretação local
   anterior adiantava o dado em três horas; o coletor agora exige UTC e o painel
   escolhe a revisão recebida mais recentemente sem apagar a evidência antiga.
+- O catálogo operacional passou a distinguir fontes ativas de fontes apenas
+  conhecidas. SGB ficou pausado por ausência de Caraguatatuba; MERGE ficou
+  bloqueado pela divergência entre os descritores do GRIB2 real e o README;
+  previsões, histórico e descargas permanecem inativos com sua dependência
+  objetiva, em vez de baixar arquivos sem semântica operacional.
 
 ### Decidido
 
