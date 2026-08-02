@@ -19,7 +19,7 @@ from fontes.provedores import (_imagem_imerg, _item_imerg, _token_ana,
 from fontes import VERSAO_NORMALIZADOR  # noqa: E402
 from fontes.repositorio import _revisao, configuracao_publica  # noqa: E402
 from fontes.contrato import Observacao  # noqa: E402
-from fontes.cli import coleta_requisicao  # noqa: E402
+from fontes.cli import coleta_requisicao, main as main_fontes  # noqa: E402
 from fontes.transporte import guarda_bruto, uri_publica  # noqa: E402
 from configura_cemaden import atualiza as atualiza_cemaden  # noqa: E402
 
@@ -297,6 +297,11 @@ def testa_snapshot_declara_versao_do_normalizador():
     snapshot = configuracao_publica(req)
     verifica(snapshot["normalizador_versao"] == VERSAO_NORMALIZADOR,
              "execução não registrou a versão do contrato de normalização")
+
+
+def testa_reprocessamento_exige_provedor_explicito():
+    verifica(main_fontes(["--reprocessar-brutos"]) == 2,
+             "reprocessamento amplo foi aceito sem recorte por provedor")
 
 
 def testa_geojson_preserva_sem_reinterpretar():

@@ -6,7 +6,7 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from .contrato import ConfiguracaoAusente
+from .contrato import ConfiguracaoAusente, Requisicao, Resposta
 from .provedores import requisicoes, normaliza
 from .repositorio import Repositorio, conecta, configuracao_publica
 from .transporte import busca, guarda_bruto
@@ -82,6 +82,9 @@ def _argumentos(argv):
                     help="mostra prontidão de configuração sem rede ou banco")
     ap.add_argument("--seco", action="store_true",
                     help="planeja sem baixar nem gravar")
+    ap.add_argument("--reprocessar-brutos", action="store_true",
+                    help=("reinterpreta brutos do --provedor com versão antiga; "
+                          "não acessa a rede nem substitui o arquivo"))
     return ap.parse_args(argv)
 
 
@@ -111,6 +114,46 @@ def _executa(plano):
     return 1 if falhas else 0
 
 
+def _reprocessa_brutos(provedores):
+    with conecta() as conexao:
+        repositorio = Repositorio(conexao)
+        ativos = repositorio.brutos_para_reprocessar(provedores)
+        falhas = 0
+        for ativo in ativos:
+            _, execucao_id = repositorio.inicia(
+                ativo["provedor"], ativo["conjunto"], {
+                    "modo": "REPROCESSAMENTO_BRUTO",
+                    "ativo_bruto_id": ativo["id"],
+                })
+            try:
+                caminho = Path(ativo["caminho"])
+                dados = caminho.read_bytes()
+                requisicao = Requisicao(
+                    ativo["provedor"], ativo["conjunto"], ativo["fonte_uri"],
+                    metadados=ativo["requisicao_metadados"])
+                resposta = Resposta(ativo["fonte_uri"], 200,
+                                    ativo["tipo_conteudo"] or "", dados)
+                conteudo = normaliza(requisicao, resposta)
+                aceitos = repositorio.normaliza(
+                    ativo["conjunto_id"], ativo["id"], conteudo)
+                repositorio.termina(execucao_id, "SUCESSO",
+                                    _itens_recebidos(conteudo), aceitos)
+                print(f'{ativo["provedor"]}/{ativo["conjunto"]} ativo '
+                      f'{ativo["id"]}: SUCESSO; {aceitos} item(ns)')
+            except Exception as erro:  # falha isolada e auditada
+                repositorio.reverte()
+                repositorio.quarentena(
+                    ativo["conjunto_id"], execucao_id, "REPROCESSAMENTO",
+                    erro, ativo["fonte_uri"])
+                repositorio.termina(execucao_id, "QUARENTENA", rejeitados=1,
+                                    erro=erro)
+                falhas += 1
+                print(f'{ativo["provedor"]}/{ativo["conjunto"]} ativo '
+                      f'{ativo["id"]}: QUARENTENA', file=sys.stderr)
+    print(f"reprocessamento: {len(ativos)} ativo(s), {falhas} falha(s)")
+    return 1 if falhas else 0
+
+
 def _itens_recebidos(conteudo):
     contagens = (len(conteudo.observacoes), len(conteudo.feicoes),
                  len(conteudo.estacoes),
@@ -123,6 +166,12 @@ def main(argv=None):
     _carrega_env(Path(__file__).resolve().parents[1] / "fontes.env")
     args = _argumentos(argv)
     selecionados = args.provedor or list(PROVEDORES)
+    if args.reprocessar_brutos:
+        if not args.provedor:
+            print("--reprocessar-brutos exige ao menos um --provedor",
+                  file=sys.stderr)
+            return 2
+        return _reprocessa_brutos(selecionados)
     sem_rede = args.listar or args.seco
     plano, ausentes = planeja(selecionados, buscar=None if sem_rede else busca)
     _mostra_plano(selecionados, plano, ausentes)

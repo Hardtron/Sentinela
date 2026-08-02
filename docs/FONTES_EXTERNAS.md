@@ -199,6 +199,14 @@ venv/bin/python fontes_externas.py --listar
 venv/bin/python fontes_externas.py --seco
 ```
 
+Quando uma versão nova do contrato precisar reinterpretar evidência já
+preservada, o reprocessamento é sempre recortado por provedor e não acessa a
+rede nem altera o arquivo bruto:
+
+```bash
+venv/bin/python fontes_externas.py --provedor REDEMET --reprocessar-brutos
+```
+
 O bruto operacional fica fora do Git em
 `/DATA/Projects/Sentinela-Data/externos` por padrão. O usuário dos serviços
 precisa ter permissão de criação nesse diretório.

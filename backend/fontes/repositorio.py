@@ -74,6 +74,30 @@ class Repositorio:
             cabecalhos["If-Modified-Since"] = linha[1]
         return cabecalhos
 
+    def brutos_para_reprocessar(self, provedores, limite=500):
+        """Ativos imutáveis ainda não interpretados pelo contrato vigente."""
+        with self.conexao.cursor() as cur:
+            cur.execute("""
+                SELECT b.id, b.conjunto_id, p.codigo AS provedor,
+                       c.codigo AS conjunto, b.fonte_uri, b.tipo_conteudo,
+                       b.caminho,
+                       coalesce(e.configuracao->'metadados', '{}'::jsonb)
+                  FROM fonte_ativo_bruto b
+                  JOIN fonte_conjunto c ON c.id=b.conjunto_id
+                  JOIN fonte_provedor p ON p.codigo=c.provedor_codigo
+                  LEFT JOIN fonte_execucao e ON e.id=b.execucao_id
+                 WHERE p.codigo=ANY(%s)
+                   AND coalesce(b.metadados->>'normalizador_versao','')<>%s
+                 ORDER BY b.adquirido_em, b.id
+                 LIMIT %s
+            """, (list(provedores), VERSAO_NORMALIZADOR, limite))
+            return [{
+                "id": linha[0], "conjunto_id": linha[1],
+                "provedor": linha[2], "conjunto": linha[3],
+                "fonte_uri": linha[4], "tipo_conteudo": linha[5],
+                "caminho": linha[6], "requisicao_metadados": linha[7] or {},
+            } for linha in cur.fetchall()]
+
     def inicia(self, provedor, conjunto, configuracao):
         conjunto_id = self.conjunto_id(provedor, conjunto)
         with self.conexao.cursor() as cur:
