@@ -115,7 +115,8 @@ def _itens_recebidos(conteudo):
     contagens = (len(conteudo.observacoes), len(conteudo.feicoes),
                  len(conteudo.estacoes),
                  int(conteudo.metadados.get("itens_recebidos", 0)))
-    return next((total for total in contagens if total), 0)
+    return next((total for total in contagens if total),
+                1 if conteudo.metadados else 0)
 
 
 def main(argv=None):
