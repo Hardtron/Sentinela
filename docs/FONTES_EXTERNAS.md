@@ -58,6 +58,13 @@ Sentinela interpreta seu GRIB2/NetCDF. A interpretação só deve ser adicionada
 depois de validar variável, unidade, grade, calendário, rodada e licença do
 produto concreto.
 
+Na REDEMET, a chave é enviada no header `X-Api-Key`, nunca na URI persistida.
+Os contratos oficiais confirmados são `produtos/satelite/{ir|realcada|vis}`,
+`produtos/radar/{tipo}` e `produtos/stsc`. Radar também exige a área do radar;
+essa escolha depende do município/da cobertura aprovada e não é inferida pelo
+coletor. Respostas com caminhos de imagem continuam sendo evidência de produto,
+não precipitação numérica.
+
 Fontes primárias consultadas:
 
 - [CEMADEN PED — Swagger](https://sws.cemaden.gov.br/PED/api/ui/)

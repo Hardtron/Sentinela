@@ -89,6 +89,17 @@ def testa_ana_seco_nao_chama_rede():
     verifica("segredo" not in str(reqs), "senha ANA vazou no plano")
 
 
+def testa_redemet_usa_header():
+    req = requisicoes("REDEMET", {
+        "REDEMET_API_KEY": "segredo-de-teste",
+        "REDEMET_URLS": "https://api-redemet.decea.mil.br/produtos/stsc",
+    })[0]
+    verifica(req.cabecalhos.get("X-Api-Key") == "segredo-de-teste",
+             "REDEMET não usou X-Api-Key")
+    verifica("api_key" not in req.parametros and "segredo-de-teste" not in repr(req),
+             "chave REDEMET ficou na query/repr")
+
+
 def testa_token_ana_no_envelope_oficial():
     token = _token_ana(b'{"status":"200 OK","items":{"access_token":"abc"}}')
     verifica(token == "abc", "token no envelope items não foi encontrado")

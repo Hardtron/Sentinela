@@ -136,8 +136,9 @@ def _sgb(ambiente):
 
 def _redemet(ambiente):
     _exige(ambiente, "REDEMET_API_KEY", "REDEMET_URLS")
-    return [Requisicao("REDEMET", "radar-satelite", url,
-                       {"api_key": ambiente["REDEMET_API_KEY"]})
+    return [Requisicao(
+                "REDEMET", "radar-satelite", url,
+                cabecalhos={"X-Api-Key": ambiente["REDEMET_API_KEY"]})
             for url in _urls(ambiente, "REDEMET_URLS")]
 
 
