@@ -78,6 +78,7 @@ def testa_interface_fontes_externas():
         "o painel não soma estações, modelos ou provedores",
         "centro(s) de célula no recorte", "organizaProdutosRedemet",
         "IMERG · estimativa em grade", "produto.fuso", "Atualizar consulta",
+        "STSC adquirido", "PED sem coordenadas",
     ])
     _contem_todos(servidor.ROTAS, [
         "/api/fontes-externas", "/api/fontes-camadas",

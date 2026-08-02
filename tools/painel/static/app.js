@@ -1821,17 +1821,20 @@ async function ligaMapa() {
   const estacoesPed = new Set(cemaden.map((o) => o.codigo_externo)).size;
   const medidoCemaden = cemaden.map((o) => o.medido_em).filter(Boolean).sort().at(-1);
   const produtosRedemet = organizaProdutosRedemet(registrosCamada);
+  const stsc = registrosCamada.find((c) => c.provedor_codigo === "REDEMET"
+    && c.metadados?.produto === "stsc");
   const agora = Date.now();
   const resumo = el("mapa-resumo");
   if (resumo) resumo.innerHTML = [
     metrica("CEMADEN PED", estacoesPed || "sem dado",
-      estacoesPed ? `estações no recorte · dado mais recente ${dataLegivel(medidoCemaden)}`
+      estacoesPed ? `estações no payload · PED sem coordenadas · dado mais recente ${dataLegivel(medidoCemaden)}`
         : "o payload PED não fornece geometria; ausência está explícita"),
     metrica("IMERG", imerg ? imerg.metadados.amostras_grade.length : "sem dado",
       imerg ? `células de ${esc(imerg.metadados.resolucao || "resolução não informada")} · ${tempoAtras(idadeData(imerg.metadados.observado_de, agora))}`
         : "nenhuma grade válida armazenada"),
-    metrica("REDEMET", produtosRedemet.length || "sem dado",
-      produtosRedemet.length ? "produtos com quadros estruturados" : "aguardando aquisição no contrato atualizado"),
+    metrica("REDEMET", produtosRedemet.length + (stsc ? 1 : 0) || "sem dado",
+      produtosRedemet.length ? `${produtosRedemet.length} cartográficos${stsc ? " + STSC sem recorte piloto" : ""}`
+        : "aguardando aquisição no contrato atualizado"),
     metrica("Consulta do painel", dataLegivel(camadasFonte?.consultado_em),
       "snapshot armazenado · atualização manual", "texto"),
   ].join("");
@@ -1844,12 +1847,16 @@ async function ligaMapa() {
   const semAtalaia = !(atalaias?.features || []).length;
   const erros = [atalaias?.erro, ensaios?.erro, camadasFonte?.erro,
     observacoesFonte?.erro, recorte?.erro].filter(Boolean);
-  if (aviso && (semAtalaia || erros.length || !estacoesPed)) {
+  const limitacoes = [
+    ...erros,
+    ...(semAtalaia ? ["Nenhuma Atalaia com coordenada cadastrada; os pontos de ensaio são evidência de bancada/campanha."] : []),
+    ...(!estacoesPed ? ["Sem observações CEMADEN PED consultáveis no banco."]
+      : ["O CEMADEN PED forneceu códigos e acumulados, mas não coordenadas; os marcadores visíveis vêm do cadastro GIS separado."]),
+    ...(stsc ? [`REDEMET STSC adquirido (${stsc.metadados.quantidade_celulas_payload ?? "quantidade não informada"} células no payload nacional; instante ${stsc.metadados.instante_origem || "não informado"}), ainda sem recorte espacial versionado para o piloto.`] : []),
+  ];
+  if (aviso && limitacoes.length) {
     aviso.innerHTML = `<div class="aviso"><strong>Ausências e limitações desta consulta</strong><ul>
-      ${erros.map((e) => `<li>${esc(e)}</li>`).join("")}
-      ${semAtalaia ? `<li>Nenhuma Atalaia com coordenada cadastrada; os pontos de ensaio são evidência de bancada/campanha.</li>` : ""}
-      ${!estacoesPed ? `<li>Sem observações CEMADEN PED consultáveis no banco.</li>` : ""}
-      ${estacoesPed && !(estacoes?.features || []).length ? `<li>O PED retornou estações e acumulados, mas não coordenadas; elas não são inventadas no mapa.</li>` : ""}
+      ${limitacoes.map((e) => `<li>${esc(e)}</li>`).join("")}
       </ul></div>`;
   }
 }
