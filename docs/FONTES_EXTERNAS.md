@@ -70,6 +70,12 @@ operação tem validade curta, o coletor aceita `CEMADEN_PED_EMAIL` e
 `CEMADEN_PED_PASSWORD` no arquivo protegido e solicita um token no início da
 coleta. `CEMADEN_PED_TOKEN` existe somente como alternativa manual e expira;
 credenciais e corpo de autenticação não entram no plano, log, banco ou Git.
+No Home Server, a instalação sem eco é feita diretamente no terminal:
+
+```bash
+cd /DATA/Projects/Sentinela
+backend/venv/bin/python tools/configura_cemaden.py
+```
 
 Fontes primárias consultadas:
 

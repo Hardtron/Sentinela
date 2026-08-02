@@ -17,6 +17,7 @@ from fontes.repositorio import _revisao  # noqa: E402
 from fontes.contrato import Observacao  # noqa: E402
 from fontes.cli import coleta_requisicao  # noqa: E402
 from fontes.transporte import guarda_bruto, uri_publica  # noqa: E402
+from configura_cemaden import atualiza as atualiza_cemaden  # noqa: E402
 
 
 def verifica(condicao, mensagem):
@@ -43,6 +44,23 @@ def testa_bruto_atomico_e_deduplicado():
         verifica(caminho1 == caminho2 and hash1 == hash2, "bruto duplicado")
         verifica(caminho1.read_bytes() == resposta.dados, "bruto alterado")
         verifica(not list(caminho1.parent.glob(".aquisicao-*")), "temporário sobrou")
+
+
+def testa_configurador_cemaden_preserva_env_e_modo():
+    with tempfile.TemporaryDirectory() as pasta:
+        caminho = Path(pasta) / "fontes.env"
+        caminho.write_text("OUTRA_CHAVE=preservada\nCEMADEN_PED_TOKEN=antigo\n",
+                           encoding="utf-8")
+        atualiza_cemaden(caminho, {
+            "CEMADEN_PED_EMAIL": "conta@example.test",
+            "CEMADEN_PED_PASSWORD": "segredo",
+            "CEMADEN_PED_TOKEN": "",
+        })
+        texto = caminho.read_text(encoding="utf-8")
+        verifica("OUTRA_CHAVE=preservada" in texto, "configuração foi perdida")
+        verifica("CEMADEN_PED_TOKEN=\n" in texto, "token manual não foi removido")
+        verifica("CEMADEN_PED_PASSWORD=segredo" in texto, "senha não foi gravada")
+        verifica(caminho.stat().st_mode & 0o777 == 0o600, "modo não ficou 600")
 
 
 def testa_cemaden_com_fuso_explicito():
