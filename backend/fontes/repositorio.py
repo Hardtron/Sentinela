@@ -194,6 +194,7 @@ class Repositorio:
                 """, (conjunto_id, ativo_id,
                       conteudo.metadados.get("identificador", "ATIVO_BRUTO"),
                       json.dumps(conteudo.metadados, ensure_ascii=False)))
+                aceitos += cur.rowcount
             cur.execute("""
                 UPDATE fonte_ativo_bruto SET processado_em=now() WHERE id=%s
             """, (ativo_id,))

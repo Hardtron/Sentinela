@@ -209,7 +209,7 @@ def _nasa_imerg(ambiente, buscar):
             {"bbox": ",".join(str(x) for x in bbox), "bboxSR": "4326",
              "imageSR": "4326", "size": f"{largura},{altura}",
              "format": "tiff", "pixelType": "F32",
-             "interpolation": "RSP_NearestNeighbor", "noData": "-9999",
+             "interpolation": "RSP_NearestNeighbor",
              "mosaicRule": json.dumps({
                  "mosaicMethod": "esriMosaicLockRaster",
                  "lockRasterIds": [item["objectid"]]}, separators=(",", ":")),
