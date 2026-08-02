@@ -49,7 +49,7 @@ armazenamento; ultrapassar o teto envia a aquisição à quarentena.
 | NOAA GFS | NOMADS/filter, GRIB2 | aquisição de URL oficial parametrizada | variáveis, níveis, domínio e rodada |
 | REDEMET | API de produtos radar/satélite | ativo: 3 satélites, STSC e 2 produtos do radar São Roque | imagens permanecem contexto, sem conversão para chuva |
 | INMET | arquivos históricos e feeds oficiais | aquisição de URL oficial fixada | arquivo/feed escolhido; endpoint não é presumido |
-| NASA IMERG | CMR + HDF5 da coleção Early V07 | ativo: bruto global imutável + células da grade no perímetro IBGE | token Earthdata protegido |
+| NASA IMERG | ImageServer/GeoTIFF da coleção Early V07 | ativo: recorte raster imutável + células da grade no perímetro IBGE | canal oficial público, sem token |
 | CHIRPS | GeoTIFF/NetCDF/COG | aquisição de URL oficial fixada | produto e período; uso histórico |
 | NOAA GOES/GLM | NetCDF/cloud/CLASS | aquisição de URL oficial fixada | coleção/setor e processamento definidos |
 
@@ -87,17 +87,18 @@ Caraguatatuba nem converte refletividade em precipitação de superfície.
 ### NASA IMERG
 
 O produto fixado é `GPM_3IMERGHHE.07`, IMERG Early V07, precipitação em
-intervalos de 30 minutos. A cada ciclo, o coletor consulta o CMR, seleciona o
-granulo HTTPS mais recente, baixa e preserva o HDF5 original, lê a variável
-`Grid/precipitation` e mantém somente centros das células contidos no perímetro
-IBGE do piloto. Unidade, período e valores vêm do próprio arquivo; a origem CMR,
-o hash e o recorte ficam associados ao ativo.
+intervalos de 30 minutos. A cada ciclo, o coletor consulta o ImageServer oficial
+da NASA, bloqueia a exportação no `objectid` mais recente, alinha a caixa do
+perímetro à grade publicada de 0,1°, baixa e preserva o GeoTIFF e mantém somente
+centros das células contidos no perímetro IBGE do piloto. Instante, variável,
+resolução, URI, hash e recorte ficam associados ao ativo.
 
 No painel, esses valores aparecem como **centros de célula de uma estimativa em
 grade**, com faixa observada e idade. Não são pluviômetros, média municipal,
-calibração local ou regra de alerta. O HDF5 global é mantido para auditoria;
-dimensionamento e política de retenção ainda precisam ser definidos antes de
-uma operação prolongada.
+calibração local ou regra de alerta. O GeoTIFF recortado é mantido para
+auditoria; o canal público ImageServer evita depender do acesso autenticado ao
+arquivo global. O token Earthdata recebido permanece protegido, mas não é
+enviado nessa integração.
 
 No CEMADEN, o portal PED obtém um JWT no SGAA. Como o token observado em
 operação tem validade curta, o coletor aceita `CEMADEN_PED_EMAIL` e
@@ -195,6 +196,5 @@ Não podem ser preenchidos pelo projeto sem inventar responsabilidade:
 - critérios de interpretação e validação local dos produtos REDEMET;
 - coleção/latência e processamento para GOES/GLM e CHIRPS;
 - credenciais ANA quando o acesso for concedido;
-- retenção/dimensionamento dos granulos HDF5 IMERG;
 - licenças/atribuições aprovadas para redistribuição no painel público;
 - qualquer regra que combine fonte externa com telemetria local ou alarme.

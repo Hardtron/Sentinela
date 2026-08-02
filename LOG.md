@@ -36,9 +36,9 @@ apenas o apontamento.
 - A REDEMET passou a incluir os produtos `03km` e `maxcappi` do radar São
   Roque/SP, além de IR, realçada, VIS e STSC. As respostas reais confirmaram a
   disponibilidade dos dois produtos de radar.
-- O adaptador IMERG passou a descobrir o granulo Early V07 mais recente pelo
-  CMR, preservar o HDF5 bruto e extrair os centros da grade contidos no
-  perímetro IBGE, conservando unidade, período e proveniência.
+- O adaptador IMERG passou a fixar o raster Early V07 mais recente no
+  ImageServer oficial, preservar o GeoTIFF recortado e extrair os centros da
+  grade contidos no perímetro IBGE, conservando instante e proveniência.
 - O painel passou a expor quantidade e faixa das células IMERG, explicitamente
   como estimativa em grade sem soma, média municipal ou uso automático em
   alerta.
@@ -52,9 +52,8 @@ apenas o apontamento.
 
 ### Próximo
 
-1. Validar a leitura do HDF5 real e a persistência no Home Server.
-2. Dimensionar retenção dos granulos IMERG antes de operação prolongada.
-3. Configurar ANA somente após a liberação do cadastro e a seleção rastreável
+1. Validar a leitura do GeoTIFF real e a persistência no Home Server.
+2. Configurar ANA somente após a liberação do cadastro e a seleção rastreável
    das estações.
 
 ## 2026-08-01 (24) — Integração auditável de ações sobre alarmes

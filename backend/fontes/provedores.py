@@ -4,10 +4,8 @@ import io
 import json
 import math
 import os
-import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .contrato import (ConfiguracaoAusente, ConteudoNormalizado, ContratoInvalido,
@@ -19,7 +17,8 @@ CEMADEN_TOKEN_URL = ("https://sgaa.cemaden.gov.br/SGAA/rest/"
 ANA_BASE = "https://www.ana.gov.br/hidrowebservice/EstacoesTelemetricas"
 SGB_URL = ("https://geoportal.sgb.gov.br/server/rest/services/"
            "gestaoterritorial/risco/FeatureServer/0/query")
-NASA_IMERG_CMR = "https://cmr.earthdata.nasa.gov/search/granules.json"
+NASA_IMERG_SERVICO = ("https://gis.earthdata.nasa.gov/image/rest/services/"
+                      "GESDISC/GPM_3IMERGHHE/ImageServer")
 NASA_IMERG_COLECAO = "GPM_3IMERGHHE"
 NASA_IMERG_VERSAO = "07"
 RAIZ_BACKEND = Path(__file__).resolve().parents[1]
@@ -184,11 +183,10 @@ def _redemet(ambiente):
 
 
 def _nasa_imerg(ambiente, buscar):
-    """Descobre o granulo Early V07 mais recente e fixa o recorte aprovado."""
-    _exige(ambiente, "NASA_IMERG_AUTHORIZATION", "NASA_IMERG_CODIBGE")
+    """Exporta a grade Early V07 mais recente no recorte municipal aprovado."""
+    _exige(ambiente, "NASA_IMERG_CODIBGE")
     codibge = ambiente["NASA_IMERG_CODIBGE"].strip()
     recorte = _recorte_municipal(codibge)
-    cabecalhos = {"Authorization": ambiente["NASA_IMERG_AUTHORIZATION"]}
     metadados = {
         "colecao": NASA_IMERG_COLECAO,
         "versao": NASA_IMERG_VERSAO,
@@ -197,41 +195,73 @@ def _nasa_imerg(ambiente, buscar):
         "recorte_fonte": recorte["source"],
     }
     if buscar is None:
-        url = ("https://data.gesdisc.earthdata.nasa.gov/"
-               "[DESCOBERTO_SOMENTE_DURANTE_A_COLETA]")
+        url = ("https://gis.earthdata.nasa.gov/image/rest/directories/"
+               "arcgisoutput/[DESCOBERTO_SOMENTE_DURANTE_A_COLETA].tif")
     else:
-        descoberta = Requisicao(
-            "NASA_IMERG", "imerg", NASA_IMERG_CMR,
-            {"short_name": NASA_IMERG_COLECAO, "version": NASA_IMERG_VERSAO,
-             "sort_key": "-start_date", "page_size": "1",
-             "downloadable": "true"}, cabecalhos)
-        url, granulo = _granulo_imerg(buscar(descoberta).dados)
-        metadados.update(granulo)
-    return [Requisicao("NASA_IMERG", "imerg", url,
-                       cabecalhos=cabecalhos, metadados=metadados)]
+        item = _item_imerg(buscar(Requisicao(
+            "NASA_IMERG", "imerg", NASA_IMERG_SERVICO + "/query",
+            {"where": "1=1", "outFields": "objectid,stdtime,name,variable",
+             "orderByFields": "stdtime DESC", "resultRecordCount": "1",
+             "returnGeometry": "false", "f": "json"})).dados)
+        bbox, largura, altura = _grade_exportacao(recorte["geometry"])
+        exportacao = Requisicao(
+            "NASA_IMERG", "imerg", NASA_IMERG_SERVICO + "/exportImage",
+            {"bbox": ",".join(str(x) for x in bbox), "bboxSR": "4326",
+             "imageSR": "4326", "size": f"{largura},{altura}",
+             "format": "tiff", "pixelType": "F32",
+             "interpolation": "RSP_NearestNeighbor", "noData": "-9999",
+             "mosaicRule": json.dumps({
+                 "mosaicMethod": "esriMosaicLockRaster",
+                 "lockRasterIds": [item["objectid"]]}, separators=(",", ":")),
+             "f": "json"})
+        url, imagem = _imagem_imerg(buscar(exportacao).dados)
+        metadados.update(item)
+        metadados.update(imagem)
+    return [Requisicao("NASA_IMERG", "imerg", url, metadados=metadados)]
 
 
-def _granulo_imerg(dados):
+def _item_imerg(dados):
     try:
         objeto = json.loads(dados)
-        entrada = objeto["feed"]["entry"][0]
+        item = objeto["features"][0]["attributes"]
     except (UnicodeDecodeError, json.JSONDecodeError, KeyError, IndexError,
             TypeError) as erro:
-        raise ContratoInvalido("CMR não retornou granulo IMERG reconhecível") from erro
-    candidatos = [
-        item.get("href") for item in entrada.get("links", [])
-        if item.get("rel", "").endswith("/data#")
-        and str(item.get("href", "")).startswith(
-            "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/")
-    ]
-    if not candidatos:
-        raise ContratoInvalido("CMR não retornou link HTTPS do granulo IMERG")
-    return candidatos[0], {
-        "granulo_id": entrada.get("id"),
-        "granulo_titulo": entrada.get("title"),
-        "inicio_cmr": entrada.get("time_start"),
-        "fim_cmr": entrada.get("time_end"),
-    }
+        raise ContratoInvalido("ImageServer não retornou item IMERG") from erro
+    if not item.get("objectid") or item.get("stdtime") is None:
+        raise ContratoInvalido("item IMERG sem objectid ou stdtime")
+    observado = datetime.fromtimestamp(
+        float(item["stdtime"]) / 1000, timezone.utc).isoformat()
+    return {"objectid": int(item["objectid"]), "nome_item": item.get("name"),
+            "variavel_item": item.get("variable"),
+            "observado_de": observado, "observado_ate": observado}
+
+
+def _imagem_imerg(dados):
+    try:
+        objeto = json.loads(dados)
+        url = objeto["href"]
+        largura, altura = int(objeto["width"]), int(objeto["height"])
+        extensao = objeto["extent"]
+        bbox = [float(extensao[x]) for x in ("xmin", "ymin", "xmax", "ymax")]
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError,
+            ValueError) as erro:
+        raise ContratoInvalido("ImageServer não retornou exportação IMERG") from erro
+    prefixo = ("https://gis.earthdata.nasa.gov/image/rest/directories/"
+               "arcgisoutput/")
+    if not str(url).startswith(prefixo) or largura <= 0 or altura <= 0:
+        raise ContratoInvalido("exportação IMERG retornou URI ou dimensão inválida")
+    return url, {"largura": largura, "altura": altura, "bbox_exportado": bbox}
+
+
+def _grade_exportacao(geometria):
+    pontos = geometria["coordinates"][0]
+    minx = math.floor(min(p[0] for p in pontos) * 10) / 10
+    miny = math.floor(min(p[1] for p in pontos) * 10) / 10
+    maxx = math.ceil(max(p[0] for p in pontos) * 10) / 10
+    maxy = math.ceil(max(p[1] for p in pontos) * 10) / 10
+    largura = round((maxx - minx) / 0.1)
+    altura = round((maxy - miny) / 0.1)
+    return [minx, miny, maxx, maxy], largura, altura
 
 
 def _conjunto(provedor):
@@ -352,24 +382,23 @@ def _recorte_municipal(codibge):
 
 def _normaliza_imerg(requisicao, dados, ambiente):
     try:
-        import h5py
+        import tifffile
     except ImportError as erro:
-        raise ConfiguracaoAusente("h5py não instalado no ambiente do backend") from erro
+        raise ConfiguracaoAusente("tifffile não instalado no backend") from erro
     codibge = requisicao.metadados.get("codibge") or ambiente.get(
         "NASA_IMERG_CODIBGE")
     recorte = _recorte_municipal(str(codibge or ""))
     try:
-        with h5py.File(io.BytesIO(dados), "r") as arquivo:
-            grupo = arquivo["Grid"]
-            longitudes = [float(x) for x in grupo["lon"][:]]
-            latitudes = [float(x) for x in grupo["lat"][:]]
-            grade = grupo["precipitation"]
-            amostras, unidade = _amostras_grade(
-                grade, longitudes, latitudes,
-                recorte["geometry"]["coordinates"][0])
+        grade = tifffile.imread(io.BytesIO(dados))
+        amostras, resolucao = _amostras_tiff(
+            grade, requisicao.metadados,
+            recorte["geometry"]["coordinates"][0])
     except (KeyError, OSError, TypeError, ValueError) as erro:
-        raise ContratoInvalido("IMERG HDF5 não contém a grade esperada") from erro
-    inicio, fim = _periodo_granulo(requisicao)
+        raise ContratoInvalido("IMERG GeoTIFF não contém a grade esperada") from erro
+    inicio = requisicao.metadados.get("observado_de")
+    fim = requisicao.metadados.get("observado_ate")
+    if not inicio or not fim:
+        raise ContratoInvalido("exportação IMERG sem instante observado")
     fonte = recorte.get("source", {})
     return ConteudoNormalizado(metadados={
         "normalizado": True,
@@ -377,10 +406,10 @@ def _normaliza_imerg(requisicao, dados, ambiente):
         "classe": "ESTIMATIVA_GRADE",
         "produto": f"{NASA_IMERG_COLECAO}.{NASA_IMERG_VERSAO}",
         "variavel_origem": "precipitation",
-        "unidade_origem": unidade,
-        "observado_de": inicio.isoformat(),
-        "observado_ate": fim.isoformat(),
-        "resolucao": "0,1 grau (coordenadas da grade do arquivo)",
+        "unidade_origem": "mm/hr",
+        "observado_de": inicio,
+        "observado_ate": fim,
+        "resolucao": resolucao,
         "itens_recebidos": len(amostras),
         "amostras_grade": amostras,
         "recorte": {
@@ -397,53 +426,22 @@ def _normaliza_imerg(requisicao, dados, ambiente):
     })
 
 
-def _amostras_grade(grade, longitudes, latitudes, poligono):
-    forma = tuple(grade.shape)
-    eixo_lon, eixo_lat = _eixos_grade(forma, longitudes, latitudes)
-    unidade = _atributo_texto(grade.attrs.get("units"))
-    if not unidade:
-        raise ContratoInvalido("IMERG sem unidade no dataset precipitation")
-    preenchimento = grade.attrs.get("_FillValue")
-    if preenchimento is None:
-        preenchimento = getattr(grade, "fillvalue", None)
+def _amostras_tiff(grade, metadados, poligono):
+    altura, largura = tuple(grade.shape)
+    if (altura, largura) != (metadados.get("altura"), metadados.get("largura")):
+        raise ContratoInvalido("dimensão GeoTIFF diverge da exportação")
+    minx, miny, maxx, maxy = metadados["bbox_exportado"]
+    passo_x, passo_y = (maxx - minx) / largura, (maxy - miny) / altura
     saida = []
-    for ilon, ilat, lon, lat in _centros_no_recorte(
-            longitudes, latitudes, poligono):
-        indice = [0] * len(forma)
-        indice[eixo_lon], indice[eixo_lat] = ilon, ilat
-        valor = float(grade[tuple(indice)])
-        if _valor_grade_valido(valor, preenchimento):
-            saida.append({"longitude": lon, "latitude": lat, "valor": valor})
-    return saida, unidade
-
-
-def _eixos_grade(forma, longitudes, latitudes):
-    try:
-        eixo_lon = forma.index(len(longitudes))
-        eixo_lat = forma.index(len(latitudes))
-    except ValueError as erro:
-        raise ContratoInvalido(
-            "dimensões lon/lat não correspondem à precipitação") from erro
-    if eixo_lon == eixo_lat:
-        raise ContratoInvalido("eixos lon/lat ambíguos na grade IMERG")
-    return eixo_lon, eixo_lat
-
-
-def _centros_no_recorte(longitudes, latitudes, poligono):
-    minx = min(p[0] for p in poligono)
-    maxx = max(p[0] for p in poligono)
-    miny = min(p[1] for p in poligono)
-    maxy = max(p[1] for p in poligono)
-    for ilon, lon in enumerate(longitudes):
-        if not minx <= lon <= maxx:
-            continue
-        for ilat, lat in enumerate(latitudes):
-            if _centro_pertence(lon, lat, miny, maxy, poligono):
-                yield ilon, ilat, lon, lat
-
-
-def _centro_pertence(lon, lat, miny, maxy, poligono):
-    return miny <= lat <= maxy and _ponto_no_poligono(lon, lat, poligono)
+    for linha in range(altura):
+        lat = maxy - (linha + 0.5) * passo_y
+        for coluna in range(largura):
+            lon = minx + (coluna + 0.5) * passo_x
+            valor = float(grade[linha, coluna])
+            if (_ponto_no_poligono(lon, lat, poligono)
+                    and _valor_grade_valido(valor, -9999)):
+                saida.append({"longitude": lon, "latitude": lat, "valor": valor})
+    return saida, f"{passo_x:g}° × {passo_y:g}°"
 
 
 def _valor_grade_valido(valor, preenchimento):
@@ -451,18 +449,6 @@ def _valor_grade_valido(valor, preenchimento):
         return False
     return preenchimento is None or not math.isclose(
         valor, float(preenchimento), rel_tol=0, abs_tol=1e-6)
-
-
-def _atributo_texto(valor):
-    if valor is None:
-        return None
-    if isinstance(valor, bytes):
-        return valor.decode("utf-8", "replace")
-    if hasattr(valor, "tolist"):
-        valor = valor.tolist()
-        if isinstance(valor, bytes):
-            return valor.decode("utf-8", "replace")
-    return str(valor)
 
 
 def _ponto_no_poligono(x, y, poligono):
@@ -476,33 +462,3 @@ def _ponto_no_poligono(x, y, poligono):
             dentro = not dentro
         anterior = atual
     return dentro
-
-
-def _periodo_granulo(requisicao):
-    inicio = requisicao.metadados.get("inicio_cmr")
-    fim = requisicao.metadados.get("fim_cmr")
-    if inicio and fim:
-        try:
-            return (_iso_utc(inicio), _iso_utc(fim))
-        except ValueError:
-            pass
-    nome = Path(urlsplit(requisicao.url).path).name
-    achou = re.search(
-        r"\.(\d{8})-S(\d{6})-E(\d{6})\.", nome)
-    if not achou:
-        raise ContratoInvalido("IMERG sem período reconhecível no granulo")
-    data, inicio_h, fim_h = achou.groups()
-    primeiro = datetime.strptime(data + inicio_h, "%Y%m%d%H%M%S").replace(
-        tzinfo=timezone.utc)
-    ultimo = datetime.strptime(data + fim_h, "%Y%m%d%H%M%S").replace(
-        tzinfo=timezone.utc)
-    if ultimo < primeiro:
-        ultimo += timedelta(days=1)
-    return primeiro, ultimo
-
-
-def _iso_utc(valor):
-    instante = datetime.fromisoformat(str(valor).replace("Z", "+00:00"))
-    if instante.tzinfo is None:
-        raise ValueError("timestamp sem fuso")
-    return instante.astimezone(timezone.utc)

@@ -13,7 +13,8 @@ RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ / "backend"))
 
 from fontes.contrato import ConfiguracaoAusente, Requisicao, Resposta  # noqa: E402
-from fontes.provedores import (_granulo_imerg, _token_ana, _token_cemaden, normaliza,
+from fontes.provedores import (_imagem_imerg, _item_imerg, _token_ana,
+                               _token_cemaden, normaliza,
                                requisicoes)  # noqa: E402
 from fontes.repositorio import _revisao  # noqa: E402
 from fontes.contrato import Observacao  # noqa: E402
@@ -162,73 +163,55 @@ def testa_redemet_usa_header():
 
 
 def testa_imerg_descobre_granulo_sem_expor_token():
-    cmr = json.dumps({"feed": {"entry": [{
-        "id": "G-TESTE", "title": "granulo-teste",
-        "time_start": "2026-08-01T19:30:00Z",
-        "time_end": "2026-08-01T19:59:59Z",
-        "links": [{
-            "rel": "http://esipfed.org/ns/fedsearch/1.1/data#",
-            "href": ("https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/"
-                     "GPM_3IMERGHHE.07/2026/213/granulo.HDF5"),
-        }],
-    }]}}).encode()
-    url, metadados = _granulo_imerg(cmr)
-    verifica(url.endswith("granulo.HDF5"), "link HTTPS do granulo não foi usado")
-    verifica(metadados["granulo_id"] == "G-TESTE", "id CMR não foi preservado")
+    consulta = json.dumps({"features": [{"attributes": {
+        "objectid": 123, "stdtime": 1785600000000,
+        "name": "item-teste", "variable": "precipitation",
+    }}]}).encode()
+    item = _item_imerg(consulta)
+    verifica(item["objectid"] == 123, "item mais recente não foi identificado")
+    exportacao = json.dumps({
+        "href": ("https://gis.earthdata.nasa.gov/image/rest/directories/"
+                 "arcgisoutput/imerg-teste.tif"),
+        "width": 6, "height": 4,
+        "extent": {"xmin": -45.8, "ymin": -23.8,
+                   "xmax": -45.2, "ymax": -23.4},
+    }).encode()
+    url, metadados = _imagem_imerg(exportacao)
+    verifica(url.endswith("imerg-teste.tif"), "GeoTIFF exportado não foi usado")
+    verifica(metadados["largura"] == 6, "dimensão exportada não foi preservada")
     ambiente = {
         "NASA_IMERG_AUTHORIZATION": "Bearer segredo-de-teste",
         "NASA_IMERG_CODIBGE": "3510500",
     }
-    req = requisicoes(
-        "NASA_IMERG", ambiente,
-        buscar=lambda _: Resposta("https://cmr.test", 200,
-                                  "application/json", cmr))[0]
+    def buscar(req):
+        dados = consulta if req.url.endswith("/query") else exportacao
+        return Resposta(req.url, 200, "application/json", dados)
+
+    req = requisicoes("NASA_IMERG", ambiente, buscar=buscar)[0]
     verifica(req.url == url and req.metadados["codibge"] == "3510500",
-             "granulo não ficou associado ao recorte aprovado")
+             "GeoTIFF não ficou associado ao recorte aprovado")
     verifica("segredo-de-teste" not in repr(req), "token NASA vazou no plano")
+    verifica(not req.cabecalhos, "token foi enviado a serviço público desnecessariamente")
 
 
 def testa_imerg_recorta_centros_sem_virar_pluviometro():
-    class Vetor:
-        def __init__(self, valores):
-            self.valores = valores
-
-        def __getitem__(self, chave):
-            return self.valores[chave]
-
     class Grade:
-        shape = (1, 6, 5)
-        attrs = {"units": b"mm/hr", "_FillValue": -9999.9}
-        fillvalue = -9999.9
+        shape = (4, 6)
 
         def __getitem__(self, indice):
-            _, ilon, ilat = indice
-            return ilon + ilat / 10
+            linha, coluna = indice
+            return linha + coluna / 10
 
-    class Arquivo:
-        grupo = {
-            "lon": Vetor([-45.75, -45.65, -45.55, -45.45, -45.35, -45.25]),
-            "lat": Vetor([-23.80, -23.70, -23.60, -23.50, -23.40]),
-            "precipitation": Grade(),
-        }
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            pass
-
-        def __getitem__(self, chave):
-            return self.grupo if chave == "Grid" else None
-
-    h5py = types.SimpleNamespace(File=lambda *_args, **_kwargs: Arquivo())
+    tifffile = types.SimpleNamespace(imread=lambda *_args, **_kwargs: Grade())
     req = Requisicao(
         "NASA_IMERG", "imerg",
-        ("https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/"
-         "3B-HHR-E.MS.MRG.3IMERG.20260801-S193000-E195959.1170.V07C.HDF5"),
-        metadados={"codibge": "3510500"})
-    res = Resposta(req.url, 200, "application/x-hdf5", b"hdf5-teste")
-    with patch.dict(sys.modules, {"h5py": h5py}):
+        "https://gis.earthdata.nasa.gov/image/rest/directories/arcgisoutput/x.tif",
+        metadados={"codibge": "3510500", "largura": 6, "altura": 4,
+                   "bbox_exportado": [-45.8, -23.8, -45.2, -23.4],
+                   "observado_de": "2026-08-01T19:30:00+00:00",
+                   "observado_ate": "2026-08-01T19:30:00+00:00"})
+    res = Resposta(req.url, 200, "image/tiff", b"tiff-teste")
+    with patch.dict(sys.modules, {"tifffile": tifffile}):
         conteudo = normaliza(req, res, {})
     verifica(conteudo.metadados["normalizado"] is True,
              "grade IMERG válida não foi reconhecida")
