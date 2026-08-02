@@ -41,7 +41,7 @@ armazenamento; ultrapassar o teto envia a aquisição à quarentena.
 
 | Fonte | Contrato oficial verificado | Estado no coletor | Pré-condição externa |
 |---|---|---|---|
-| CEMADEN PED | REST, JSON/CSV/XML, token; acumulados 1–120 h | bruto + normalização dos acumulados | token, município/estação e fuso explícito |
+| CEMADEN PED | REST, JSON/CSV/XML, JWT do SGAA; acumulados 1–120 h | bruto + normalização dos acumulados | conta, município/estação e fuso explícito |
 | ANA HidroWebService | REST JSON, OAuth/JWT, inventário e séries | bruto auditável; normalização aguarda amostra real validada | cadastro, estações e intervalo |
 | SGB Setorização de Risco | ArcGIS FeatureServer/GeoJSON | bruto + feições no mapa, sem reinterpretar risco | código IBGE/recorte definido |
 | INPE MERGE/GPM | HTTPS, produtos GRIB2 | aquisição de URLs oficiais fixadas | produto/arquivo e recorte operacional |
@@ -65,9 +65,16 @@ essa escolha depende do município/da cobertura aprovada e não é inferida pelo
 coletor. Respostas com caminhos de imagem continuam sendo evidência de produto,
 não precipitação numérica.
 
+No CEMADEN, o portal PED obtém um JWT no SGAA. Como o token observado em
+operação tem validade curta, o coletor aceita `CEMADEN_PED_EMAIL` e
+`CEMADEN_PED_PASSWORD` no arquivo protegido e solicita um token no início da
+coleta. `CEMADEN_PED_TOKEN` existe somente como alternativa manual e expira;
+credenciais e corpo de autenticação não entram no plano, log, banco ou Git.
+
 Fontes primárias consultadas:
 
 - [CEMADEN PED — Swagger](https://sws.cemaden.gov.br/PED/api/ui/)
+- [CEMADEN SGAA — emissão de token](https://sgaa.cemaden.gov.br/SGAA/api/ui/)
 - [ANA HidroWebService — Swagger](https://www.ana.gov.br/hidrowebservice/swagger-ui/index.html)
 - [SGB — FeatureServer da Setorização de Risco](https://geoportal.sgb.gov.br/server/rest/services/gestaoterritorial/risco/FeatureServer/0)
 - [CPTEC/INPE — MERGE/GPM](https://ftp.cptec.inpe.br/modelos/tempo/MERGE/GPM/)

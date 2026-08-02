@@ -11,7 +11,8 @@ RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ / "backend"))
 
 from fontes.contrato import ConfiguracaoAusente, Requisicao, Resposta  # noqa: E402
-from fontes.provedores import _token_ana, normaliza, requisicoes  # noqa: E402
+from fontes.provedores import (_token_ana, _token_cemaden, normaliza,
+                               requisicoes)  # noqa: E402
 from fontes.repositorio import _revisao  # noqa: E402
 from fontes.contrato import Observacao  # noqa: E402
 from fontes.cli import coleta_requisicao  # noqa: E402
@@ -69,6 +70,46 @@ def testa_cemaden_recusa_fuso_ausente():
     except ConfiguracaoAusente:
         return
     raise AssertionError("CEMADEN aceitou data sem política de fuso")
+
+
+def testa_cemaden_renova_token_sem_vazar_credenciais():
+    ambiente = {
+        "CEMADEN_PED_EMAIL": "conta@example.test",
+        "CEMADEN_PED_PASSWORD": "segredo-de-teste",
+        "CEMADEN_CODIBGE": "3510500",
+    }
+    recebida = {}
+
+    def buscar(req):
+        recebida["req"] = req
+        return Resposta(req.url, 201, "application/json",
+                        b'{"timeToExp":"14400","token":"jwt-teste"}')
+
+    req = requisicoes("CEMADEN", ambiente, buscar=buscar)[0]
+    autenticacao = recebida["req"]
+    verifica(autenticacao.metodo == "POST", "SGAA não recebeu POST")
+    verifica(autenticacao.url.endswith("/controle-token/tokens"),
+             "endpoint SGAA incorreto")
+    verifica(req.cabecalhos.get("token") == "jwt-teste",
+             "token SGAA não chegou à requisição PED")
+    verifica("segredo-de-teste" not in repr(autenticacao),
+             "senha CEMADEN vazou na representação da requisição")
+
+
+def testa_cemaden_seco_nao_autentica():
+    ambiente = {
+        "CEMADEN_PED_EMAIL": "conta@example.test",
+        "CEMADEN_PED_PASSWORD": "segredo-de-teste",
+        "CEMADEN_CODIBGE": "3510500",
+    }
+    req = requisicoes("CEMADEN", ambiente, buscar=None)[0]
+    verifica("segredo-de-teste" not in repr(req),
+             "senha CEMADEN vazou no planejamento seco")
+
+
+def testa_token_cemaden_no_contrato_oficial():
+    token = _token_cemaden(b'{"timeToExp":"14400","token":"abc"}')
+    verifica(token == "abc", "token CEMADEN não foi encontrado")
 
 
 def testa_sgb_exige_recorte():

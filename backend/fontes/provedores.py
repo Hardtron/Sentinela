@@ -9,6 +9,8 @@ from .contrato import (ConfiguracaoAusente, ConteudoNormalizado, ContratoInvalid
                        Estacao, Feicao, Observacao, Requisicao)
 
 CEMADEN_BASE = "https://sws.cemaden.gov.br/PED/rest"
+CEMADEN_TOKEN_URL = ("https://sgaa.cemaden.gov.br/SGAA/rest/"
+                     "controle-token/tokens")
 ANA_BASE = "https://www.ana.gov.br/hidrowebservice/EstacoesTelemetricas"
 SGB_URL = ("https://geoportal.sgb.gov.br/server/rest/services/"
            "gestaoterritorial/risco/FeatureServer/0/query")
@@ -38,7 +40,7 @@ def requisicoes(provedor, ambiente=None, buscar=None):
     """Constrói requisições somente depois de validar credencial e recorte."""
     ambiente = os.environ if ambiente is None else ambiente
     if provedor == "CEMADEN":
-        return _cemaden(ambiente)
+        return _cemaden(ambiente, buscar)
     if provedor == "ANA":
         return _ana(ambiente, buscar)
     if provedor == "SGB":
@@ -55,8 +57,25 @@ def requisicoes(provedor, ambiente=None, buscar=None):
     raise ConfiguracaoAusente(f"provedor desconhecido: {provedor}")
 
 
-def _cemaden(ambiente):
-    _exige(ambiente, "CEMADEN_PED_TOKEN")
+def _cemaden(ambiente, buscar):
+    token = ambiente.get("CEMADEN_PED_TOKEN")
+    email = ambiente.get("CEMADEN_PED_EMAIL")
+    senha = ambiente.get("CEMADEN_PED_PASSWORD")
+    if email or senha:
+        _exige(ambiente, "CEMADEN_PED_EMAIL", "CEMADEN_PED_PASSWORD")
+        if buscar is None:
+            token = "[OBTIDO_SOMENTE_DURANTE_A_COLETA]"
+        else:
+            corpo = json.dumps({"email": email, "password": senha}).encode()
+            autenticacao = Requisicao(
+                "CEMADEN", "acumulados-recentes", CEMADEN_TOKEN_URL,
+                cabecalhos={"Content-Type": "application/json"},
+                metodo="POST", corpo=corpo)
+            token = _token_cemaden(buscar(autenticacao).dados)
+    if not token:
+        raise ConfiguracaoAusente(
+            "falta CEMADEN_PED_TOKEN ou o par "
+            "CEMADEN_PED_EMAIL/CEMADEN_PED_PASSWORD")
     parametros = {"formato": "JSON"}
     if ambiente.get("CEMADEN_CODIBGE"):
         parametros["codibge"] = ambiente["CEMADEN_CODIBGE"]
@@ -68,7 +87,18 @@ def _cemaden(ambiente):
     return [Requisicao(
         "CEMADEN", "acumulados-recentes",
         f"{CEMADEN_BASE}/pcds-acum/acumulados-recentes",
-        parametros, {"token": ambiente["CEMADEN_PED_TOKEN"]})]
+        parametros, {"token": token})]
+
+
+def _token_cemaden(dados):
+    try:
+        objeto = json.loads(dados)
+    except (UnicodeDecodeError, json.JSONDecodeError) as erro:
+        raise ContratoInvalido("autenticação CEMADEN não retornou JSON") from erro
+    if not isinstance(objeto, dict) or not objeto.get("token"):
+        raise ContratoInvalido(
+            "resposta de autenticação CEMADEN sem token reconhecível")
+    return str(objeto["token"])
 
 
 def _ana(ambiente, buscar):
