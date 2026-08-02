@@ -44,8 +44,7 @@ def coleta_requisicao(requisicao, repositorio, buscar=busca, guardar=guarda_brut
             return "SEM_NOVIDADE", 0
         conteudo = normaliza(requisicao, resposta)
         aceitos = repositorio.normaliza(conjunto_id, ativo_id, conteudo)
-        recebidos = (len(conteudo.observacoes) or len(conteudo.feicoes)
-                     or len(conteudo.estacoes))
+        recebidos = _itens_recebidos(conteudo)
         # Reimportação normalizada idempotente não é rejeição de contrato.
         repositorio.termina(execucao_id, "SUCESSO", recebidos, aceitos,
                             0, resposta.status)
@@ -110,6 +109,13 @@ def _executa(plano):
                   f"{estado}; {aceitos} item(ns) normalizado(s)")
             falhas += estado in {"QUARENTENA", "FALHA"}
     return 1 if falhas else 0
+
+
+def _itens_recebidos(conteudo):
+    contagens = (len(conteudo.observacoes), len(conteudo.feicoes),
+                 len(conteudo.estacoes),
+                 int(conteudo.metadados.get("itens_recebidos", 0)))
+    return next((total for total in contagens if total), 0)
 
 
 def main(argv=None):

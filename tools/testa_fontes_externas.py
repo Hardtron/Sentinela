@@ -4,14 +4,16 @@
 import json
 import sys
 import tempfile
+import types
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ / "backend"))
 
 from fontes.contrato import ConfiguracaoAusente, Requisicao, Resposta  # noqa: E402
-from fontes.provedores import (_token_ana, _token_cemaden, normaliza,
+from fontes.provedores import (_granulo_imerg, _token_ana, _token_cemaden, normaliza,
                                requisicoes)  # noqa: E402
 from fontes.repositorio import _revisao  # noqa: E402
 from fontes.contrato import Observacao  # noqa: E402
@@ -157,6 +159,85 @@ def testa_redemet_usa_header():
              "REDEMET não usou X-Api-Key")
     verifica("api_key" not in req.parametros and "segredo-de-teste" not in repr(req),
              "chave REDEMET ficou na query/repr")
+
+
+def testa_imerg_descobre_granulo_sem_expor_token():
+    cmr = json.dumps({"feed": {"entry": [{
+        "id": "G-TESTE", "title": "granulo-teste",
+        "time_start": "2026-08-01T19:30:00Z",
+        "time_end": "2026-08-01T19:59:59Z",
+        "links": [{
+            "rel": "http://esipfed.org/ns/fedsearch/1.1/data#",
+            "href": ("https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/"
+                     "GPM_3IMERGHHE.07/2026/213/granulo.HDF5"),
+        }],
+    }]}}).encode()
+    url, metadados = _granulo_imerg(cmr)
+    verifica(url.endswith("granulo.HDF5"), "link HTTPS do granulo não foi usado")
+    verifica(metadados["granulo_id"] == "G-TESTE", "id CMR não foi preservado")
+    ambiente = {
+        "NASA_IMERG_AUTHORIZATION": "Bearer segredo-de-teste",
+        "NASA_IMERG_CODIBGE": "3510500",
+    }
+    req = requisicoes(
+        "NASA_IMERG", ambiente,
+        buscar=lambda _: Resposta("https://cmr.test", 200,
+                                  "application/json", cmr))[0]
+    verifica(req.url == url and req.metadados["codibge"] == "3510500",
+             "granulo não ficou associado ao recorte aprovado")
+    verifica("segredo-de-teste" not in repr(req), "token NASA vazou no plano")
+
+
+def testa_imerg_recorta_centros_sem_virar_pluviometro():
+    class Vetor:
+        def __init__(self, valores):
+            self.valores = valores
+
+        def __getitem__(self, chave):
+            return self.valores[chave]
+
+    class Grade:
+        shape = (1, 6, 5)
+        attrs = {"units": b"mm/hr", "_FillValue": -9999.9}
+        fillvalue = -9999.9
+
+        def __getitem__(self, indice):
+            _, ilon, ilat = indice
+            return ilon + ilat / 10
+
+    class Arquivo:
+        grupo = {
+            "lon": Vetor([-45.75, -45.65, -45.55, -45.45, -45.35, -45.25]),
+            "lat": Vetor([-23.80, -23.70, -23.60, -23.50, -23.40]),
+            "precipitation": Grade(),
+        }
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def __getitem__(self, chave):
+            return self.grupo if chave == "Grid" else None
+
+    h5py = types.SimpleNamespace(File=lambda *_args, **_kwargs: Arquivo())
+    req = Requisicao(
+        "NASA_IMERG", "imerg",
+        ("https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/"
+         "3B-HHR-E.MS.MRG.3IMERG.20260801-S193000-E195959.1170.V07C.HDF5"),
+        metadados={"codibge": "3510500"})
+    res = Resposta(req.url, 200, "application/x-hdf5", b"hdf5-teste")
+    with patch.dict(sys.modules, {"h5py": h5py}):
+        conteudo = normaliza(req, res, {})
+    verifica(conteudo.metadados["normalizado"] is True,
+             "grade IMERG válida não foi reconhecida")
+    verifica(conteudo.metadados["observado_de"].startswith("2026-08-01T19:30"),
+             "início do granulo foi perdido")
+    verifica(conteudo.metadados["amostras_grade"],
+             "nenhum centro de célula do município foi preservado")
+    verifica(not conteudo.observacoes and not conteudo.estacoes,
+             "estimativa IMERG foi convertida em pluviômetro")
 
 
 def testa_token_ana_no_envelope_oficial():

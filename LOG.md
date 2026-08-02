@@ -21,6 +21,42 @@ apenas o apontamento.
 
 ---
 
+## 2026-08-01 (25) — Recorte piloto e fontes meteorológicas operacionais
+
+**Fase:** 3 · **Duração:** média
+
+### Feito
+
+- Caraguatatuba/SP foi fixada como município-piloto (`3510500`), com o
+  perímetro mínimo oficial do IBGE versionado e identificado como recorte de
+  aquisição, não como setor de risco.
+- A camada oficial de Setorização de Risco do SGB foi consultada por código e
+  nome; não há feições publicadas para Caraguatatuba. A integração permanece
+  desativada para não representar lista vazia como cobertura.
+- A REDEMET passou a incluir os produtos `03km` e `maxcappi` do radar São
+  Roque/SP, além de IR, realçada, VIS e STSC. As respostas reais confirmaram a
+  disponibilidade dos dois produtos de radar.
+- O adaptador IMERG passou a descobrir o granulo Early V07 mais recente pelo
+  CMR, preservar o HDF5 bruto e extrair os centros da grade contidos no
+  perímetro IBGE, conservando unidade, período e proveniência.
+- O painel passou a expor quantidade e faixa das células IMERG, explicitamente
+  como estimativa em grade sem soma, média municipal ou uso automático em
+  alerta.
+
+### Decidido
+
+- Radar, satélite e IMERG são camadas contextuais independentes. Não alteram
+  alarmes nem limiares e não substituem a rede pluviométrica observacional.
+- Fonte oficial sem dado para o piloto permanece uma lacuna visível; resposta
+  vazia não encerra a pendência.
+
+### Próximo
+
+1. Validar a leitura do HDF5 real e a persistência no Home Server.
+2. Dimensionar retenção dos granulos IMERG antes de operação prolongada.
+3. Configurar ANA somente após a liberação do cadastro e a seleção rastreável
+   das estações.
+
 ## 2026-08-01 (24) — Integração auditável de ações sobre alarmes
 
 **Fase:** 3 · **Duração:** curta

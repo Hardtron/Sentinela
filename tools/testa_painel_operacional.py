@@ -70,6 +70,7 @@ def testa_interface_fontes_externas():
     assert 'api("/api/fontes-observacoes")' in js
     assert 'api("/api/gis/fontes-contexto")' in js
     assert "o painel não soma estações, modelos ou provedores" in js
+    assert "centro(s) de célula no recorte" in js
     assert "/api/fontes-externas" in servidor.ROTAS
 
 

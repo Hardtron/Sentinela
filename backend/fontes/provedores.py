@@ -1,8 +1,13 @@
 """Adaptadores finos para contratos oficiais; recortes nunca são presumidos."""
 
+import io
 import json
+import math
 import os
-from datetime import datetime
+import re
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .contrato import (ConfiguracaoAusente, ConteudoNormalizado, ContratoInvalido,
@@ -14,9 +19,13 @@ CEMADEN_TOKEN_URL = ("https://sgaa.cemaden.gov.br/SGAA/rest/"
 ANA_BASE = "https://www.ana.gov.br/hidrowebservice/EstacoesTelemetricas"
 SGB_URL = ("https://geoportal.sgb.gov.br/server/rest/services/"
            "gestaoterritorial/risco/FeatureServer/0/query")
+NASA_IMERG_CMR = "https://cmr.earthdata.nasa.gov/search/granules.json"
+NASA_IMERG_COLECAO = "GPM_3IMERGHHE"
+NASA_IMERG_VERSAO = "07"
+RAIZ_BACKEND = Path(__file__).resolve().parents[1]
 PROVEDORES_ARQUIVO = {
     "INPE_MERGE", "INPE_WRF", "NOAA_GFS", "INMET",
-    "NASA_IMERG", "CHIRPS", "NOAA_GOES",
+    "CHIRPS", "NOAA_GOES",
 }
 INTERVALOS_ANA = {
     "MINUTO_5", "MINUTO_10", "MINUTO_15", "MINUTO_30",
@@ -47,6 +56,8 @@ def requisicoes(provedor, ambiente=None, buscar=None):
         return _sgb(ambiente)
     if provedor == "REDEMET":
         return _redemet(ambiente)
+    if provedor == "NASA_IMERG":
+        return _nasa_imerg(ambiente, buscar)
     if provedor in PROVEDORES_ARQUIVO:
         cabecalhos = {}
         if ambiente.get(f"{provedor}_AUTHORIZATION"):
@@ -172,6 +183,57 @@ def _redemet(ambiente):
             for url in _urls(ambiente, "REDEMET_URLS")]
 
 
+def _nasa_imerg(ambiente, buscar):
+    """Descobre o granulo Early V07 mais recente e fixa o recorte aprovado."""
+    _exige(ambiente, "NASA_IMERG_AUTHORIZATION", "NASA_IMERG_CODIBGE")
+    codibge = ambiente["NASA_IMERG_CODIBGE"].strip()
+    recorte = _recorte_municipal(codibge)
+    cabecalhos = {"Authorization": ambiente["NASA_IMERG_AUTHORIZATION"]}
+    metadados = {
+        "colecao": NASA_IMERG_COLECAO,
+        "versao": NASA_IMERG_VERSAO,
+        "codibge": codibge,
+        "municipio": recorte["properties"].get("municipio"),
+        "recorte_fonte": recorte["source"],
+    }
+    if buscar is None:
+        url = ("https://data.gesdisc.earthdata.nasa.gov/"
+               "[DESCOBERTO_SOMENTE_DURANTE_A_COLETA]")
+    else:
+        descoberta = Requisicao(
+            "NASA_IMERG", "imerg", NASA_IMERG_CMR,
+            {"short_name": NASA_IMERG_COLECAO, "version": NASA_IMERG_VERSAO,
+             "sort_key": "-start_date", "page_size": "1",
+             "downloadable": "true"}, cabecalhos)
+        url, granulo = _granulo_imerg(buscar(descoberta).dados)
+        metadados.update(granulo)
+    return [Requisicao("NASA_IMERG", "imerg", url,
+                       cabecalhos=cabecalhos, metadados=metadados)]
+
+
+def _granulo_imerg(dados):
+    try:
+        objeto = json.loads(dados)
+        entrada = objeto["feed"]["entry"][0]
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, IndexError,
+            TypeError) as erro:
+        raise ContratoInvalido("CMR não retornou granulo IMERG reconhecível") from erro
+    candidatos = [
+        item.get("href") for item in entrada.get("links", [])
+        if item.get("rel", "").endswith("/data#")
+        and str(item.get("href", "")).startswith(
+            "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/")
+    ]
+    if not candidatos:
+        raise ContratoInvalido("CMR não retornou link HTTPS do granulo IMERG")
+    return candidatos[0], {
+        "granulo_id": entrada.get("id"),
+        "granulo_titulo": entrada.get("title"),
+        "inicio_cmr": entrada.get("time_start"),
+        "fim_cmr": entrada.get("time_end"),
+    }
+
+
 def _conjunto(provedor):
     return {
         "INPE_MERGE": "gpm-merge", "INPE_WRF": "ams-07km",
@@ -188,6 +250,8 @@ def normaliza(requisicao, resposta, ambiente=None):
         return _normaliza_cemaden(resposta.dados, ambiente)
     if requisicao.provedor == "SGB":
         return _normaliza_geojson(resposta.dados)
+    if requisicao.provedor == "NASA_IMERG":
+        return _normaliza_imerg(requisicao, resposta.dados, ambiente)
     # ANA e grades ficam brutas até um mapeamento de campos/produto ser
     # validado com resposta real. Isso é ausência explícita, não dado perdido.
     return ConteudoNormalizado(metadados={"normalizado": False})
@@ -265,3 +329,180 @@ def _normaliza_geojson(dados):
         saida.feicoes.append(Feicao(str(identificador), item.get("geometry"),
                                     propriedades))
     return saida
+
+
+def _recorte_municipal(codibge):
+    caminho = RAIZ_BACKEND / "recortes" / f"{codibge}.geojson"
+    if not caminho.exists():
+        raise ConfiguracaoAusente(
+            f"recorte municipal oficial ausente: recortes/{codibge}.geojson")
+    try:
+        objeto = json.loads(caminho.read_text(encoding="utf-8"))
+        feicao = objeto["features"][0]
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError,
+            IndexError, TypeError) as erro:
+        raise ConfiguracaoAusente(f"recorte municipal inválido: {caminho.name}") from erro
+    if str(feicao.get("properties", {}).get("codarea")) != codibge:
+        raise ConfiguracaoAusente("código IBGE diverge do recorte municipal")
+    geometria = feicao.get("geometry") or {}
+    if geometria.get("type") != "Polygon" or not geometria.get("coordinates"):
+        raise ConfiguracaoAusente("recorte municipal precisa ser Polygon GeoJSON")
+    return {**feicao, "source": objeto.get("source", {})}
+
+
+def _normaliza_imerg(requisicao, dados, ambiente):
+    try:
+        import h5py
+    except ImportError as erro:
+        raise ConfiguracaoAusente("h5py não instalado no ambiente do backend") from erro
+    codibge = requisicao.metadados.get("codibge") or ambiente.get(
+        "NASA_IMERG_CODIBGE")
+    recorte = _recorte_municipal(str(codibge or ""))
+    try:
+        with h5py.File(io.BytesIO(dados), "r") as arquivo:
+            grupo = arquivo["Grid"]
+            longitudes = [float(x) for x in grupo["lon"][:]]
+            latitudes = [float(x) for x in grupo["lat"][:]]
+            grade = grupo["precipitation"]
+            amostras, unidade = _amostras_grade(
+                grade, longitudes, latitudes,
+                recorte["geometry"]["coordinates"][0])
+    except (KeyError, OSError, TypeError, ValueError) as erro:
+        raise ContratoInvalido("IMERG HDF5 não contém a grade esperada") from erro
+    inicio, fim = _periodo_granulo(requisicao)
+    fonte = recorte.get("source", {})
+    return ConteudoNormalizado(metadados={
+        "normalizado": True,
+        "identificador": "PRECIPITATION_RECORTE_MUNICIPAL",
+        "classe": "ESTIMATIVA_GRADE",
+        "produto": f"{NASA_IMERG_COLECAO}.{NASA_IMERG_VERSAO}",
+        "variavel_origem": "precipitation",
+        "unidade_origem": unidade,
+        "observado_de": inicio.isoformat(),
+        "observado_ate": fim.isoformat(),
+        "resolucao": "0,1 grau (coordenadas da grade do arquivo)",
+        "itens_recebidos": len(amostras),
+        "amostras_grade": amostras,
+        "recorte": {
+            "codibge": str(codibge),
+            "municipio": recorte["properties"].get("municipio"),
+            "metodo": "centros de celulas contidos no perimetro municipal",
+            "fonte": fonte.get("orgao"),
+            "fonte_url": fonte.get("url"),
+            "qualidade_malha": fonte.get("qualidade"),
+        },
+        "limitacao": (
+            "estimativa orbital em grade; amostras não são pluviômetros nem "
+            "média municipal e não acionam alerta"),
+    })
+
+
+def _amostras_grade(grade, longitudes, latitudes, poligono):
+    forma = tuple(grade.shape)
+    eixo_lon, eixo_lat = _eixos_grade(forma, longitudes, latitudes)
+    unidade = _atributo_texto(grade.attrs.get("units"))
+    if not unidade:
+        raise ContratoInvalido("IMERG sem unidade no dataset precipitation")
+    preenchimento = grade.attrs.get("_FillValue")
+    if preenchimento is None:
+        preenchimento = getattr(grade, "fillvalue", None)
+    saida = []
+    for ilon, ilat, lon, lat in _centros_no_recorte(
+            longitudes, latitudes, poligono):
+        indice = [0] * len(forma)
+        indice[eixo_lon], indice[eixo_lat] = ilon, ilat
+        valor = float(grade[tuple(indice)])
+        if _valor_grade_valido(valor, preenchimento):
+            saida.append({"longitude": lon, "latitude": lat, "valor": valor})
+    return saida, unidade
+
+
+def _eixos_grade(forma, longitudes, latitudes):
+    try:
+        eixo_lon = forma.index(len(longitudes))
+        eixo_lat = forma.index(len(latitudes))
+    except ValueError as erro:
+        raise ContratoInvalido(
+            "dimensões lon/lat não correspondem à precipitação") from erro
+    if eixo_lon == eixo_lat:
+        raise ContratoInvalido("eixos lon/lat ambíguos na grade IMERG")
+    return eixo_lon, eixo_lat
+
+
+def _centros_no_recorte(longitudes, latitudes, poligono):
+    minx = min(p[0] for p in poligono)
+    maxx = max(p[0] for p in poligono)
+    miny = min(p[1] for p in poligono)
+    maxy = max(p[1] for p in poligono)
+    for ilon, lon in enumerate(longitudes):
+        if not minx <= lon <= maxx:
+            continue
+        for ilat, lat in enumerate(latitudes):
+            if _centro_pertence(lon, lat, miny, maxy, poligono):
+                yield ilon, ilat, lon, lat
+
+
+def _centro_pertence(lon, lat, miny, maxy, poligono):
+    return miny <= lat <= maxy and _ponto_no_poligono(lon, lat, poligono)
+
+
+def _valor_grade_valido(valor, preenchimento):
+    if not math.isfinite(valor):
+        return False
+    return preenchimento is None or not math.isclose(
+        valor, float(preenchimento), rel_tol=0, abs_tol=1e-6)
+
+
+def _atributo_texto(valor):
+    if valor is None:
+        return None
+    if isinstance(valor, bytes):
+        return valor.decode("utf-8", "replace")
+    if hasattr(valor, "tolist"):
+        valor = valor.tolist()
+        if isinstance(valor, bytes):
+            return valor.decode("utf-8", "replace")
+    return str(valor)
+
+
+def _ponto_no_poligono(x, y, poligono):
+    dentro = False
+    anterior = poligono[-1]
+    for atual in poligono:
+        x1, y1 = anterior[:2]
+        x2, y2 = atual[:2]
+        cruza = ((y1 > y) != (y2 > y))
+        if cruza and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+            dentro = not dentro
+        anterior = atual
+    return dentro
+
+
+def _periodo_granulo(requisicao):
+    inicio = requisicao.metadados.get("inicio_cmr")
+    fim = requisicao.metadados.get("fim_cmr")
+    if inicio and fim:
+        try:
+            return (_iso_utc(inicio), _iso_utc(fim))
+        except ValueError:
+            pass
+    nome = Path(urlsplit(requisicao.url).path).name
+    achou = re.search(
+        r"\.(\d{8})-S(\d{6})-E(\d{6})\.", nome)
+    if not achou:
+        raise ContratoInvalido("IMERG sem período reconhecível no granulo")
+    data, inicio_h, fim_h = achou.groups()
+    primeiro = datetime.strptime(data + inicio_h, "%Y%m%d%H%M%S").replace(
+        tzinfo=timezone.utc)
+    ultimo = datetime.strptime(data + fim_h, "%Y%m%d%H%M%S").replace(
+        tzinfo=timezone.utc)
+    if ultimo < primeiro:
+        ultimo += timedelta(days=1)
+    return primeiro, ultimo
+
+
+def _iso_utc(valor):
+    instante = datetime.fromisoformat(str(valor).replace("Z", "+00:00"))
+    if instante.tzinfo is None:
+        raise ValueError("timestamp sem fuso")
+    return instante.astimezone(timezone.utc)

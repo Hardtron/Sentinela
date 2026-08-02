@@ -22,6 +22,7 @@ class Requisicao:
     cabecalhos: Dict[str, str] = field(default_factory=dict, repr=False)
     metodo: str = "GET"
     corpo: Optional[bytes] = field(default=None, repr=False)
+    metadados: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

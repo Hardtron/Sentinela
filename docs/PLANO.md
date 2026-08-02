@@ -147,9 +147,9 @@ e alimentação.
 | ID | Pendência | Bloqueia |
 |---|---|---|
 | ~~P-001~~ | ~~Publicar o repositório~~ | **Resolvida em 30/07/2026** — `github.com/Hardtron/Sentinela`, privado |
-| P-002 | Definir municípios-piloto e contato na Defesa Civil | Fase 5 |
+| P-002 | **Parcialmente resolvida em 01/08/2026:** Caraguatatuba/SP (`3510500`) foi definida como município-piloto; resta formalizar contato e responsabilidades com a Defesa Civil | Fase 5 |
 | P-003 | Definir licença do projeto | Abrir o repositório |
-| ~~P-004~~ | ~~Verificar disponibilidade de dados do CEMADEN~~ | **Parcialmente resolvida em 01/08/2026** — dado existe (acumulado a cada 10 min, histórico desde 2013, rede instalada junto a áreas de risco) e a ingestão está implementada (`backend/cemaden.py`). **Resta [?]: não há API REST pública documentada** — o acesso é por exportação do Mapa Interativo. Confirmar canal programático com o órgão |
+| ~~P-004~~ | ~~Verificar disponibilidade de dados do CEMADEN~~ | **Resolvida em 01/08/2026** — contrato PED/SGAA documentado, renovação de token implementada e aquisição recortada pelo código IBGE `3510500` validada no Home Server; ver `docs/FONTES_EXTERNAS.md` |
 | P-005 | Calibrar o divisor de tensão de bateria da Heltec V2 | Medição de autonomia |
 | P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
 | P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |

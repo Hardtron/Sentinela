@@ -137,7 +137,7 @@ resposta a evento. Contrato plurianual protege contra a sazonalidade.
 
 | ID | Item | Situação |
 |---|---|---|
-| M-01 | Obter a base de setores de risco do CPRM/SGB por município | **[?]** |
+| M-01 | Obter a base de setores de risco do CPRM/SGB por município | **Bloqueada na fonte para o piloto:** em 01/08/2026 a camada oficial consultada não continha feições nem município distinto para Caraguatatuba (`3510500`); não substituir por vazio ou classificação inventada |
 | M-02 | Acompanhar publicação da atualização com Censo 2022 | **[?]** |
 | M-03 | Validar preço por ponto com um município real | **[?]** — premissa não testada |
 | M-04 | Mapear editais recentes de monitoramento geotécnico municipal | **[?]** |

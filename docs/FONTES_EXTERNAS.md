@@ -41,15 +41,15 @@ armazenamento; ultrapassar o teto envia a aquisição à quarentena.
 
 | Fonte | Contrato oficial verificado | Estado no coletor | Pré-condição externa |
 |---|---|---|---|
-| CEMADEN PED | REST, JSON/CSV/XML, JWT do SGAA; acumulados 1–120 h | bruto + normalização dos acumulados | conta, município/estação e fuso explícito |
+| CEMADEN PED | REST, JSON/CSV/XML, JWT do SGAA; acumulados 1–120 h | ativo para Caraguatatuba; bruto + normalização dos acumulados | credencial protegida e fuso explícito |
 | ANA HidroWebService | REST JSON, OAuth/JWT, inventário e séries | bruto auditável; normalização aguarda amostra real validada | cadastro, estações e intervalo |
-| SGB Setorização de Risco | ArcGIS FeatureServer/GeoJSON | bruto + feições no mapa, sem reinterpretar risco | código IBGE/recorte definido |
+| SGB Setorização de Risco | ArcGIS FeatureServer/GeoJSON | adaptador pronto; camada consultada não contém Caraguatatuba | publicação de feições pelo SGB para o piloto |
 | INPE MERGE/GPM | HTTPS, produtos GRIB2 | aquisição de URLs oficiais fixadas | produto/arquivo e recorte operacional |
 | INPE WRF 7 km | HTTPS de produtos/recortes | aquisição de URLs oficiais fixadas | produto, rodada e horizonte |
 | NOAA GFS | NOMADS/filter, GRIB2 | aquisição de URL oficial parametrizada | variáveis, níveis, domínio e rodada |
-| REDEMET | API de produtos radar/satélite | bruto auditável | conta/chave e tipos de produto |
+| REDEMET | API de produtos radar/satélite | ativo: 3 satélites, STSC e 2 produtos do radar São Roque | imagens permanecem contexto, sem conversão para chuva |
 | INMET | arquivos históricos e feeds oficiais | aquisição de URL oficial fixada | arquivo/feed escolhido; endpoint não é presumido |
-| NASA IMERG | arquivos/OPeNDAP | aquisição de URL oficial fixada | coleção e, conforme canal, Earthdata |
+| NASA IMERG | CMR + HDF5 da coleção Early V07 | ativo: bruto global imutável + células da grade no perímetro IBGE | token Earthdata protegido |
 | CHIRPS | GeoTIFF/NetCDF/COG | aquisição de URL oficial fixada | produto e período; uso histórico |
 | NOAA GOES/GLM | NetCDF/cloud/CLASS | aquisição de URL oficial fixada | coleção/setor e processamento definidos |
 
@@ -58,12 +58,46 @@ Sentinela interpreta seu GRIB2/NetCDF. A interpretação só deve ser adicionada
 depois de validar variável, unidade, grade, calendário, rodada e licença do
 produto concreto.
 
+### Recorte piloto aprovado
+
+Caraguatatuba/SP é o município-piloto definido, código IBGE `3510500`. O
+perímetro mínimo obtido da API de Malhas do IBGE foi versionado em
+`backend/recortes/3510500.geojson`, junto da URL, qualidade e data da aquisição.
+Ele é recorte espacial de coleta, não setor de risco nem classificação de
+suscetibilidade.
+
+Na consulta de 01/08/2026, a camada oficial de Setorização de Risco do SGB
+retornou zero feições tanto por `cd_geocmu='3510500'` quanto por nome do
+município. O catálogo de municípios distintos da camada também não continha
+Caraguatatuba. Por isso `SGB_WHERE` continua desativado: sucesso HTTP com lista
+vazia não será apresentado como cobertura territorial.
+
+### REDEMET
+
 Na REDEMET, a chave é enviada no header `X-Api-Key`, nunca na URI persistida.
 Os contratos oficiais confirmados são `produtos/satelite/{ir|realcada|vis}`,
 `produtos/radar/{tipo}` e `produtos/stsc`. Radar também exige a área do radar;
-essa escolha depende do município/da cobertura aprovada e não é inferida pelo
-coletor. Respostas com caminhos de imagem continuam sendo evidência de produto,
-não precipitação numérica.
+para o piloto foi selecionada e verificada a área `sr`, Radar São Roque/SP.
+O coletor preserva `03km` (CAPPI a 3,1 km, raio publicado de 250 km) e
+`maxcappi` (máximo na coluna, raio publicado de 400 km). Em 01/08/2026 os dois
+endpoints responderam com produto, radar, localidade, raio, instante e caminho
+de imagem. Isso confirma disponibilidade da API; não demonstra qualidade sobre
+Caraguatatuba nem converte refletividade em precipitação de superfície.
+
+### NASA IMERG
+
+O produto fixado é `GPM_3IMERGHHE.07`, IMERG Early V07, precipitação em
+intervalos de 30 minutos. A cada ciclo, o coletor consulta o CMR, seleciona o
+granulo HTTPS mais recente, baixa e preserva o HDF5 original, lê a variável
+`Grid/precipitation` e mantém somente centros das células contidos no perímetro
+IBGE do piloto. Unidade, período e valores vêm do próprio arquivo; a origem CMR,
+o hash e o recorte ficam associados ao ativo.
+
+No painel, esses valores aparecem como **centros de célula de uma estimativa em
+grade**, com faixa observada e idade. Não são pluviômetros, média municipal,
+calibração local ou regra de alerta. O HDF5 global é mantido para auditoria;
+dimensionamento e política de retenção ainda precisam ser definidos antes de
+uma operação prolongada.
 
 No CEMADEN, o portal PED obtém um JWT no SGAA. Como o token observado em
 operação tem validade curta, o coletor aceita `CEMADEN_PED_EMAIL` e
@@ -83,12 +117,15 @@ Fontes primárias consultadas:
 - [CEMADEN SGAA — emissão de token](https://sgaa.cemaden.gov.br/SGAA/api/ui/)
 - [ANA HidroWebService — Swagger](https://www.ana.gov.br/hidrowebservice/swagger-ui/index.html)
 - [SGB — FeatureServer da Setorização de Risco](https://geoportal.sgb.gov.br/server/rest/services/gestaoterritorial/risco/FeatureServer/0)
+- [IBGE — API de Malhas](https://servicodados.ibge.gov.br/api/docs/malhas?versao=3)
 - [CPTEC/INPE — MERGE/GPM](https://ftp.cptec.inpe.br/modelos/tempo/MERGE/GPM/)
 - [CPTEC/INPE — WRF 7 km](https://ftp.cptec.inpe.br/modelos/tempo/WRF/ams_07km/)
 - [NOAA/NCEP — filtro GRIB do NOMADS](https://nomads.ncep.noaa.gov/info.php?page=gribfilter)
 - [DECEA — API REDEMET](https://ajuda.decea.mil.br/base-de-conhecimento/api-redemet-o-que-e/)
+- [DECEA — produtos radar](https://ajuda.decea.mil.br/base-de-conhecimento/api-redemet-produtos-radar/)
 - [INMET — dados históricos](https://portal.inmet.gov.br/dadoshistoricos)
 - [NASA — IMERG](https://gpm.nasa.gov/data/imerg)
+- [NASA Earthdata — GPM_3IMERGHHE ImageServer](https://gis.earthdata.nasa.gov/portal/home/item.html?id=598df0e6fd674ab7855f448f7f6f0e39)
 - [UCSB Climate Hazards Center — CHIRPS](https://www.chc.ucsb.edu/data/chirps)
 - [NOAA/NCEI — GOES-R](https://www.ncei.noaa.gov/products/satellite/goes-r-series)
 
@@ -152,11 +189,12 @@ SELECT registrado_em, etapa, motivo, fonte_uri
 
 Não podem ser preenchidos pelo projeto sem inventar responsabilidade:
 
-- município(s)-piloto e códigos IBGE;
-- estações ANA/CEMADEN representativas e política institucional de recorte;
+- contato e responsabilidades institucionais do piloto em Caraguatatuba;
+- estações ANA representativas e política institucional de adoção;
 - produto, variável, nível, domínio, rodada e horizonte de MERGE/WRF/GFS;
-- produtos REDEMET e finalidade operacional de cada imagem;
-- coleção/latência para IMERG, GOES/GLM e CHIRPS;
-- credenciais CEMADEN PED, ANA, REDEMET e Earthdata quando exigida;
+- critérios de interpretação e validação local dos produtos REDEMET;
+- coleção/latência e processamento para GOES/GLM e CHIRPS;
+- credenciais ANA quando o acesso for concedido;
+- retenção/dimensionamento dos granulos HDF5 IMERG;
 - licenças/atribuições aprovadas para redistribuição no painel público;
 - qualquer regra que combine fonte externa com telemetria local ou alarme.

@@ -165,13 +165,7 @@ class Repositorio:
                       revisao, ativo_id,
                       json.dumps(obs.metadados, ensure_ascii=False)))
                 aceitos += cur.rowcount
-            if conteudo.observacoes:
-                instantes = [obs.medido_em for obs in conteudo.observacoes]
-                cur.execute("""
-                    UPDATE fonte_ativo_bruto
-                       SET observado_de=%s, observado_ate=%s
-                     WHERE id=%s
-                """, (min(instantes), max(instantes), ativo_id))
+            _atualiza_periodo(cur, ativo_id, conteudo)
             if conteudo.feicoes:
                 for feicao in conteudo.feicoes:
                     geometria = (json.dumps(feicao.geometria, ensure_ascii=False)
@@ -194,10 +188,11 @@ class Repositorio:
                 cur.execute("""
                     INSERT INTO fonte_camada
                         (conjunto_id, ativo_bruto_id, identificador, metadados)
-                    VALUES (%s,%s,'ATIVO_BRUTO',%s::jsonb)
+                    VALUES (%s,%s,%s,%s::jsonb)
                     ON CONFLICT (conjunto_id, ativo_bruto_id, identificador)
                     DO NOTHING
                 """, (conjunto_id, ativo_id,
+                      conteudo.metadados.get("identificador", "ATIVO_BRUTO"),
                       json.dumps(conteudo.metadados, ensure_ascii=False)))
             cur.execute("""
                 UPDATE fonte_ativo_bruto SET processado_em=now() WHERE id=%s
@@ -236,8 +231,23 @@ def configuracao_publica(requisicao):
         "parametros": sorted(requisicao.parametros),
         "cabecalhos": sorted(requisicao.cabecalhos),
         "metodo": requisicao.metodo,
+        "metadados": requisicao.metadados,
         "coletado_em": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def _atualiza_periodo(cur, ativo_id, conteudo):
+    if conteudo.observacoes:
+        instantes = [obs.medido_em for obs in conteudo.observacoes]
+        inicio, fim = min(instantes), max(instantes)
+    else:
+        inicio = conteudo.metadados.get("observado_de")
+        fim = conteudo.metadados.get("observado_ate")
+    if inicio and fim:
+        cur.execute("""
+            UPDATE fonte_ativo_bruto SET observado_de=%s, observado_ate=%s
+             WHERE id=%s
+        """, (inicio, fim, ativo_id))
 
 
 def _resumo(valor):

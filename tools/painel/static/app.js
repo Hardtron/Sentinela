@@ -296,12 +296,27 @@ rotas["operacao"] = async () => {
       { rot: "Fonte / conjunto", val: (i) => `<strong>${esc(i.provedor)}</strong><br><span class="miudo">${esc(i.titulo)}</span>` },
       { rot: "Natureza", val: (i) => `${origem(i.classe, i.uso)}<br><span class="miudo">${esc(i.variavel || "produto composto")}${i.unidade ? ` · ${esc(i.unidade)}` : ""}</span>` },
       { rot: "Aquisição", val: (i) => `${origem(i.ultima_execucao_estado || i.configuracao_estado)}<br><span class="miudo">${i.ultima_conclusao_em ? dataLegivel(i.ultima_conclusao_em) : "nunca executada"}</span>` },
-      { rot: "Último dado", val: (i) => i.ultimo_observado_em ? `${dataLegivel(i.ultimo_observado_em)}<br><span class="miudo">${tempoAtras(idadeData(i.ultimo_observado_em, agora))}</span>` : "não informado pelo produto" },
+      { rot: "Último dado", val: (i) => resumoCamadaExterna(i, agora) },
       { rot: "Limitação", val: (i) => esc(i.limitacao) },
     ], externas.fontes || [], "Nenhum conjunto externo catalogado. A migração 011 pode estar pendente.")
     + secao("Limitações desta visão")
     + `<div class="aviso"><ul>${(o.limitacoes || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
 };
+
+function resumoCamadaExterna(item, agora) {
+  const quando = item.ultimo_observado_em;
+  const tempo = quando
+    ? `${dataLegivel(quando)}<br><span class="miudo">${tempoAtras(idadeData(quando, agora))}</span>`
+    : "não informado pelo produto";
+  const camada = item.camada_metadados || {};
+  const amostras = Array.isArray(camada.amostras_grade) ? camada.amostras_grade : [];
+  if (!amostras.length) return tempo;
+  const valores = amostras.map((a) => Number(a.valor)).filter(Number.isFinite);
+  const faixa = valores.length
+    ? `${Math.min(...valores).toFixed(2)}–${Math.max(...valores).toFixed(2)} ${esc(camada.unidade_origem || "")}`
+    : "valores ausentes";
+  return `${tempo}<br><span class="miudo">${amostras.length} centro(s) de célula no recorte · faixa ${faixa}</span>`;
+}
 
 /* ================================================= T-25: DASHBOARD (Situação)
    Tela principal do operador — substitui a antiga "Visão geral" que mostrava

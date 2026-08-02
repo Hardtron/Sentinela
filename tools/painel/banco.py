@@ -280,14 +280,19 @@ def fontes_externas():
     devolve a ausência explicitamente e o restante do painel permanece ativo.
     """
     fontes = consulta("""
-        SELECT provedor_codigo, provedor, orgao, acesso, exige_cadastro,
+        SELECT s.provedor_codigo, s.provedor, s.orgao, s.acesso,
+               s.exige_cadastro,
                conjunto_codigo, titulo, classe, variavel, unidade, uso,
                configuracao_estado, limitacao, ultima_execucao_em,
                ultima_conclusao_em, ultima_execucao_estado,
                itens_recebidos, itens_aceitos, itens_rejeitados, erro_resumo,
                ultimo_ativo_em, ultimo_processado_em, ultimo_observado_em,
-               ultimo_sha256
-          FROM fonte_estado
+               ultimo_sha256,
+               (SELECT fc.metadados
+                  FROM fonte_camada fc
+                 WHERE fc.conjunto_id=s.conjunto_id
+                 ORDER BY fc.id DESC LIMIT 1) AS camada_metadados
+          FROM fonte_estado s
          ORDER BY provedor, titulo
     """)
     erro = _estado["erro"]
