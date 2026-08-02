@@ -36,7 +36,9 @@ projeto inteiro — todo o resto é estimativa até ele existir.
 
 ## Fase 1 — Sensores e protocolo
 
-**Objetivo.** Nó que lê o ambiente e transmite payload compacto.
+**Objetivo.** Nó experimental que lê o ambiente e transmite payload compacto;
+em paralelo, especificar a unidade de aquisição do IPI sem confundir o quadro
+de bancada com o perfil geotécnico (ADR-010).
 
 - [x] **`lib/proto/` — payload binário versionado**, 01/08/2026. Quadro de
       sensor em **20 B exatos** e de saúde (RC-12) em 32 B; espaço de
@@ -48,8 +50,10 @@ projeto inteiro — todo o resto é estimativa até ele existir.
 - [ ] Contador de báscula por interrupção, com persistência em NVS
 - [ ] Deep sleep com acordar por RTC e por interrupção externa
 
-**Critério de saída.** `HTC-04` transmitindo leituras reais e sobrevivendo a
-reinício sem perder acumulado (RC-06).
+**Critério de saída.** `HTC-04` transmitindo leituras experimentais reais e
+sobrevivendo a reinício sem perder acumulado (RC-06). Isso valida o nó de P&D,
+não o instrumento ISO 18674-3; o produto-alvo exige seleção documentada do IPI,
+contrato multiponto e FAT/SAT próprios.
 
 ---
 

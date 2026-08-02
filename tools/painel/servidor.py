@@ -20,6 +20,7 @@ Autoria: Matheus Marassi
 """
 
 import argparse
+import hashlib
 import json
 import mimetypes
 import os
@@ -79,6 +80,122 @@ def operacao():
         ],
     }
 
+
+def _seleciona_campos(leituras, campos):
+    """Projeta leituras sem criar interpretação ou valor derivado."""
+    return [{campo: leitura.get(campo) for campo in campos}
+            for leitura in leituras]
+
+
+def _sensores_invalidos(leituras):
+    invalidos = []
+    campos_validade = (
+        ("chuva", "chuva_valida"),
+        ("inclinação", "inclin_valida"),
+        ("umidade do solo", "solo_valido"),
+    )
+    for leitura in leituras:
+        campos = [nome for nome, chave in campos_validade
+                  if leitura.get(chave) is False]
+        if campos:
+            invalidos.append({
+                "node_id": leitura.get("node_id"),
+                "placa": leitura.get("placa"),
+                "campos_invalidos": campos,
+                "recebido_em": leitura.get("recebido_em"),
+            })
+    return invalidos
+
+
+def evidencia_contextual():
+    """Compõe um retrato exportável das evidências já disponíveis.
+
+    O pacote deliberadamente não calcula nível de risco: ele preserva as
+    categorias de observação (pontual, grade, radar/satélite e sensor local),
+    os códigos de qualidade e as ausências. O hash protege somente o JSON
+    devolvido nesta consulta; persistência/cadeia de custódia continuam sendo
+    responsabilidade do registro de alarme ou do arquivo exportado (RC-10).
+    """
+    gerado_em = datetime.now(timezone.utc).isoformat()
+    fontes = banco.fontes_externas()
+    observacoes = banco.fontes_observacoes()
+    camadas = banco.fontes_camadas()
+    sensores = banco.sensor()
+    oper = operacao()
+
+    leituras = sensores.get("leituras") or []
+    invalidos = _sensores_invalidos(leituras)
+
+    pacote = {
+        "esquema": "sentinela.evidencia_contextual.v1",
+        "gerado_em": gerado_em,
+        "classificacao": "INFORMATIVO",
+        "decisao": {
+            "nivel_risco": None,
+            "regra_automatica_aplicada": False,
+            "mensagem": (
+                "Evidências para apoio técnico; não constitui alerta "
+                "geotécnico nem autoriza ação autônoma."),
+        },
+        "associacao": {
+            "metodo": "camadas independentes, reunidas por tempo e proveniência",
+            "soma_entre_provedores": False,
+            "limiar_geotecnico": None,
+        },
+        "camadas": {
+            "gatilho_meteorologico": {
+                "observacoes_pontuais": observacoes.get("observacoes") or [],
+                "produtos_grade_radar_satelite": camadas.get("camadas") or [],
+                "escopo": (
+                    "Chuva pontual, estimativa em grade e imagens permanecem "
+                    "grandezas distintas; divergência não é resolvida por média."),
+            },
+            "estado_hidrologico_local": {
+                "leituras": _seleciona_campos(leituras, (
+                    "node_id", "placa", "medido_em", "recebido_em",
+                    "umidade_solo", "solo_valido", "fonte")),
+                "escopo": "Disponível somente quando o sensor local medir e declarar validade.",
+            },
+            "resposta_mecanica_local": {
+                "leituras": _seleciona_campos(leituras, (
+                    "node_id", "placa", "medido_em", "recebido_em",
+                    "pitch_graus", "roll_graus", "inclin_valida", "fonte")),
+                "escopo": (
+                    "Leitura isolada não caracteriza movimento; baseline, "
+                    "persistência e corroboração ainda exigem validação local."),
+            },
+            "qualidade_operacional": {
+                "cadeia": oper,
+                "sensores_invalidos": invalidos,
+                "fontes": fontes.get("fontes") or [],
+                "quarentena_fontes_7d": fontes.get("quarentena_7d") or {},
+            },
+        },
+        "ausencias_e_limitacoes": [
+            "Quadros de sensor ainda não percorrem a esteira MQTT → banco em produção.",
+            "Não existe limiar geotécnico local validado para o piloto.",
+            "IMERG é estimativa em grade; REDEMET permanece contexto visual.",
+            "O PED observado não fornece coordenadas no payload usado pelo projeto.",
+            "Suscetibilidade, exposição e protocolo institucional não estão completos.",
+        ],
+        "erros_consulta": {
+            "fontes": fontes.get("erro"),
+            "observacoes": observacoes.get("erro"),
+            "camadas": camadas.get("erro"),
+            "sensores": sensores.get("erro"),
+            "operacao": oper.get("banco", {}).get("erro"),
+        },
+    }
+    canonico = json.dumps(
+        pacote, ensure_ascii=False, sort_keys=True,
+        separators=(",", ":")).encode("utf-8")
+    pacote["integridade"] = {
+        "algoritmo": "SHA-256",
+        "sha256": hashlib.sha256(canonico).hexdigest(),
+        "escopo": "conteúdo deste pacote, antes do campo integridade; não persistido pelo painel",
+    }
+    return pacote
+
 ROTAS = {
     "/api/visao-geral": lambda q: coletor.visao_geral(),
     "/api/documentos": lambda q: coletor.documentos(),
@@ -91,6 +208,7 @@ ROTAS = {
     "/api/complexidade": lambda q: coletor.complexidade(),
     "/api/telemetria": lambda q: telemetria.estado(),
     "/api/operacao": lambda q: operacao(),
+    "/api/evidencia-contextual": lambda q: evidencia_contextual(),
     "/api/fontes-externas": lambda q: banco.fontes_externas(),
     "/api/fontes-observacoes": lambda q: banco.fontes_observacoes(),
     "/api/fontes-camadas": lambda q: banco.fontes_camadas(),

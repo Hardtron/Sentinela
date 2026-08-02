@@ -1,5 +1,19 @@
 # Ancoragem e instalação do nó de campo
 
+> **Revisão de segurança — 02/08/2026.** Este documento preserva o histórico de
+> dimensionamento, mas não é uma instrução executiva de campo. A arquitetura e
+> o procedimento atuais estão em
+> [PROTOTIPO_BARRA_SENTINELA.md](PROTOTIPO_BARRA_SENTINELA.md): barra de medição
+> e mastro de serviço são mecanicamente independentes; profundidade e fundação
+> dependem do perfil do sítio; proteção contra descargas não pode ser resolvida
+> por aterramento improvisado.
+
+> **Escopo reclassificado.** A barra descrita aqui é um corpo de prova
+> superficial auxiliar. Ela não especifica o furo, casing, datum nem a cadeia
+> IPI do instrumento-alvo da ISO 18674-3 e não pode sustentar alegação de
+> conformidade. Para o produto geotécnico, prevalece
+> [INSTRUMENTACAO_GEOTECNICA_ISO.md](INSTRUMENTACAO_GEOTECNICA_ISO.md).
+
 Projeto padronizado de como o dispositivo se fixa no talude. Responde às quatro
 questões abertas: como ancorar, se a haste de 4 m é mesmo necessária em encosta,
 que material usar e como manter a instalação simples sem comprometer a leitura.
@@ -65,9 +79,9 @@ Conclusões:
 - **Haste de 3 a 4 m com inclinômetro no topo é inviável.** Deflexões de 0,8° a
   6,3° são ordens de grandeza acima da resolução do instrumento e comprometem
   qualquer limiar razoável.
-- **A 1,5 m, tubo de 1.1/2" ou 2" fica em 0,04–0,07°** — margem aceitável, ainda
-  que não desprezível. O eletroduto 3/4" **sai da recomendação**: 0,27° a 1,5 m
-  é alto demais.
+- **A 1,5 m, o modelo estimou 0,04–0,07° para tubo de 1.1/2" ou 2".** Isso é
+  apenas comparação entre corpos de prova: não existe margem de aceitação
+  validada para o sítio. O eletroduto 3/4" sai do corpo de prova preferencial.
 - **PVC está descartado como elemento estrutural.** 3,81° já a 1,5 m. Serve como
   conduíte ou proteção, nunca como haste.
 
@@ -75,33 +89,31 @@ Conclusões:
 
 ## 2. A solução: separar as duas funções
 
-**O inclinômetro fica embaixo, junto ao solo. A antena fica em cima.** O rádio
-não se importa com oscilação — alguns centímetros de balanço não alteram o
-enlace. O inclinômetro se importa muito.
+**O sensor auxiliar de rotação fica no cabeçote da barra curta; antena,
+eletrônica e energia ficam em um mastro de serviço separado.** O enlace tolera
+movimento mecânico que seria erro direto nesse canal experimental.
 
 ```
-        ┌── antena no topo do invólucro (1,5 m)
-        │
-   ═════╪═════  invólucro IP67 com eletrônica e rádio
-        │
-        │       tubo de aço galvanizado 1.1/2"
-        │
-   ─────┼─────  solo
-        ▓       ← INCLINÔMETRO AQUI, na base, dentro do tubo
-        ▓
-        ▓       trecho cravado, 0,8 a 1,2 m
-        ▓
+ mastro de serviço                 barra de medição auxiliar
+ antena + caixa                    cabeçote/sensor de rotação
+       │                                  │
+       │        sem união mecânica        │
+───────┼──────────────────────────────────┼────── solo
+       │                                  ▓
+       │                                  ▓  profundidade definida
+       │                                  ▓  pelo perfil do sítio
 ```
 
-Com o sensor de inclinação na base engastada, a deflexão do vento é **zero por
-definição** — o engaste não gira, quem gira é o topo livre. O que a base mede é
-apenas a rotação do bloco de solo em que está cravada, que é exatamente o
-fenômeno de interesse.
+Com o sensor de inclinação próximo à base, a contribuição de flexão do trecho
+livre tende a ser menor do que no topo. Ela **não é zero por definição**: folga,
+deformação local, acoplamento solo–tubo, tração dos cabos e movimento do mastro
+podem aparecer na leitura. O protótipo precisa medir essas interferências. A
+solução atual separa o mastro de serviço da barra de medição.
 
-Se um vão específico exigir antena mais alta que 1,5 m, a saída **não** é
-alongar esta haste: é um **mastro separado**, estaiado, mecanicamente
-independente do tubo de medição, ligado por cabo coaxial. Assim o mastro pode
-balançar à vontade sem contaminar a leitura.
+Se um vão exigir antena mais alta, a saída **não** é alongar a barra: aumenta-se
+o gateway ou projeta-se o mastro de serviço, mantendo-o mecanicamente
+independente. O ensaio de interferência ainda precisa confirmar que cabo,
+manutenção e solo ao redor não acoplam o movimento entre os dois elementos.
 
 ---
 
@@ -130,10 +142,11 @@ superfície de ruptura, fica ancorada no material que não se move — e o senso
 deixa de registrar o deslocamento justamente quando ele ocorre. A estaca precisa
 estar **dentro do horizonte superficial mobilizável**.
 
-Profundidade cravada de **0,8 a 1,2 m** é o ponto de partida adotado: fica no
-horizonte superficial descrito pela literatura, dá estabilidade ao tubo curto e
-coincide com a faixa validada em campo pelo SitkaNet, que crava até ~0,95 m ou
-até a interface solo-rocha **[L]**.
+Profundidade cravada de **0,8 a 1,2 m** foi uma hipótese inicial do corpo de
+prova: aproxima a geometria publicada pelo SitkaNet, que crava até ~0,95 m ou
+até a interface solo-rocha **[L]**. Ela **não foi validada para Caraguatatuba** e
+não deve orientar instalação em área de risco sem descrição do perfil e decisão
+do responsável geotécnico.
 
 > **Esta é decisão geotécnica, não de instrumentação.** A profundidade correta
 > depende do perfil pedológico do talude — em particular da posição do contato
@@ -184,8 +197,10 @@ Complementos quando o solo for muito mole ou muito duro:
 
 ## 5. Material: tubo de aço galvanizado 1.1/2"
 
-**Recomendação: tubo de aço carbono galvanizado a fogo, 1.1/2" (48,3 mm),
-parede 3 mm, comprimento total 2,5 m** — cerca de 1 m cravado e 1,5 m livre.
+**Corpo de prova recomendado para os ensaios mecânicos:** tubo de aço carbono
+galvanizado a fogo, 1.1/2" (48,3 mm), parede 3 mm e comprimento total de até
+2,5 m **[E]**. O trecho cravado e o trecho livre não são prescritos para campo;
+o mastro de rádio é um elemento separado.
 
 | Critério | Avaliação |
 |---|---|
@@ -327,8 +342,8 @@ Materiais por nó:
 | Ponteira | Bisel na base ou aleta soldada | R$ 20 |
 | Abraçadeiras | Tipo U, 2 unidades | R$ 15 |
 | Invólucro | Caixa IP67 com prensa-cabos | R$ 80–150 |
-| Aterramento | Cabo de cobre + haste (NBR 5419) | R$ 60 |
-| **Total estrutura** | | **~R$ 300** **[E]** |
+| Proteção contra descargas | Projeto/avaliação por profissional habilitado | **cotar** |
+| **Subtotal sem proteção contra descargas** | | **~R$ 240** **[E]** |
 
 Todos os valores acima são **estimativa de mercado sem cotação formal** — item
 B-07 em REFERENCIAS.md. Não usar em proposta comercial antes de cotar.
@@ -340,26 +355,31 @@ trado manual, nível de bolha, trena, GPS.
 
 1. **Escolher o ponto** — geotécnico define o local; `tools/alcance.py` e o
    modelo do MDE indicam se o enlace fecha.
-2. **Verificar o enlace antes de instalar** — levar o nó com o firmware de campo
-   e confirmar veredito **APROVADO** na posição pretendida (ROTEIRO_CAMPO.md).
-   Instalar primeiro e testar depois é retrabalho garantido.
-3. **Cravar o tubo** com capacete e marreta, 0,8 a 1,2 m, até resistência firme.
+2. **Verificar o enlace antes de instalar** — levar o nó com firmware e antena
+   de teste e registrar o veredito medido (ROTEIRO_CAMPO.md). O resultado aprova
+   apenas a configuração e geometria ensaiadas.
+3. **Instalar o corpo de prova** pelo método aprovado para o ensaio e registrar
+   a profundidade alcançada. Em campo, profundidade e método são definidos a
+   partir do perfil do sítio.
 4. **Conferir a prumada** — o valor absoluto não importa, mas registrar o ângulo
    inicial como referência de calibração.
-5. **Fixar o invólucro** com as abraçadeiras, antena na vertical, apontada para
-   cima.
-6. **Aterrar** conforme NBR 5419.
+5. **Fixar invólucro e antena no mastro de serviço separado**, sem tirante ou
+   esforço compartilhado com a barra de medição.
+6. **Não improvisar aterramento ou SPDA.** Registrar a avaliação de risco e o
+   projeto do profissional habilitado conforme a edição vigente do conjunto
+   ABNT NBR 5419, quando aplicável.
 7. **Registrar**: coordenada, altitude, ângulo inicial, foto do conjunto e do
    entorno, e o veredito de enlace medido.
 8. **Confirmar o primeiro pacote** no gateway antes de deixar o local.
 
 ### O que padronizar e o que não
 
-**Padronizar:** tubo, invólucro, altura livre de 1,5 m, procedimento de cravação,
-ficha de registro.
+**Padronizar no protótipo:** identificação, eixos, corpo de prova, ficha de
+registro e teste de interferência entre mastro e barra.
 
-**Não padronizar:** profundidade final e escolha do ponto. Dependem do perfil do
-talude e são decisão de engenheiro geotécnico por sítio.
+**Não padronizar sem projeto do sítio:** profundidade final, fundação, altura do
+mastro e escolha do ponto. Dependem do perfil do talude, enlace, vento,
+descargas e responsabilidade técnica correspondente.
 
 ---
 

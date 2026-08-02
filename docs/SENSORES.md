@@ -1,5 +1,11 @@
 # Grandezas monitoradas
 
+> **Configuração corrente do protótipo:** a ordem original deste documento foi
+> substituída pela ADR-009 e detalhada em
+> [PROTOTIPO_BARRA_SENTINELA.md](PROTOTIPO_BARRA_SENTINELA.md). No piloto, chuva
+> vem das fontes externas com proveniência; a Atalaia prioriza perfil de umidade
+> e rotação local. Nenhuma combinação possui limiar automático validado.
+
 > **Proveniência.** Números e afirmações neste documento seguem a política de
 > [REFERENCIAS.md](REFERENCIAS.md): **[M]** medido em ensaio próprio, **[N]**
 > norma, **[L]** literatura revisada, **[G]** fonte governamental, **[E]**
@@ -138,3 +144,44 @@ outro município, e a própria literatura exige atualização contínua com o
 histórico local de ocorrências. Preencher um número sem calibração daria
 aparência de critério técnico a um palpite — e afirmação geotécnica nunca pode
 ser **[E]** (REFERENCIAS.md §1).
+
+## Seleção para o primeiro protótipo — 02/08/2026
+
+A seleção não transforma componentes MEMS ou agrícolas em instrumentos
+geotécnicos certificados. Ela cria uma campanha comparativa rastreável.
+
+> **ADR-010:** ADXL355 e SCL3300 são agora canais superficiais auxiliares/P&D.
+> O canal geotécnico primário será uma cadeia IPI biaxial em furo revestido,
+> selecionada e avaliada conforme
+> [INSTRUMENTACAO_GEOTECNICA_ISO.md](INSTRUMENTACAO_GEOTECNICA_ISO.md).
+
+| Canal | Referência de protótipo | Estado | Condição para avançar |
+|---|---|---|---|
+| Rotação local auxiliar | ADXL355 em placa de avaliação | candidato principal do protótipo superficial, não do instrumento ISO | repetibilidade, deriva térmica, orientação, consumo e acoplamento medidos |
+| Rotação local A/B | Murata SCL3300-D01 em placa de avaliação | referência comparativa opcional | comparação no mesmo gabarito; não substituir apenas por especificação de catálogo |
+| Umidade/temperatura/EC do solo | TEROS 12 | referência recomendada | interface DDI/SDI-12 protegida e calibração com solo local |
+| Umidade de baixo custo | a selecionar | somente candidato comparativo | ensaio simultâneo contra a referência em ciclos e horizontes representativos |
+| Temperatura/UR da caixa | SHT41 | diagnóstico operacional | posição interna registrada; não chamar de condição atmosférica externa |
+| Pressão de poros | piezômetro a especificar | fora do P0 | projeto geotécnico e instalação compatível com ISO 18674-4 |
+
+O fabricante do ADXL355 declara baixo ruído, baixa deriva, temperatura interna,
+autoteste e interfaces SPI/I2C. O SCL3300 é um inclinômetro de três eixos com
+saída angular por SPI. Essas características justificam o ensaio, mas **não
+demonstram a resposta da barra nem do solo**.
+
+Para deslocamento conforme a linha de medição da ISO 18674-3, o requisito deixa
+de ser “qual acelerômetro” e passa a abranger cadeia IPI, casing, segmentos,
+calibração, datum, instalação e redução do perfil. Um bom MEMS é apenas um
+componente desse sistema.
+
+O TEROS 12 opera em faixa de alimentação diferente dos GPIOs da Heltec e usa
+DDI/SDI-12. Ele requer fonte comutada e interface elétrica; ligação direta é
+proibida. O valor físico deve carregar sensor, série, profundidade, horizonte,
+calibração, unidade e validade. Enquanto a calibração local estiver pendente, o
+dado é `EXPERIMENTAL`, não "percentual de saturação".
+
+O perfil continua definido como **2–3 profundidades [E]** para observar a
+evolução vertical sem copiar a instrumentação de outra rede. O CEMADEN mede
+várias camadas e chega a 3 m, mas isso é precedente governamental, não regra de
+quantidade ou profundidade para o Sentinela. A posição real depende da
+caracterização do solo no ponto piloto.

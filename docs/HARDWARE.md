@@ -1,5 +1,11 @@
 # Hardware
 
+> **Separação de escopo — ADR-010.** Todo inventário Heltec desta página é
+> hardware de bancada/P&D. Ele não constitui instrumentação conforme a ISO
+> 18674-3. O produto geotécnico passa a integrar uma cadeia IPI em furo
+> revestido; requisitos e caminho de avaliação estão em
+> [INSTRUMENTACAO_GEOTECNICA_ISO.md](INSTRUMENTACAO_GEOTECNICA_ISO.md).
+
 ## Inventário disponível
 
 | Qtd | Item | Observação |
@@ -15,6 +21,32 @@ Nenhuma compra realizada até o momento. As fases 0 a 3 foram desenhadas para
 rodar integralmente com o inventário acima — mas **dentro da fase 0**, a
 combinação "6 placas, 2 antenas, sem bateria, sem sensor" exige uma alocação
 que separe o que é seguro fazer agora do que espera peça.
+
+## Arquitetura física do produto-alvo
+
+O hardware final não é uma Heltec ligada diretamente a um acelerômetro. Ele é
+composto por dois subsistemas com evidência independente:
+
+| Subsistema | Componentes mínimos | Alegação permitida hoje |
+|---|---|---|
+| Instrumento geotécnico `IG` | casing ranhurado, cadeia IPI biaxial serializada/calibrada, cabos, suspensão, referência e documentação | `NAO_AVALIADO`; selecionar sistema comercial e comprovar escopo ISO |
+| Aquisição Sentinela `DAQ/COM` | RS-485 isolado, fonte protegida, relógio, memória, STM32WLE5/rádio, antena e telemetria | `EM_DESENVOLVIMENTO`; sujeito a ensaios e Anatel |
+
+Características obrigatórias para o próximo esquemático da DAQ:
+
+- entrada RS-485/Modbus isolada e terminação configurável;
+- proteção de linha e de alimentação definida para o ambiente;
+- alimentação da cadeia IPI separada, com corrente/tensão monitoradas;
+- armazenamento local do perfil completo e fila resistente a corrupção;
+- identidade de hardware, *secure boot* e firmware assinado;
+- interface de manutenção compatível com a vedação;
+- conectores e invólucro escolhidos para ensaio do conjunto, não por alegação
+  isolada de catálogo;
+- pontos de ensaio para EMC, segurança elétrica, consumo e diagnóstico.
+
+Modelo comercial de referência, não escolha fechada: cadeia IPI digital
+biaxial com RS-485/Modbus. A compra depende da RFI e da comprovação documental
+descritas em INSTRUMENTACAO_GEOTECNICA_ISO.md §3.
 
 ## Restrição de antenas — regra operacional
 
@@ -49,7 +81,7 @@ receber antena de novo.
 | `HTC-01` | Nó de desenvolvimento — PINGER (**placa substituta**, ver §troca) | `bench_01` **até o enlace ser confirmado**; depois `node_dev` | Bancada, USB do MacBook |
 | `HTC-02` | Nó par de alcance — PONGER | `bench_02` — **sem antena desde 31/07/2026** (remanejada para HTC-03) | Bancada |
 | `HTC-03` | Gateway/Farol — PONGER (**placa de display defeituoso**, ver §troca-03) | `bridge` — RF-ativo, **com antena** | USB do RPi 4, destino: telhado |
-| `HTC-04` | Nó de campo (display funcional) — **aguarda antena** | `bench_04` **obrigatório** enquanto não houver antena (A-003) | Solta na bancada |
+| `HTC-04` | Protótipo móvel P0/P1 (display funcional) — **aguarda antena** | `bench_04` **obrigatório** enquanto não houver antena (A-003) | Solta na bancada; não é instrumento ISO |
 | `HTC-05` | **Única reserva restante** — a outra virou `HTC-01` | `bench_05` até antena disponível | — |
 | ~~`HTC-06`~~ | **Não existe placa física** — a designação era de uma das duas reservas, agora promovida a `HTC-01` | — | — |
 
@@ -70,7 +102,7 @@ como `/dev/cu.usbserial-0001`. O que identifica cada placa é o **MAC do ESP32**
 | ~~`HTC-01` (antiga)~~ | `3c:71:bf:8c:2c:d0` | 4 MB | **DANIFICADA — fora do projeto** |
 | `HTC-02` | `3c:71:bf:8c:2f:9c` | 4 MB | bancada, sem antena |
 | `HTC-03` | `3c:71:bf:8c:2f:a4` | 4 MB | **gateway desde 31/07/2026** — display defeituoso, irrelevante no telhado |
-| `HTC-04` | `3c:71:bf:8c:31:70` | 4 MB | **liberada para campo** — display funcional; **sem antena** |
+| `HTC-04` | `3c:71:bf:8c:31:70` | 4 MB | liberada apenas para ensaio controlado P0/P1 — display funcional; **sem antena** |
 | `HTC-05` | **[?]** a identificar na primeira gravação | — | única reserva restante |
 
 Ao gravar cada placa nova pela primeira vez, registrar o MAC aqui — é o que
@@ -209,7 +241,8 @@ placa está reservada para intervenção física.
 Uma das 6 placas tem o **display OLED com defeito** (tela permanece
 escura/sem imagem). Ela era a `HTC-04`, de bancada. **Passou a ocupar o posto
 do gateway (`HTC-03`)**, e a placa que estava no gateway (display funcional)
-foi liberada para campo.
+foi liberada para ensaio móvel P0/P1. Essa liberação não a transforma em
+instrumento geotécnico nem autoriza instalação operacional.
 
 **O raciocínio é bom e vale registrar:** o gateway vai ficar **no telhado**.
 Display ali não é só dispensável — é inútil, porque ninguém vai subir para

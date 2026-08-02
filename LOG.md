@@ -21,6 +21,111 @@ apenas o apontamento.
 
 ---
 
+## 2026-08-02 (28) — Pacote de transição para a equipe sucessora
+
+**Fase:** transição · **Duração:** curta
+
+### Feito
+
+- Criado [HANDOFF_2026-08-02.md](docs/HANDOFF_2026-08-02.md) com snapshot de
+  branch/commit/worktree, inventário das mudanças locais, arquitetura, contrato
+  de dados futuro, matriz normativa, testes, ambientes, segurança, pendências,
+  sequência de retomada e alegações proibidas.
+- Registrada explicitamente a fronteira entre o commit remoto `3fb669c` e o
+  commit local de transição, ainda não enviado/não implantado. O hash final é
+  obtido por `git log -1 --oneline` no worktree entregue.
+
+### Decidido
+
+- A equipe sucessora deve primeiro preservar, revisar e integrar o worktree;
+  depois fechar RFI, normas licenciadas, responsáveis e laboratórios; só então
+  congelar protocolo/placa e planejar FAT/SAT.
+- Nenhum segredo foi reproduzido no handoff, e nenhum estado remoto foi
+  presumido a partir do worktree do MacBook.
+
+### Próximo
+
+- Reproduzir a verificação automatizada e revisar o diff antes do primeiro
+  commit de transição.
+
+## 2026-08-02 (27) — Arquitetura-alvo ISO 18674-3 e caminho de conformidade
+
+**Fase:** produto/instrumentação · **Duração:** média
+
+### Feito
+
+- Criado
+  [INSTRUMENTACAO_GEOTECNICA_ISO.md](docs/INSTRUMENTACAO_GEOTECNICA_ISO.md)
+  com arquitetura, requisitos `GI-*`, modelo de dados, FAT/SAT, dossiê e matriz
+  de normas do instrumento, aquisição, rádio, ambiente, bateria e segurança.
+- Requisitos `RC-19` a `RC-26` incorporam perfil completo, rastreabilidade
+  metrológica, configuração temporal, redução verificável, falha explícita e
+  desenvolvimento seguro.
+- Arquitetura, hardware, sensores, ancoragem, responsabilidade técnica,
+  conformidade e plano foram reconciliados com o novo escopo.
+
+### Decidido
+
+- O produto-alvo usa uma cadeia IPI biaxial em furo/casing projetados por
+  responsável geotécnico; a unidade Sentinela faz aquisição, preservação e
+  telemetria. A primeira versão deve integrar instrumento comercial submetido
+  a RFI documental.
+- Heltec, ADXL355/SCL3300 e a barra superficial permanecem P&D auxiliar. Não
+  são instrumento conforme ISO 18674-3 nem herdam conformidade por catálogo.
+- Nenhuma alegação `CONFORME` será feita sem cópias licenciadas, matriz cláusula
+  a cláusula, calibração/ensaios no escopo adequado e avaliação independente.
+- Protocolo e banco multiponto só serão congelados após seleção do IPI e acesso
+  ao mapa real de registradores; não será inventado contrato de fabricante.
+
+### Próximo
+
+- Adquirir as normas licenciadas e emitir RFI a fornecedores de IPI.
+- Contratar responsável geotécnico e consultar laboratórios/OCD antes do layout
+  final, da instalação e de qualquer alegação de conformidade.
+
+## 2026-08-02 (26) — Evidência contextual e protótipo da Barra Sentinela
+
+**Fase:** 2/3 · **Duração:** longa
+
+### Feito
+
+- O painel ganhou `#/evidencias` e `/api/evidencia-contextual`: snapshot
+  exportável e identificado por SHA-256 que reúne gatilho meteorológico,
+  umidade local, rotação local e qualidade operacional sem calcular risco.
+- A interface declara ausências, validade, origem e falhas de consulta. O
+  snapshot não é persistido automaticamente e precisa acompanhar o registro
+  técnico quando usado em análise ou incidente.
+- A especificação [PROTOTIPO_BARRA_SENTINELA.md](docs/PROTOTIPO_BARRA_SENTINELA.md)
+  definiu fases P0/P1, arquitetura mecânica, sensores candidatos, montagem,
+  contrato de dados, segurança, aquisição e campanha de validação.
+- ANCORAGEM.md foi corrigido: a base de uma haste não é imune por definição a
+  interferência, 0,8–1,2 m não é profundidade validada para o piloto e
+  aterramento/SPDA não pode ser improvisado.
+- Validação local: contratos do painel, protocolo, decodificação cruzada,
+  alarmes, fluxo robusto, fontes externas, sintaxe, complexidade ≤ 10 e
+  verificação visual desktop/móvel. Em 390 px, o painel não apresenta mais
+  transbordamento horizontal na nova página.
+
+### Decidido
+
+- Barra de medição e mastro de serviço são mecanicamente independentes.
+- ADXL355 permanece candidato principal; SCL3300-D01 é referência comparativa.
+  TEROS 12 é referência de umidade para calibração com solo local. Nenhum deles
+  recebe status de instrumento geotécnico certificado por catálogo.
+- Chuva, umidade e inclinação permanecem camadas independentes até existir
+  validação local e decisão institucional; valores de protótipo não alimentam
+  regra de alerta.
+
+### Próximo
+
+1. Adquirir um canal de inclinação e um canal de umidade de referência para P0.
+2. Implementar a próxima versão do quadro multiprofundidade após fechar a
+   interface elétrica e os identificadores reais dos sensores.
+3. Validar no Home Server e publicar o painel somente em uma ação de deploy
+   autorizada; esta sessão não alterou serviços remotos.
+
+---
+
 ## 2026-08-01 (25) — Recorte piloto e fontes meteorológicas operacionais
 
 **Fase:** 3 · **Duração:** média

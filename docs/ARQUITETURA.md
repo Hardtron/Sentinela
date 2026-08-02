@@ -151,6 +151,11 @@ Defesa Civil.
 
 **Status:** aceito · 30/07/2026
 
+> **Escopo revisto pela ADR-010.** O nó pode executar diagnóstico e uma regra
+> técnica previamente validada, mas a cadeia inclinometricamente conforme é um
+> subsistema independente. Até validação geotécnica e institucional, nenhuma
+> regra local recebe status de alerta decisório ou aciona evacuação.
+
 **Contexto.** LoRaWAN Classe A só recebe downlink depois de um uplink, o que
 introduz latência incompatível com alerta imediato. Classe C resolve a latência
 e destrói a autonomia.
@@ -325,3 +330,45 @@ oficial com cobertura útil do município-piloto — a densidade da rede varia
 muito —, um pluviômetro local volta a ser necessário. O campo `chuva_1h` e a
 coluna `fonte` já existem no protocolo e no banco justamente para permitir as
 duas origens sem mudança de formato.
+
+---
+
+## ADR-010 — Instrumento ISO separado da aquisição e telemetria
+
+**Status:** aceito · 02/08/2026
+
+**Contexto.** O protótipo da Barra Sentinela usa um MEMS superficial para medir
+rotação local. A meta do produto passou a incluir compatibilidade demonstrável
+com a ISO 18674-3, cujo objeto é a medição de deslocamentos transversais ao
+longo de uma linha por inclinômetros, inclusive para planos ativos de
+cisalhamento em taludes.
+
+**Decisão.** O canal geotécnico primário será uma linha vertical em furo
+revestido, instrumentada com cadeia IPI biaxial e referência definida pelo
+projeto geotécnico. No primeiro produto, o Sentinela integrará um instrumento
+comercial cuja documentação, calibração e matriz normativa sejam aceitas. A
+unidade Sentinela será responsável por aquisição, armazenamento, integridade,
+telemetria e apresentação — não herdará nem ampliará a alegação de conformidade
+do transdutor.
+
+**Consequências.**
+
+- Heltec V2, ADXL355, SCL3300 e barra superficial continuam somente em P&D e
+  sensoriamento auxiliar até qualificação do sistema completo.
+- A interface prioritária do produto passa a incluir RS-485/Modbus isolado,
+  fonte protegida e memória para o perfil completo.
+- O protocolo compacto de um único ângulo não atende à cadeia IPI; será criada
+  versão multiponto sem quebrar os quadros experimentais existentes.
+- Calibração será contratada em laboratório acreditado, dentro de escopo
+  adequado, e cada segmento conservará série, certificado e incerteza.
+- Alegação `CONFORME ISO 18674-3` permanece proibida até aquisição licenciada
+  da norma, matriz cláusula a cláusula, ensaios e avaliação externa aplicável.
+- O projeto do furo, casing, orientação, referência e profundidade exige
+  responsável geotécnico e ART.
+
+**Alternativa rejeitada.** Transformar diretamente o ADXL355 superficial em
+“inclinômetro ISO”. A qualidade do componente não demonstra o comportamento da
+linha de medição, encapsulamento, juntas, casing, instalação, calibração e
+redução de dados.
+
+Detalhamento: [INSTRUMENTACAO_GEOTECNICA_ISO.md](INSTRUMENTACAO_GEOTECNICA_ISO.md).

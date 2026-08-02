@@ -142,9 +142,74 @@ dimensionamento físico incompatível com 915 MHz. Sem relação com o rádio Lo
 — ver HARDWARE.md. Marcada **[E]** por não haver datasheet da V2 com o
 componente explicitamente rotulado (só V3/V4, mesmo fabricante e convenção).
 
+### R7 — Barra de medição e mastro de rádio foram separados **[corrigido]**
+
+ANCORAGEM.md dizia que a rotação na base de uma haste alta seria "zero por
+definição" e apresentava 0,8–1,2 m como ponto de partida de instalação. A
+afirmação ignorava folga, deformação local, cabo e acoplamento solo–estrutura;
+a profundidade não foi validada no solo do piloto.
+
+**Correção:** o protótipo passa a ter barra de medição e mastro de serviço
+mecanicamente independentes. O tubo de 2,5 m e a faixa anterior permanecem
+somente como geometria/histórico de corpo de prova **[E]**. Profundidade,
+acoplamento, fundação, vento e proteção contra descargas precisam da
+caracterização e responsabilidade técnica correspondentes. Ver
+[PROTOTIPO_BARRA_SENTINELA.md](PROTOTIPO_BARRA_SENTINELA.md).
+
+### R8 — Um MEMS superficial não representa a ISO 18674-3 **[corrigido]**
+
+A barra com um acelerômetro mede rotação local, mas não reconstrói deslocamento
+transversal ao longo de uma linha nem identifica a profundidade de uma zona de
+cisalhamento. Ela foi reclassificada como P&D auxiliar. O produto-alvo passa a
+integrar uma cadeia IPI biaxial em casing vertical, com datum, calibração,
+perfil bruto e redução versionada. Ver ADR-010 e
+[INSTRUMENTACAO_GEOTECNICA_ISO.md](INSTRUMENTACAO_GEOTECNICA_ISO.md).
+
+Essa conclusão está limitada ao escopo público da ISO. A matriz cláusula a
+cláusula depende da cópia licenciada da ISO 18674-3:2017 e da Emenda 1:2020;
+nenhum resumo público autoriza declarar conformidade.
+
 ---
 
 ## 4. Bibliografia por área
+
+### 4.0 Normas e infraestrutura de conformidade
+
+- [ISO 18674-1:2015](https://www.iso.org/standard/63168.html) — regras gerais
+  para monitoramento geotécnico por instrumentação de campo. · **[N]**
+- [ISO 18674-3:2017](https://www.iso.org/standard/69207.html) e
+  [Emenda 1:2020](https://www.iso.org/standard/78218.html) — medição de
+  deslocamentos transversais por inclinômetros; textos integrais licenciados
+  ainda precisam ser adquiridos para a matriz de conformidade. · **[N]**
+- [ISO 18674-4:2020](https://www.iso.org/standard/73819.html) — medição de
+  pressão de poros por piezômetros; aplicável a uma futura camada, não ao
+  primeiro escopo inclinômetro. · **[N]**
+- [ISO/IEC 17025:2017](https://www.iso.org/standard/66912.html) e
+  [RBC/Inmetro](https://www.gov.br/inmetro/pt-br/centrais-de-conteudo/sistemas/rbc)
+  — competência e consulta do escopo de laboratórios de calibração/ensaio. ·
+  **[N]**
+- [IEC 61326-1:2020](https://webstore.iec.ch/en/publication/67782) e
+  [IEC 61010-1](https://webstore.iec.ch/en/publication/4279) — EMC e segurança
+  de equipamento de medição, controle e laboratório; aplicabilidade e edição
+  final devem ser confirmadas no plano de certificação. · **[N]**
+- [IEC 60529](https://webstore.iec.ch/en/publication/2452) e série IEC 60068 —
+  grau de proteção e ensaios ambientais do conjunto. Severidades dependem do
+  perfil ambiental aprovado. · **[N]**
+- [IEC 62133-2](https://webstore.iec.ch/en/publication/32662) e
+  [ONU, Manual de Ensaios e Critérios, subseção 38.3](https://unece.org/transport/dangerous-goods/rev8-files)
+  — segurança e transporte da solução final com bateria de lítio. · **[N]**
+- [IEC 62443-4-1](https://webstore.iec.ch/en/publication/33615) e
+  [IEC 62443-4-2](https://webstore.iec.ch/en/publication/34421) — processo de
+  desenvolvimento seguro e requisitos de componentes IACS. · **[N]**
+- [ISO/IEC 27001:2022](https://www.iso.org/standard/27001) — requisitos para
+  sistema de gestão de segurança da informação da organização. · **[N]**
+- [ISO 22320:2018](https://www.iso.org/standard/67851.html) — diretrizes para
+  gestão de incidentes, papéis e cooperação. · **[N]**
+- [ISO 22324:2022](https://www.iso.org/standard/84559.html) — diretrizes para
+  alertas codificados por cores. · **[N]**
+- [IEC 61508:2010](https://webstore.iec.ch/en/publication/22273) — segurança
+  funcional de sistemas E/E/PE; aplicabilidade condicionada a futura função de
+  segurança, não ao escopo atual de apoio à decisão. · **[N]**
 
 ### 4.1 Deslizamentos e mecanismo de ruptura
 
@@ -188,6 +253,17 @@ componente explicitamente rotulado (só V3/V4, mesmo fabricante e convenção).
 - **Inclinômetros MEMS in-place** — resolução da ordem de 0,0025°.
   [Sisgeo](https://sisgeo.com/products/ipi-in-place-inclinometers/mems-in-place-inclinometers/) ·
   [ESS](https://www.essearth.com/product/geostring-in-place-mems-inclinometer/) · **[L]**
+- **Bogaard & Greco (2018)** — distingue precipitação como gatilho
+  meteorológico dos processos hidrológicos que causam a instabilidade e discute
+  limiares hidrometeorológicos.
+  [NHESS](https://doi.org/10.5194/nhess-18-31-2018) · **[L]**
+- **Halter et al. (2025)** — avalia a incorporação de umidade in situ a modelos
+  de alerta baseados em precipitação.
+  [Landslides](https://doi.org/10.1007/s10346-025-02599-4) · **[L]**
+- **CEMADEN RedeGeo** — estações geotécnicas associam chuva e umidade em várias
+  camadas, com perfil chegando a 3 m; parâmetros e limiares seguem em
+  aprimoramento regional.
+  [CEMADEN](https://www.gov.br/cemaden/pt-br/assuntos/noticias-cemaden/redegeo-e-informacoes-sobre-umidade-de-solo-das-encostas-para-prevencao-de-deslizamentos-sao-apresentadas-pelo-cemaden) · **[G]**
 
 ### 4.3 Propagação LoRa
 
@@ -215,8 +291,36 @@ componente explicitamente rotulado (só V3/V4, mesmo fabricante e convenção).
 - **ABNT NBR 5419** — Proteção contra descargas atmosféricas. · **[N]**
 - **ABNT NBR 5410** — Instalações elétricas de baixa tensão. · **[N]**
 - **NR-35** — Trabalho em altura · **NR-10** — Segurança em eletricidade. · **[N]**
+- [ISO 17892-1:2014](https://www.iso.org/standard/55243.html) — determinação do
+  teor de água em solo por secagem em estufa. · **[N]**
+- [IEC 60529](https://webstore.iec.ch/en/publication/2452) — graus de proteção
+  providos por invólucros (código IP). · **[N]**
 
-### 4.5 Telecomunicações e regulação
+### 4.5 Sensores candidatos do protótipo
+
+Sistemas comerciais abaixo são referências para RFI, não produtos aprovados
+automaticamente pelo Sentinela nem prova de conformidade ISO 18674-3:
+
+- [GEOKON 6180](https://www.geokon.com/6180) — IPI biaxial endereçável,
+  comunicação RS-485/Modbus e segmentos serializados/calibrados segundo a
+  documentação do fabricante. · **[L]**
+- [Sisgeo S411/S412](https://sisgeo.com/products/ipi-in-place-inclinometers/mems-in-place-inclinometers/)
+  — cadeia MEMS IPI em casing, variantes uni/biaxiais e Modbus RS-485 segundo o
+  fabricante. · **[L]**
+- [RST MEMS Digital IPI](https://rstinstruments.com/wp-content/uploads/ICM0062K-MEMS-In-Place-Inclinometer-System-Instruction-Manual.pdf)
+  — sistema IPI digital e manual de instalação do fabricante. · **[L]**
+
+- [Analog Devices ADXL355](https://www.analog.com/en/products/adxl355.html) —
+  acelerômetro digital de três eixos, baixo ruído/deriva, temperatura e
+  autoteste; candidato já adotado para ensaio de rotação local. · **[L]**
+- [Murata SCL3300-D01](https://www.murata.com/en-us/products/sensor/overview/item/scl3300-d01) —
+  inclinômetro MEMS de três eixos com saída SPI; referência comparativa, não
+  substituto automático de instrumento geotécnico. · **[L]**
+- [METER Group TEROS 11/12](https://publications.metergroup.com/Manuals/20587_TEROS11-12_Manual_Web.pdf) —
+  sonda de umidade/temperatura (e EC no TEROS 12), DDI/SDI-12; referência para
+  calibração com solo local. · **[L]**
+
+### 4.6 Telecomunicações e regulação
 
 - [Resolução Anatel nº 680/2017](https://informacoes.anatel.gov.br/legislacao/resolucoes/2017/936resolucao-680) — radiação restrita. · **[N]**
 - [Ato Anatel nº 14448/2017](https://informacoes.anatel.gov.br/legislacao/atos-de-certificacao-de-produtos/2017/1139-) — requisitos técnicos.
@@ -225,6 +329,11 @@ componente explicitamente rotulado (só V3/V4, mesmo fabricante e convenção).
   6 dBi para equipamentos de espalhamento espectral, com redução de potência
   dB-a-dB acima disso) — base do CONFORMIDADE.md §1.1.1. · **[N]**
 - [Resolução Anatel nº 715/2019](https://informacoes.anatel.gov.br/legislacao/resolucoes/2019/1350-resolucao-715) — avaliação de conformidade e homologação. · **[N]**
+- [Anatel — Certificação de Produtos](https://www.gov.br/anatel/pt-br/regulado/certificacao-de-produtos)
+  — orientação oficial vigente; consulta de 02/08/2026 registra homologação
+  como pré-requisito para comercialização e utilização. A página consolidada
+  da Resolução 715 registra alterações posteriores e suspensão parcial em
+  2026; confirmar o procedimento aplicável com OCD. · **[G]**
 - **Semtech SX1276 datasheet** — sensibilidade por spreading factor. **[?]**
   Ainda não citado formalmente; os valores em uso vêm de tabela do fabricante e
   precisam do link do documento oficial. · **[?]**
@@ -233,7 +342,7 @@ componente explicitamente rotulado (só V3/V4, mesmo fabricante e convenção).
   [docs.heltec.org (V3/V4)](https://docs.heltec.org/en/node/esp32/wifi_lora_32/index.html) —
   usado para identificar a bobina de antena WiFi/BT (HARDWARE.md). · **[L]**
 
-### 4.6 Legislação e habilitação
+### 4.7 Legislação e habilitação
 
 - [Lei nº 12.608/2012](https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12608.htm) — PNPDEC. · **[N]**
 - [Lei nº 13.709/2018](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm) — LGPD. · **[N]**

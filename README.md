@@ -4,10 +4,11 @@ Rede de sensores LoRa para monitoramento de áreas de risco geológico-hidrológ
 em múltiplos municípios.
 
 Cada dispositivo de campo é uma **Atalaia**; o gateway que congrega uma área é
-um **Farol**. O sistema mede chuva acumulada, saturação do solo, inclinação de
-talude e condições atmosféricas, correlaciona essas grandezas com a base geoespacial de
-suscetibilidade e população exposta, e entrega à Defesa Civil informação
-acionável sobre risco iminente de deslizamento.
+um **Farol**. A plataforma integra chuva, umidade do solo, atmosfera e dados
+geoespaciais. O canal geotécnico de produto está sendo redesenhado como perfil
+de deslocamento por cadeia IPI; as Heltec com MEMS superficial medem apenas
+rotação experimental e não são instrumento conforme ISO 18674-3. Esses dados
+apoiam a análise da Defesa Civil sem produzir diagnóstico autônomo.
 
 > **O Sentinela é um sistema de apoio à decisão.** Ele não substitui o
 > julgamento técnico da Defesa Civil nem aciona evacuação de forma autônoma.
@@ -35,6 +36,9 @@ para a fronteira entre valores experimentais e decisórios.
 | [docs/CAMPO.md](docs/CAMPO.md) | Resultados dos ensaios de enlace |
 | [docs/PROPAGACAO.md](docs/PROPAGACAO.md) | Modelo de propagação calibrado e dimensionamento |
 | [docs/ANCORAGEM.md](docs/ANCORAGEM.md) | Projeto de fixação da Atalaia no talude |
+| [docs/PROTOTIPO_BARRA_SENTINELA.md](docs/PROTOTIPO_BARRA_SENTINELA.md) | Especificação, sensores, montagem e validação do protótipo de medição |
+| [docs/INSTRUMENTACAO_GEOTECNICA_ISO.md](docs/INSTRUMENTACAO_GEOTECNICA_ISO.md) | Arquitetura-alvo ISO 18674-3, requisitos metrológicos e caminho de conformidade |
+| [docs/HANDOFF_2026-08-02.md](docs/HANDOFF_2026-08-02.md) | Estado exato, decisões, mudanças locais e roteiro de transição para a próxima equipe |
 | [docs/MANUTENCAO.md](docs/MANUTENCAO.md) | Saúde da frota, alarmes e manutenção preditiva |
 | [docs/CONFORMIDADE.md](docs/CONFORMIDADE.md) | Normas aplicáveis — Anatel, defesa civil, geotecnia, LGPD |
 | [docs/RESPONSABILIDADE_TECNICA.md](docs/RESPONSABILIDADE_TECNICA.md) | Habilitação profissional e camadas de responsabilidade |

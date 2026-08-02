@@ -385,6 +385,100 @@ rotas["situacao"] = async () => {
 /* Alias: rota padrão é "situacao", não mais "visao-geral" */
 rotas["visao-geral"] = rotas["situacao"];
 
+/* Evidência contextual: reúne as camadas disponíveis sem calcular risco.
+   O JSON exportado é o mesmo exibido na tela e leva hash próprio, para que
+   uma análise técnica possa citar exatamente qual retrato foi consultado. */
+let ultimoPacoteEvidencia = null;
+
+rotas["evidencias"] = async () => {
+  const p = await api("/api/evidencia-contextual");
+  ultimoPacoteEvidencia = p;
+  const met = p.camadas?.gatilho_meteorologico || {};
+  const hid = p.camadas?.estado_hidrologico_local || {};
+  const mec = p.camadas?.resposta_mecanica_local || {};
+  const qua = p.camadas?.qualidade_operacional || {};
+  const obs = met.observacoes_pontuais || [];
+  const produtos = met.produtos_grade_radar_satelite || [];
+  const provedores = new Set(obs.map((o) => o.provedor_codigo).filter(Boolean));
+  const erros = Object.entries(p.erros_consulta || {}).filter(([, v]) => v);
+
+  const estadoCamada = (leituras, campo) => leituras.length
+    ? leituras.some((x) => x[campo] === true)
+      ? origem("OBSERVADO", "há leitura válida")
+      : origem("SEM_DADO", "sem validade confirmada")
+    : origem("SEM_DADO", "sem leitura");
+
+  return cabecalho("Evidências para decisão",
+    "Retrato auditável das camadas disponíveis. Não produz nível de risco nem substitui avaliação técnica.")
+    + `<div class="acoes-barra imprimir-nao">
+        <button id="baixar-evidencia" class="btn btn-primario" type="button">Baixar snapshot JSON</button>
+        <button id="atualizar-evidencia" class="btn btn-secundario" type="button">Atualizar consulta</button>
+        <span class="espaco"></span>
+        ${origem(p.classificacao, p.classificacao)}
+      </div>`
+    + `<div class="grade g4">
+      ${metrica("Observações pontuais", obs.length,
+        provedores.size ? `${provedores.size} provedor(es) · sem soma entre fontes` : "sem dado")}
+      ${metrica("Produtos espaciais", produtos.length,
+        "grade, radar e satélite preservados por produto")}
+      ${metrica("Umidade local", estadoCamada(hid.leituras || [], "solo_valido"),
+        `${(hid.leituras || []).length} Atalaia(s) com registro`, "texto")}
+      ${metrica("Inclinação local", estadoCamada(mec.leituras || [], "inclin_valida"),
+        `${(mec.leituras || []).length} Atalaia(s) com registro`, "texto")}
+    </div>`
+    + secao("Como as evidências são associadas")
+    + `<div class="cadeia" role="list">
+      ${cartaoEvidencia("1 · Gatilho meteorológico", "OBSERVADO",
+        `${obs.length} observação(ões) pontuais e ${produtos.length} produto(s) espacial(is).`, met.escopo)}
+      ${cartaoEvidencia("2 · Estado hídrico local", (hid.leituras || []).length ? "OBSERVADO" : "SEM_DADO",
+        `${(hid.leituras || []).length} leitura(s) de umidade disponíveis.`, hid.escopo)}
+      ${cartaoEvidencia("3 · Resposta mecânica", (mec.leituras || []).length ? "OBSERVADO" : "SEM_DADO",
+        `${(mec.leituras || []).length} leitura(s) de inclinação disponíveis.`, mec.escopo)}
+      ${cartaoEvidencia("4 · Confiança operacional", "OBSERVADO",
+        `${(qua.sensores_invalidos || []).length} registro(s) com validade explicitamente recusada.`,
+        "Saúde da cadeia não é evidência de estabilidade do talude.")}
+    </div>`
+    + secao("Ausências que impedem classificação automática")
+    + `<div class="aviso"><ul>${(p.ausencias_e_limitacoes || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+       ${erros.length ? `<p><strong>Falhas desta consulta:</strong> ${erros.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(" · ")}</p>` : ""}</div>`
+    + secao("Integridade do snapshot")
+    + `<div class="cartao"><dl class="dl-grade">
+       <div><dt>Esquema</dt><dd><code>${esc(p.esquema)}</code></dd></div>
+       <div><dt>Gerado em</dt><dd>${dataLegivel(p.gerado_em)}</dd></div>
+       <div><dt>SHA-256</dt><dd class="hash">${esc(p.integridade?.sha256 || "não calculado")}</dd></div>
+       <div><dt>Escopo</dt><dd>${esc(p.integridade?.escopo || "não informado")}</dd></div>
+       </dl></div>`
+    + `<p class="nota">O hash identifica o conteúdo desta consulta. O painel não o persiste automaticamente;
+       ao usar o snapshot em análise, laudo ou incidente, o arquivo exportado deve integrar o registro correspondente.</p>`;
+};
+
+function cartaoEvidencia(nome, tipo, fato, limite) {
+  return `<article class="cartao fonte" role="listitem">
+    <div class="fonte-cab"><strong>${esc(nome)}</strong>${origem(tipo)}</div>
+    <p>${esc(fato)}</p><dl><div><dt>Limitação</dt><dd>${esc(limite || "não informada")}</dd></div></dl>
+  </article>`;
+}
+
+function ligaEvidencias() {
+  const baixar = el("baixar-evidencia");
+  const atualizar = el("atualizar-evidencia");
+  if (atualizar) atualizar.onclick = () => navega();
+  if (!baixar || !ultimoPacoteEvidencia) return;
+  baixar.onclick = () => {
+    const blob = new Blob([JSON.stringify(ultimoPacoteEvidencia, null, 2) + "\n"],
+      { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const instante = String(ultimoPacoteEvidencia.gerado_em || "snapshot")
+      .replace(/[:.]/g, "-");
+    a.href = url;
+    a.download = `sentinela-evidencia-${instante}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    el("estado-interface").textContent = "Snapshot de evidência preparado para download";
+  };
+}
+
 /* ================================================= T-30: PROGRESSO (consolida visão geral + pendências + timeline) */
 
 rotas["progresso"] = async () => {
@@ -1595,6 +1689,7 @@ async function depoisDeRenderizar(nome, params) {
   if (nome === "alertas" || nome === "frota") return ligaFrota();
   if (nome === "monitor") return ligaMonitor();
   if (nome === "mapa") return ligaMapa();
+  if (nome === "evidencias") return ligaEvidencias();
   if (nome === "atalaias") return ligaAtalaias();
   if (nome === "comissionamento") return ligaWizard();
 }

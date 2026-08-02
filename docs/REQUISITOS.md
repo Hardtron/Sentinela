@@ -34,8 +34,10 @@ ser visível antes da falha.
 mantém o rádio silencioso é indistinguível de nó destruído — e o RC-02 cobre
 isso, mas o nó deve tentar se recuperar sozinho primeiro.
 
-**RC-05 — Autonomia de decisão.** O nó avalia sua regra crítica localmente e
-permanece funcional sem enlace (ADR-006).
+**RC-05 — Operação local segura.** O nó permanece funcional sem enlace e pode
+avaliar apenas regra técnica previamente validada, versionada e habilitada no
+comissionamento (ADR-006 e ADR-010). Na ausência dessa regra, limita-se a
+medir, preservar dados e sinalizar falhas; não infere risco geotécnico.
 
 **RC-06 — Persistência de estado.** Acumulados e referência de calibração
 sobrevivem a reinício (NVS). Um reset não pode zerar a chuva acumulada de 72 h.
@@ -46,8 +48,11 @@ errado é pior que valor ausente.
 
 ## Alerta
 
-**RC-08 — Alerta local independente.** Sinalização local (sirene/luz), quando
-houver, é acionada pelo nó, sem depender de downlink.
+**RC-08 — Sinalização local condicionada.** Sinalização local (sirene/luz)
+permanece desabilitada no piloto enquanto não houver regra validada, protocolo
+institucional, responsabilidade definida e autorização de comissionamento.
+Quando formalmente habilitada, não pode depender de downlink para executar o
+comportamento aprovado.
 
 **RC-09 — Confirmação cruzada.** Alerta de movimento exige corroboração —
 persistência temporal e, quando possível, correlação com chuva acumulada ou
@@ -97,6 +102,48 @@ sistemas de alarme perderem credibilidade.
 **RC-18 — Sugestão antes de ordem de serviço.** Enquanto as assinaturas de
 falha não forem validadas em campo, os alarmes de degradação lenta produzem
 sugestão ao operador, não despacho automático de equipe.
+
+## Instrumentação geotécnica
+
+Derivados da arquitetura-alvo em
+[INSTRUMENTACAO_GEOTECNICA_ISO.md](INSTRUMENTACAO_GEOTECNICA_ISO.md). Estes
+requisitos não afirmam conformidade: definem o que deverá ser demonstrado por
+matriz e ensaios contra a edição licenciada das normas aplicáveis.
+
+**RC-19 — Separação entre medição e transporte.** O subsistema inclinômetro é
+o instrumento geotécnico; a unidade Sentinela adquire, conserva e transporta
+seus dados. Sucesso de rádio, MQTT ou banco não comprova desempenho metrológico.
+
+**RC-20 — Perfil completo.** Cada amostra preserva identidade, ordem, posição,
+registradores brutos, duas componentes, temperatura disponível e qualidade de
+cada segmento. Um ângulo ou resumo único não substitui o perfil.
+
+**RC-21 — Rastreabilidade metrológica.** Sensor, casing, logger, firmware,
+calibração, incerteza, datum, eixo e instalação permanecem ligados à amostra.
+Calibração só é declarada acreditada quando o laboratório e o serviço estão
+dentro do escopo publicado da acreditação.
+
+**RC-22 — Configuração imutável no tempo.** Troca de segmento, endereço,
+orientação, comprimento, calibração, baseline ou algoritmo cria nova revisão
+com vigência; histórico não é sobrescrito nem recalculado silenciosamente.
+
+**RC-23 — Estado de conformidade explícito.** Interface, API, documento e
+etiqueta distinguem `NAO_AVALIADO`, `EM_DESENVOLVIMENTO`, `ENSAIO_INTERNO`,
+`ENSAIO_TERCEIRO`, `CONFORME` e `NAO_CONFORME`. Catálogo de componente,
+certificação do fabricante ou ensaio interno não autoriza `CONFORME`.
+
+**RC-24 — Redução verificável.** O cálculo de deslocamento identifica versão,
+baseline, referência e unidades e é verificável por vetores congelados e método
+independente definido no plano de ensaio.
+
+**RC-25 — Falha explícita do perfil.** Segmento ausente, duplicado, invertido,
+fora de ordem, saturado ou sem calibração válida torna a condição visível e
+impede que o perfil incompleto seja apresentado como válido.
+
+**RC-26 — Desenvolvimento seguro.** A unidade de aquisição mantém identidade
+única, atualização controlada, inventário de componentes, proteção de segredos,
+registro de eventos e processo de vulnerabilidades compatível com o contexto
+operacional definido pelo órgão usuário.
 
 ---
 

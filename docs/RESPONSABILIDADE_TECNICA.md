@@ -53,6 +53,15 @@ A confusão nesse tipo de projeto vem de tratar como uma só coisa o que são tr
 O projeto já está desenhado com essa separação — é o que RC-00 estabelece
 (REQUISITOS.md). Isso não foi acidente: é o que torna o arranjo defensável.
 
+Para a arquitetura ISO 18674-3, a camada de produto ainda se subdivide sem
+transferir responsabilidades: o fornecedor responde pelas alegações e
+certificados da cadeia IPI; o Sentinela responde pela unidade de aquisição,
+integridade e telemetria; laboratório acreditado responde somente pelos
+ensaios dentro do seu escopo; o responsável geotécnico define furo, casing,
+datum, instalação, baseline e interpretação. Uma certificação ISO 9001 do
+fabricante não substitui calibração, avaliação do instrumento nem ART da
+aplicação.
+
 ---
 
 ## 4. O que a formação atual permite
