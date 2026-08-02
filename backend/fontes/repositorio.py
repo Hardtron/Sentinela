@@ -6,7 +6,7 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import VERSAO_COLETOR
+from . import VERSAO_COLETOR, VERSAO_NORMALIZADOR
 
 RAIZ_BACKEND = Path(__file__).resolve().parents[1]
 
@@ -104,14 +104,17 @@ class Repositorio:
                 )
                 SELECT id, TRUE, FALSE FROM novo
                 UNION ALL
-                SELECT id, FALSE, processado_em IS NOT NULL FROM fonte_ativo_bruto
+                SELECT id, FALSE,
+                       processado_em IS NOT NULL
+                       AND metadados->>'normalizador_versao'=%s
+                  FROM fonte_ativo_bruto
                  WHERE conjunto_id=%s AND sha256=%s
                    AND NOT EXISTS (SELECT 1 FROM novo)
                 LIMIT 1
             """, (conjunto_id, execucao_id, resposta.url_publica,
                   resposta.tipo_conteudo, len(resposta.dados), sha256,
                   str(caminho), json.dumps(metadados or {}, ensure_ascii=False),
-                  conjunto_id, sha256))
+                  VERSAO_NORMALIZADOR, conjunto_id, sha256))
             resultado = cur.fetchone()
         self.conexao.commit()
         return resultado[0], bool(resultado[1]), bool(resultado[2])
@@ -196,8 +199,12 @@ class Repositorio:
                       json.dumps(conteudo.metadados, ensure_ascii=False)))
                 aceitos += cur.rowcount
             cur.execute("""
-                UPDATE fonte_ativo_bruto SET processado_em=now() WHERE id=%s
-            """, (ativo_id,))
+                UPDATE fonte_ativo_bruto
+                   SET processado_em=now(),
+                       metadados=jsonb_set(metadados,
+                           '{normalizador_versao}', %s::jsonb, true)
+                 WHERE id=%s
+            """, (json.dumps(VERSAO_NORMALIZADOR), ativo_id))
         self.conexao.commit()
         return aceitos
 
@@ -233,6 +240,7 @@ def configuracao_publica(requisicao):
         "cabecalhos": sorted(requisicao.cabecalhos),
         "metodo": requisicao.metodo,
         "metadados": requisicao.metadados,
+        "normalizador_versao": VERSAO_NORMALIZADOR,
         "coletado_em": datetime.now(timezone.utc).isoformat(),
     }
 

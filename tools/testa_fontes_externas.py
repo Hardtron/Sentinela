@@ -16,7 +16,8 @@ from fontes.contrato import ConfiguracaoAusente, Requisicao, Resposta  # noqa: E
 from fontes.provedores import (_imagem_imerg, _item_imerg, _token_ana,
                                _token_cemaden, normaliza,
                                requisicoes)  # noqa: E402
-from fontes.repositorio import _revisao  # noqa: E402
+from fontes import VERSAO_NORMALIZADOR  # noqa: E402
+from fontes.repositorio import _revisao, configuracao_publica  # noqa: E402
 from fontes.contrato import Observacao  # noqa: E402
 from fontes.cli import coleta_requisicao  # noqa: E402
 from fontes.transporte import guarda_bruto, uri_publica  # noqa: E402
@@ -289,6 +290,13 @@ def testa_revisao_por_conteudo():
     corrigida = Observacao("A", instante, "x", 1.1, "mm", periodo_s=3600)
     verifica(_revisao(primeira) == _revisao(repetida), "repetição criou revisão")
     verifica(_revisao(primeira) != _revisao(corrigida), "correção foi perdida")
+
+
+def testa_snapshot_declara_versao_do_normalizador():
+    req = Requisicao("SGB", "setorizacao-risco", "https://x.test")
+    snapshot = configuracao_publica(req)
+    verifica(snapshot["normalizador_versao"] == VERSAO_NORMALIZADOR,
+             "execução não registrou a versão do contrato de normalização")
 
 
 def testa_geojson_preserva_sem_reinterpretar():

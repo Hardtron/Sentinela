@@ -25,11 +25,14 @@ A migração `011_fontes_externas.sql` cria:
 - view `fonte_estado`, consumida por **Cadeia e fontes** no painel.
 
 O coletor grava primeiro o bruto por `rename` atômico no mesmo filesystem. Uma
-resposta idêntica já processada é `SEM_NOVIDADE`; não duplica ativo. Um bruto
-em quarentena permanece reprocessável em execuções futuras. Correções do provedor
-podem coexistir porque conteúdo diferente tem outro hash e observações têm
-revisão. Corpos de erro, senhas, tokens e chaves não entram no log, banco ou URI
-persistida.
+resposta idêntica já processada pela versão atual do normalizador é
+`SEM_NOVIDADE`; não duplica ativo. Cada ativo registra
+`normalizador_versao`: ao evoluir o contrato, o bruto existente pode ser
+reinterpretado idempotentemente, sem apagar nem substituir a evidência. Um
+bruto em quarentena também permanece reprocessável em execuções futuras.
+Correções do provedor podem coexistir porque conteúdo diferente tem outro hash
+e observações têm revisão. Corpos de erro, senhas, tokens e chaves não entram no
+log, banco ou URI persistida.
 
 Quando o servidor publica `ETag` ou `Last-Modified`, a próxima execução usa
 `If-None-Match`/`If-Modified-Since`; HTTP 304 vira `SEM_NOVIDADE` sem baixar o
