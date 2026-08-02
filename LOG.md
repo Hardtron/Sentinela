@@ -42,6 +42,10 @@ apenas o apontamento.
 - O painel passou a expor quantidade e faixa das células IMERG, explicitamente
   como estimativa em grade sem soma, média municipal ou uso automático em
   alerta.
+- A validação ponta a ponta mostrou que `datahora` do CEMADEN acompanha o
+  relógio UTC, conforme a declaração oficial do órgão. A interpretação local
+  anterior adiantava o dado em três horas; o coletor agora exige UTC e o painel
+  escolhe a revisão recebida mais recentemente sem apagar a evidência antiga.
 
 ### Decidido
 

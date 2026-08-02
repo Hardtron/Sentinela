@@ -325,14 +325,15 @@ def fontes_observacoes():
                e.codigo_externo, e.nome AS estacao, e.municipio, e.uf,
                o.medido_em, o.recebido_em, o.variavel, o.valor, o.unidade,
                o.periodo_s, o.qualificacao_origem, o.revisao,
-               b.sha256, b.fonte_uri
+               o.metadados, b.sha256, b.fonte_uri
           FROM fonte_observacao_atual o
           JOIN fonte_conjunto c ON c.id=o.conjunto_id
           JOIN fonte_provedor p ON p.codigo=c.provedor_codigo
           JOIN fonte_estacao e ON e.id=o.estacao_id
           LEFT JOIN fonte_ativo_bruto b ON b.id=o.ativo_bruto_id
          ORDER BY p.codigo, e.codigo_externo, o.variavel,
-                  coalesce(o.periodo_s, -1), o.medido_em DESC
+                  coalesce(o.periodo_s, -1), o.recebido_em DESC,
+                  o.medido_em DESC
     """)
     return {
         "observacoes": _limpa(linhas),

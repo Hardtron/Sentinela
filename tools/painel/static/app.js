@@ -828,7 +828,7 @@ function blocoObservacoesExternas(dados) {
       { rot: "Grandeza", val: (o) => `${esc(o.variavel)}<br><span class="miudo">período ${periodoLegivel(o.periodo_s)}</span>` },
       { rot: "Valor observado", val: (o) => `<strong>${esc(o.valor)} ${esc(o.unidade)}</strong>`, classe: "num" },
       { rot: "Medido em", val: (o) => `${dataLegivel(o.medido_em)}<br><span class="miudo">recebido ${dataLegivel(o.recebido_em)}</span>` },
-      { rot: "Qualidade / evidência", val: (o) => `${esc(o.qualificacao_origem || "sem código de qualidade")}${o.sha256 ? `<br><span class="hash">sha256 ${esc(o.sha256.slice(0, 12))}…</span>` : ""}` },
+      { rot: "Qualidade / evidência", val: (o) => `${esc(o.qualificacao_origem || "sem código de qualidade")}${o.metadados?.fuso_origem ? `<br><span class="miudo">tempo ${esc(o.metadados.fuso_origem)}</span>` : ""}${o.sha256 ? `<br><span class="hash">sha256 ${esc(o.sha256.slice(0, 12))}…</span>` : ""}` },
     ], dados.observacoes);
 }
 

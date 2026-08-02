@@ -105,6 +105,9 @@ operação tem validade curta, o coletor aceita `CEMADEN_PED_EMAIL` e
 `CEMADEN_PED_PASSWORD` no arquivo protegido e solicita um token no início da
 coleta. `CEMADEN_PED_TOKEN` existe somente como alternativa manual e expira;
 credenciais e corpo de autenticação não entram no plano, log, banco ou Git.
+O próprio CEMADEN declara que seus dados são registrados em UTC/GMT. Por isso
+`datahora` sem sufixo é interpretado exclusivamente como `UTC`, e cada
+observação carrega `fuso_origem=UTC`; configuração em horário local é recusada.
 No Home Server, a instalação sem eco é feita diretamente no terminal:
 
 ```bash
@@ -116,6 +119,7 @@ Fontes primárias consultadas:
 
 - [CEMADEN PED — Swagger](https://sws.cemaden.gov.br/PED/api/ui/)
 - [CEMADEN SGAA — emissão de token](https://sgaa.cemaden.gov.br/SGAA/api/ui/)
+- [CEMADEN — convenção temporal UTC/GMT](https://mapainterativo.cemaden.gov.br/)
 - [ANA HidroWebService — Swagger](https://www.ana.gov.br/hidrowebservice/swagger-ui/index.html)
 - [SGB — FeatureServer da Setorização de Risco](https://geoportal.sgb.gov.br/server/rest/services/gestaoterritorial/risco/FeatureServer/0)
 - [IBGE — API de Malhas](https://servicodados.ibge.gov.br/api/docs/malhas?versao=3)

@@ -74,13 +74,17 @@ def testa_cemaden_com_fuso_explicito():
     }]).encode()
     req = Requisicao("CEMADEN", "acumulados-recentes", "https://x.test")
     res = Resposta("https://x.test", 200, "application/json", dados)
-    normal = normaliza(req, res, {"CEMADEN_FUSO": "America/Sao_Paulo"})
+    normal = normaliza(req, res, {"CEMADEN_FUSO": "UTC"})
     verifica(len(normal.estacoes) == 1, "estação CEMADEN não normalizada")
     verifica(len(normal.observacoes) == 2, "acumulados ausentes/duplicados")
     verifica({o.periodo_s for o in normal.observacoes} == {3600, 86400},
              "períodos oficiais foram alterados")
     verifica(normal.observacoes[0].medido_em.utcoffset() is not None,
              "timestamp continuou sem fuso")
+    verifica(normal.observacoes[0].medido_em.utcoffset().total_seconds() == 0,
+             "timestamp CEMADEN não foi interpretado em UTC")
+    verifica(normal.observacoes[0].metadados["fuso_origem"] == "UTC",
+             "proveniência temporal não foi preservada")
 
 
 def testa_cemaden_recusa_fuso_ausente():
@@ -91,6 +95,16 @@ def testa_cemaden_recusa_fuso_ausente():
     except ConfiguracaoAusente:
         return
     raise AssertionError("CEMADEN aceitou data sem política de fuso")
+
+
+def testa_cemaden_recusa_fuso_local():
+    req = Requisicao("CEMADEN", "acumulados-recentes", "https://x.test")
+    res = Resposta("https://x.test", 200, "application/json", b"[]")
+    try:
+        normaliza(req, res, {"CEMADEN_FUSO": "America/Sao_Paulo"})
+    except ConfiguracaoAusente:
+        return
+    raise AssertionError("CEMADEN aceitou fuso local contra a fonte oficial")
 
 
 def testa_cemaden_renova_token_sem_vazar_credenciais():

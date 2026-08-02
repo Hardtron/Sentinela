@@ -6,7 +6,6 @@ import math
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .contrato import (ConfiguracaoAusente, ConteudoNormalizado, ContratoInvalido,
                        Estacao, Feicao, Observacao, Requisicao)
@@ -289,10 +288,9 @@ def normaliza(requisicao, resposta, ambiente=None):
 
 def _normaliza_cemaden(dados, ambiente):
     _exige(ambiente, "CEMADEN_FUSO")
-    try:
-        fuso = ZoneInfo(ambiente["CEMADEN_FUSO"])
-    except ZoneInfoNotFoundError as erro:
-        raise ConfiguracaoAusente("CEMADEN_FUSO não é um fuso IANA válido") from erro
+    if ambiente["CEMADEN_FUSO"] != "UTC":
+        raise ConfiguracaoAusente(
+            "CEMADEN_FUSO deve ser UTC conforme a convenção publicada pelo órgão")
     try:
         linhas = json.loads(dados)
     except (UnicodeDecodeError, json.JSONDecodeError) as erro:
@@ -310,7 +308,7 @@ def _normaliza_cemaden(dados, ambiente):
         codigo = str(linha["codestacao"])
         saida.estacoes.append(Estacao("CEMADEN", codigo,
                                       metadados={"codibge": linha.get("codibge")}))
-        instante = _instante_cemaden(linha.get("datahora"), fuso)
+        instante = _instante_cemaden(linha.get("datahora"), timezone.utc)
         for campo, periodo in periodos.items():
             if linha.get(campo) is None:
                 continue
@@ -321,7 +319,8 @@ def _normaliza_cemaden(dados, ambiente):
                     f"CEMADEN: {campo} não numérico no item {indice}") from erro
             saida.observacoes.append(Observacao(
                 codigo, instante, "precipitacao_acumulada", valor, "mm",
-                periodo_s=periodo, metadados={"campo_origem": campo}))
+                periodo_s=periodo,
+                metadados={"campo_origem": campo, "fuso_origem": "UTC"}))
     return saida
 
 
