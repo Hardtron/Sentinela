@@ -53,6 +53,13 @@ apenas o apontamento.
 1. Repetir periodicamente o ensaio de failover e acompanhar o uso da fila.
 2. Definir alarme explícito antes de a fila MQTT atingir seu teto.
 
+### Ajuste encontrado no primeiro ensaio
+
+O comando inicial de simulação não desmontou a Ethernet ativa, mas expôs que
+uma interface com carrier e sem IP seria retestada imediatamente ao entrar no
+fallback. O primeiro reteste passou a respeitar os mesmos 30 s dos seguintes,
+evitando flapping e dando ao Wi-Fi uma janela real para assumir.
+
 ## 2026-08-01 (25) — Recorte piloto e fontes meteorológicas operacionais
 
 **Fase:** 3 · **Duração:** média

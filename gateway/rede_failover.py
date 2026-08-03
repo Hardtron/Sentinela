@@ -152,7 +152,10 @@ def main():
     anuncia(f"iniciado; alvo={ALVO} ethernet={ETHERNET} wifi={WIFI}")
     while True:
         saudavel = ethernet_saudavel()
-        aplica(estado.observa(saudavel))
+        transicao = estado.observa(saudavel)
+        aplica(transicao)
+        if transicao == "WIFI":
+            proximo_reteste = time.monotonic() + RETESTE_ETHERNET
         if estado.modo == "WIFI":
             liga_wifi()
             agora = time.monotonic()

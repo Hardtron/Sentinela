@@ -45,6 +45,9 @@ def testa_artefatos():
     verifica("SENTINELA_REDE_CONEXAO_ETH" in unidade, "perfil Ethernet explícito")
     verifica("ipv4.route-metric" in (RAIZ / "gateway" / "rede_failover.py").read_text(),
              "preferência deve ser reaplicada")
+    verifica("time.monotonic() + RETESTE_ETHERNET" in
+             (RAIZ / "gateway" / "rede_failover.py").read_text(),
+             "reteste não pode religar Ethernet imediatamente")
     verifica("max_queued_bytes" in broker, "fila MQTT precisa de teto")
     verifica("HostKeyAlias=sentinela-rpi" in tunel, "host key deve ser estável")
     verifica("sentinelapi.local" in tunel, "túnel não pode depender do IP")
@@ -55,7 +58,7 @@ def main():
     rede = importa()
     testa_histerese(rede)
     testa_artefatos()
-    print("Failover de rede: 16 verificações, 0 falha(s)")
+    print("Failover de rede: 17 verificações, 0 falha(s)")
     return 0
 
 
