@@ -60,6 +60,13 @@ uma interface com carrier e sem IP seria retestada imediatamente ao entrar no
 fallback. O primeiro reteste passou a respeitar os mesmos 30 s dos seguintes,
 evitando flapping e dando ao Wi-Fi uma janela real para assumir.
 
+No ensaio seguinte, o NetworkManager associou ao Wi-Fi e recebeu `.74`; o
+túnel reconectou por mDNS, a Ethernet retornou e o Wi-Fi foi desligado. Quatro
+ciclos de saúde de 30 s atravessaram a janela e os quatro apareceram no banco.
+O log ainda mostrou duas ativações Wi-Fi concorrentes (autoconnect + pedido
+explícito); o gerenciador passou a aguardar o autoconnect por 8 s e só força o
+perfil se ele não completar.
+
 ## 2026-08-01 (25) — Recorte piloto e fontes meteorológicas operacionais
 
 **Fase:** 3 · **Duração:** média

@@ -73,11 +73,24 @@ def wifi_habilitado():
     return resultado.returncode == 0 and resultado.stdout.strip() == "enabled"
 
 
+def espera_wifi(limite=8):
+    fim = time.monotonic() + limite
+    while time.monotonic() < fim:
+        if wifi_conectado():
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def liga_wifi():
+    radio_ativado = False
     if not wifi_habilitado():
         comando("nmcli", "--wait", "5", "radio", "wifi", "on")
+        radio_ativado = True
+    if radio_ativado and espera_wifi():
+        return
     if not wifi_conectado():
-        comando("nmcli", "--wait", "15", "device", "connect", WIFI,
+        comando("nmcli", "--wait", "15", "connection", "up", CONEXAO_WIFI,
                 timeout=20)
 
 
