@@ -21,6 +21,37 @@ apenas o apontamento.
 
 ---
 
+## 2026-08-03 (26) — Failover Ethernet/Wi-Fi sem evaporar telemetria
+
+**Fase:** 2/3 · **Duração:** média
+
+### Feito
+
+- Criado `gateway/rede_failover.py` com serviço systemd: confirma carrier,
+  IPv4, rota e alcance do Home Server pela `eth0`; três sucessos desligam o
+  Wi-Fi e duas falhas o reativam. Uma Ethernet com link mas sem caminho só é
+  afastada depois que o Wi-Fi conecta, e é retestada periodicamente.
+- O túnel deixou de fixar `192.168.15.73`: usa `sentinelapi.local` e
+  `HostKeyAlias=sentinela-rpi`, mantendo a mesma identidade SSH nos IPs das
+  duas interfaces.
+- O ingestor passou a usar sessão MQTT persistente. O Mosquitto ganhou
+  autosave em 10 s e fila limitada a 50 MiB/200 mil mensagens QoS 1.
+- Adicionado teste isolado da histerese e dos contratos de implantação.
+
+### Decidido
+
+- O buffer da bridge e a fila do broker cobrem falhas diferentes. A bridge
+  só retém quando não consegue publicar localmente; queda do caminho até o
+  Home Server é coberta pela sessão persistente do assinante (ADR-010).
+- A presença do cabo não basta para vencer: Ethernet só desliga o Wi-Fi depois
+  de provar que alcança o destino real. Isso evita preferir um cabo conectado
+  a uma rede sem serviço.
+
+### Próximo
+
+1. Repetir periodicamente o ensaio de failover e acompanhar o uso da fila.
+2. Definir alarme explícito antes de a fila MQTT atingir seu teto.
+
 ## 2026-08-01 (25) — Recorte piloto e fontes meteorológicas operacionais
 
 **Fase:** 3 · **Duração:** média

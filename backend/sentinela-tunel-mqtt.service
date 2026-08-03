@@ -9,6 +9,8 @@
 # A chave `id_sentinela_rpi` está registrada no RPi com
 # `restrict,port-forwarding,permitopen="127.0.0.1:1883"`: serve só para
 # encaminhar essa porta. Não abre shell nem pty mesmo se vazar.
+# O destino usa mDNS e `HostKeyAlias`: o endereço muda entre Ethernet e Wi-Fi,
+# mas a identidade criptográfica do Raspberry continua sendo uma só.
 #
 # **Unidade de usuário**, não de sistema: o sudo do homeserver exige senha, e
 # o serviço não precisa de privilégio nenhum — só de uma chave SSH do próprio
@@ -29,9 +31,9 @@ Description=Sentinela — túnel SSH para o broker MQTT do Raspberry Pi
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i %h/.ssh/id_sentinela_rpi -L 127.0.0.1:1883:127.0.0.1:1883 sentinelapi@192.168.15.73
+ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -o ConnectTimeout=8 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 -o StrictHostKeyChecking=accept-new -o HostKeyAlias=sentinela-rpi -i %h/.ssh/id_sentinela_rpi -L 127.0.0.1:1883:127.0.0.1:1883 sentinelapi@sentinelapi.local
 Restart=always
-RestartSec=10
+RestartSec=3
 
 [Install]
 WantedBy=default.target

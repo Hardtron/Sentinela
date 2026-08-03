@@ -1,0 +1,22 @@
+# Sentinela — Ethernet preferencial, Wi-Fi de contingência no Raspberry Pi.
+
+[Unit]
+Description=Sentinela — failover inteligente Ethernet/Wi-Fi
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/sentinelapi/sentinela/gateway/rede_failover.py
+Environment=PYTHONUNBUFFERED=1
+Environment=LC_ALL=C
+Environment=SENTINELA_REDE_ALVO=192.168.15.66
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

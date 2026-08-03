@@ -287,6 +287,12 @@ def conecta_banco(args):
         password=senha, connect_timeout=10, autocommit=False)
 
 
+def cria_cliente_mqtt():
+    """Sessão durável: o broker enfileira QoS 1 enquanto o túnel está fora."""
+    return mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ingestor",
+                       clean_session=False)
+
+
 def main():
     carrega_env(RAIZ / ".env")
     args = parse_args()
@@ -297,7 +303,7 @@ def main():
     print(f"[ingestor] banco conectado: {args.banco_host}:{args.banco_porta}",
           flush=True)
 
-    cliente = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ingestor")
+    cliente = cria_cliente_mqtt()
     cliente.conexao = conexao
     cliente.on_connect = ao_conectar
     cliente.on_message = ao_receber

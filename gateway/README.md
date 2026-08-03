@@ -36,8 +36,42 @@ confundidas com bugs nossos.
       `sentinelapi@192.168.15.73` (SSH por chave, ADR-007), Mosquitto via
       `apt`, repositório sincronizado por `rsync` (não `git clone` — repo
       privado, o RPi é host de runtime), unidade `sentinela-bridge.service`
-      habilitada e ativa. Falta apenas ligar a `HTC-03` na USB do RPi para o
-      primeiro dado real passar ponta a ponta.
+      habilitada e ativa. A `HTC-03` está ligada e a telemetria passa ponta a
+      ponta.
+- [x] **Ethernet preferencial com Wi-Fi de contingência** —
+      `rede_failover.py` só desliga o Wi-Fi após confirmar três vezes o caminho
+      Ethernet até o Home Server. Duas falhas reativam o Wi-Fi; uma Ethernet
+      com carrier mas sem caminho só é afastada depois de o Wi-Fi conectar.
+- [x] **Fila durante a troca de rede** — sessão persistente do ingestor no
+      Mosquitto, QoS 1, persistência em disco e teto de 50 MiB.
+
+### Rede do Farol
+
+O Raspberry usa NetworkManager. Ethernet é a rota preferencial; Wi-Fi é
+contingência e permanece com o rádio desligado enquanto o cabo estiver
+operacional. A decisão não usa apenas presença física do cabo: exige endereço,
+rota padrão e resposta do Home Server pela própria `eth0`, com histerese para
+não oscilar por uma perda isolada.
+
+```bash
+sudo cp gateway/sentinela-rede.service /etc/systemd/system/
+sudo cp gateway/mosquitto-sentinela.conf /etc/mosquitto/conf.d/sentinela.conf
+sudo systemctl daemon-reload
+sudo systemctl enable --now sentinela-rede.service
+sudo systemctl restart mosquitto
+```
+
+Diagnóstico:
+
+```bash
+systemctl status sentinela-rede sentinela-bridge mosquitto
+journalctl -u sentinela-rede -n 50 --no-pager
+nmcli device status
+```
+
+Os endereços atuais são `.73` no cabo e `.74` no Wi-Fi, mas consumidores não
+devem fixá-los: `sentinelapi.local` acompanha a interface ativa. LoRa opera em
+916,8 MHz e o Wi-Fi em 5 GHz, sem sobreposição espectral.
 
 ### Testar sem nenhum hardware
 
@@ -81,7 +115,8 @@ de qualquer um. Para o painel no MacBook (ou o futuro ingestor no homeserver)
 assinar os tópicos, use um túnel SSH sobre a chave já estabelecida:
 
 ```bash
-ssh -N -L 1883:127.0.0.1:1883 sentinelapi@192.168.15.73
+ssh -N -o HostKeyAlias=sentinela-rpi \
+  -L 1883:127.0.0.1:1883 sentinelapi@sentinelapi.local
 ```
 
 O cliente passa a encontrar o broker em `localhost:1883` sem que nada seja
@@ -93,7 +128,7 @@ o protocolo de rádio.
 ## Decisões pendentes
 
 - ~~Mosquitto no RPi 4 ou no homeserver~~ — **decidido e implementado: no RPi
-  4** (31/07/2026), para que a bridge continue enfileirando se o enlace até o
-  homeserver cair.
+  4** (31/07/2026). A sessão persistente do ingestor é a fila que cobre queda
+  do enlace até o homeserver; o buffer da bridge cobre queda do broker local.
 - ~~Acesso remoto ao Raspberry Pi 4~~ — **resolvido em 31/07/2026**, SSH por
   chave, mesmo padrão do homeserver (ver ADR-007).

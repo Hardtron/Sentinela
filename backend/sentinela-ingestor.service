@@ -2,7 +2,8 @@
 #
 # Depende do túnel (broker) e do Docker (banco). `Wants` em vez de `Requires`
 # de propósito: se o túnel cair, o ingestor não deve morrer junto — ele
-# reconecta sozinho, e o broker segura as mensagens QoS 1 enquanto isso.
+# reconecta sozinho, e sua sessão MQTT persistente faz o broker segurar as
+# mensagens QoS 1 enquanto isso.
 #
 # **Unidade de usuário** — ver a nota em sentinela-tunel-mqtt.service.
 #   cp backend/sentinela-ingestor.service ~/.config/systemd/user/

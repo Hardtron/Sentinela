@@ -11,6 +11,7 @@ TESTES = (
     "testa_decodifica.py",
     "testa_reconhecimento_alarme.py",
     "testa_fluxo_robusto.py",
+    "testa_rede_failover.py",
     "testa_painel_operacional.py",
     "testa_fontes_externas.py",
 )

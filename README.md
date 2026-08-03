@@ -193,6 +193,11 @@ toca no repositório.
 Nada é exposto na LAN: painel e broker ficam em `127.0.0.1` nas respectivas
 máquinas, e o que atravessa a rede são túneis SSH sobre chave.
 
+No Raspberry, Ethernet é preferencial e desliga o Wi-Fi após validação do
+caminho. Sem cabo, o Wi-Fi assume automaticamente. O túnel usa o nome mDNS do
+Farol e o broker mantém uma sessão QoS 1 persistente durante a troca; ver
+ADR-010 e `gateway/README.md`.
+
 Ambas as camadas se reerguem sozinhas (`Restart=always` no systemd,
 `KeepAlive` no launchd) — verificado matando os processos à força.
 

@@ -325,3 +325,34 @@ oficial com cobertura útil do município-piloto — a densidade da rede varia
 muito —, um pluviômetro local volta a ser necessário. O campo `chuva_1h` e a
 coluna `fonte` já existem no protocolo e no banco justamente para permitir as
 duas origens sem mudança de formato.
+
+---
+
+## ADR-010 — Ethernet preferencial; Wi-Fi é contingência com fila durável
+
+**Status:** aceito · 03/08/2026
+
+**Contexto.** O Farol precisa poder operar sem cabo, mas uma troca de interface
+derruba o túnel SSH entre o Mosquitto no Raspberry e o ingestor no Home Server.
+O buffer da bridge não cobria essa falha: como o broker local continuava
+aceitando as publicações, a bridge considerava o envio concluído enquanto o
+assinante remoto estava ausente.
+
+**Decisão.** Ethernet é preferencial e desliga o rádio Wi-Fi somente depois de
+três verificações consecutivas do caminho até o Home Server. Duas falhas
+consecutivas habilitam o Wi-Fi. O gerenciador verifica carrier, IPv4, rota e o
+destino pela própria interface; uma Ethernet parcialmente quebrada só é
+desconectada depois de o Wi-Fi estar conectado. O retorno também tem histerese.
+
+O túnel usa `sentinelapi.local` com `HostKeyAlias=sentinela-rpi`, portanto a
+identidade SSH não depende dos IPs `.73`/`.74`. O ingestor mantém sessão MQTT
+persistente e o broker preserva QoS 1 com teto de 50 MiB e gravação frequente.
+
+**Consequências.** A troca tem segundos de indisponibilidade de transporte,
+mas não cria lacuna de dados dentro da capacidade da fila. Reentrega é esperada
+e segura porque o banco é idempotente. Se Ethernet e Wi-Fi falharem ao mesmo
+tempo, o broker continua acumulando até o limite; excedê-lo vira falha visível,
+não promessa de retenção infinita.
+
+**O que reverteria.** Um gateway LoRaWAN com backhaul celular/dual-WAN e fila
+própria substituiria este gerenciador; a exigência de sessão durável permanece.

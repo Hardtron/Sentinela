@@ -73,6 +73,17 @@ a rede é só o MQTT, dentro de um túnel SSH cuja chave está registrada no RPi
 com `restrict,port-forwarding,permitopen="127.0.0.1:1883"` — ela não abre
 shell nem encaminha nada além da porta do broker, mesmo se vazar.
 
+### Continuidade entre Ethernet e Wi-Fi
+
+O ingestor usa `client_id=ingestor` com sessão MQTT persistente
+(`clean_session=False`). O Mosquitto do Raspberry mantém até 50 MiB de
+mensagens QoS 1 para essa sessão quando o túnel cai. Ao retornar, o ingestor
+recebe a fila e a idempotência do banco absorve eventual reentrega.
+
+O túnel aponta para `sentinelapi.local`, não para um IP de interface, e fixa a
+identidade SSH com `HostKeyAlias=sentinela-rpi`. Assim a troca entre Ethernet
+e Wi-Fi muda o caminho, não o host confiado.
+
 ### Tabelas que já existem
 
 - `no` — cadastro das 6 placas, com geometria (nula enquanto em bancada)
@@ -117,6 +128,10 @@ configuração e dependências de cadastro/decisão institucional.
 A bridge reenvia o buffer em disco quando o broker volta. O índice único
 `(bridge_id, node_id, seq, recebido_em)` com `ON CONFLICT DO NOTHING` impede
 que isso duplique amostra e falseie a taxa de perda.
+
+São duas filas com falhas diferentes: o buffer da bridge cobre indisponibilidade
+do broker local; a sessão persistente do broker cobre indisponibilidade do
+túnel/homeserver.
 
 ## Modelo de dados previsto (Fase 3)
 
