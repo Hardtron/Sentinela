@@ -67,6 +67,14 @@ O log ainda mostrou duas ativações Wi-Fi concorrentes (autoconnect + pedido
 explícito); o gerenciador passou a aguardar o autoconnect por 8 s e só força o
 perfil se ele não completar.
 
+O ensaio final já com esse ajuste repetiu o ciclo completo sem o timer de
+restauração: Wi-Fi recebeu `.74`, o túnel retomou por `sentinelapi.local`, o
+próprio gerenciador reativou a Ethernet após a janela de 30 s e desligou o
+Wi-Fi depois de três confirmações. O banco avançou de 8.741 para 8.745 registros
+de saúde nos quatro instantes esperados, sem lacuna. Não havia telemetria LoRa
+de nó ativa durante o ensaio; a comprovação usou a saúde da bridge, que percorre
+a mesma sessão MQTT QoS 1 e a mesma fila persistente.
+
 ## 2026-08-01 (25) — Recorte piloto e fontes meteorológicas operacionais
 
 **Fase:** 3 · **Duração:** média
