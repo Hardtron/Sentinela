@@ -51,7 +51,8 @@ O Raspberry usa NetworkManager. Ethernet é a rota preferencial; Wi-Fi é
 contingência e permanece com o rádio desligado enquanto o cabo estiver
 operacional. A decisão não usa apenas presença física do cabo: exige endereço,
 rota padrão e resposta do Home Server pela própria `eth0`, com histerese para
-não oscilar por uma perda isolada.
+não oscilar por uma perda isolada. O serviço também reaplica prioridade e
+métrica de rota: Ethernet `100`, Wi-Fi `600`.
 
 ```bash
 sudo cp gateway/sentinela-rede.service /etc/systemd/system/

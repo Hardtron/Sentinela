@@ -30,7 +30,8 @@ apenas o apontamento.
 - Criado `gateway/rede_failover.py` com serviço systemd: confirma carrier,
   IPv4, rota e alcance do Home Server pela `eth0`; três sucessos desligam o
   Wi-Fi e duas falhas o reativam. Uma Ethernet com link mas sem caminho só é
-  afastada depois que o Wi-Fi conecta, e é retestada periodicamente.
+  afastada depois que o Wi-Fi conecta, e é retestada periodicamente. As
+  métricas são reaplicadas no início: Ethernet 100, Wi-Fi 600.
 - O túnel deixou de fixar `192.168.15.73`: usa `sentinelapi.local` e
   `HostKeyAlias=sentinela-rpi`, mantendo a mesma identidade SSH nos IPs das
   duas interfaces.

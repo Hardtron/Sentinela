@@ -21,6 +21,9 @@ ALVO = os.environ.get("SENTINELA_REDE_ALVO", "192.168.15.66")
 ETHERNET = os.environ.get("SENTINELA_REDE_ETHERNET", "eth0")
 WIFI = os.environ.get("SENTINELA_REDE_WIFI", "wlan0")
 RETESTE_ETHERNET = float(os.environ.get("SENTINELA_REDE_RETESTE", "30"))
+CONEXAO_ETHERNET = os.environ.get("SENTINELA_REDE_CONEXAO_ETH", "netplan-eth0")
+CONEXAO_WIFI = os.environ.get("SENTINELA_REDE_CONEXAO_WIFI",
+                             "netplan-wlan0-Nautila")
 
 
 def comando(*args, timeout=12):
@@ -88,6 +91,16 @@ def conecta_ethernet():
             timeout=20)
 
 
+def configura_preferencia():
+    ajustes = ((CONEXAO_ETHERNET, "100", "100"),
+               (CONEXAO_WIFI, "50", "600"))
+    for conexao, prioridade, metrica in ajustes:
+        comando("nmcli", "connection", "modify", conexao,
+                "connection.autoconnect-priority", prioridade,
+                "ipv4.route-metric", metrica,
+                "ipv6.route-metric", metrica)
+
+
 def desconecta_ethernet_inoperante():
     if (wifi_conectado() and carrier() and tem_ipv4(ETHERNET)
             and not alcança_alvo()):
@@ -135,6 +148,7 @@ def aplica(modo):
 def main():
     estado = EstadoFailover()
     proximo_reteste = 0.0
+    configura_preferencia()
     anuncia(f"iniciado; alvo={ALVO} ethernet={ETHERNET} wifi={WIFI}")
     while True:
         saudavel = ethernet_saudavel()

@@ -11,6 +11,8 @@ ExecStart=/usr/bin/python3 /home/sentinelapi/sentinela/gateway/rede_failover.py
 Environment=PYTHONUNBUFFERED=1
 Environment=LC_ALL=C
 Environment=SENTINELA_REDE_ALVO=192.168.15.66
+Environment=SENTINELA_REDE_CONEXAO_ETH=netplan-eth0
+Environment=SENTINELA_REDE_CONEXAO_WIFI=netplan-wlan0-Nautila
 Restart=always
 RestartSec=3
 NoNewPrivileges=true
