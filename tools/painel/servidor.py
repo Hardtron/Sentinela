@@ -38,7 +38,7 @@ ESTATICOS = Path(__file__).resolve().parent / "static"
 # Pasta das Atalaias (comissionamento.py escreve, o painel só lê). Mesmo
 # padrão de `backend/comissionamento.py` — não duplicar o caminho ao mudar.
 MEDIA = Path(os.environ.get("SENTINELA_MEDIA",
-                            "/DATA/Projects/Sentinela-Media/Atalaias"))
+                            "/DATA/Runtime/Sentinela-Media/Atalaias"))
 
 # Só o que o laudo e o mapa precisam exibir. Lista branca, não lista negra:
 # a pasta da Atalaia guarda ART e checklist assinado, documento de terceiro

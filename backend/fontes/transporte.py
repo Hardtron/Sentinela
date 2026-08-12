@@ -71,7 +71,7 @@ def busca(requisicao, timeout_s=30, max_bytes=None, abridor=urlopen):
 def raiz_dados():
     return Path(os.environ.get(
         "SENTINELA_DADOS_EXTERNOS",
-        "/DATA/Projects/Sentinela-Data/externos"))
+        "/DATA/Runtime/Sentinela-Data/externos"))
 
 
 def guarda_bruto(resposta, provedor, conjunto, raiz=None, agora=None):

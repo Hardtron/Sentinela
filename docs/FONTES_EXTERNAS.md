@@ -208,7 +208,7 @@ venv/bin/python fontes_externas.py --provedor REDEMET --reprocessar-brutos
 ```
 
 O bruto operacional fica fora do Git em
-`/DATA/Projects/Sentinela-Data/externos` por padrão. O usuário dos serviços
+`/DATA/Runtime/Sentinela-Data/externos` por padrão. O usuário dos serviços
 precisa ter permissão de criação nesse diretório.
 
 ```bash

@@ -949,7 +949,7 @@ function wizardPasso3() {
     <textarea class="entrada" id="wiz-obs" placeholder="Condições do terreno, acesso, notas relevantes"></textarea></div>
   <p class="nota">As fotos da instalação devem ser copiadas para a pasta da Atalaia
     no servidor. O sistema lê automaticamente o GPS do EXIF.
-    ${dica("Pasta padrão: /DATA/Projects/Sentinela-Media/Atalaias/<código>/fotos/")}</p>`;
+    ${dica("Pasta padrão: /DATA/Runtime/Sentinela-Media/Atalaias/<código>/fotos/")}</p>`;
 }
 
 /* Monta resumo do checklist preenchido. CC = 3 */

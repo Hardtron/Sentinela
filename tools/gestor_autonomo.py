@@ -40,7 +40,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 # um caminho que o serviço já pode escrever; para usar /DATA/Media basta criá-lo
 # com o dono certo (uma vez, com sudo) e apontar SENTINELA_MEDIA para ele.
 MEDIA = Path(os.environ.get("SENTINELA_MEDIA",
-                            "/DATA/Projects/Sentinela-Media/Atalaias"))
+                            "/DATA/Runtime/Sentinela-Media/Atalaias"))
 TILES = Path(os.environ.get("SENTINELA_TILES", "/DATA/Tiles"))
 
 SUBPASTAS = ("fotos", "dados", "documentos", "manutencao")
