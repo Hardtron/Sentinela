@@ -21,7 +21,7 @@ devem ser lidas depois deste arquivo.
 No Home Server, execute a partir do repositório:
 
 ```bash
-/DATA/Projects/Geo_Quality/scripts/projetos iniciar
+/DATA/Projects/painel-mdu/scripts/projetos iniciar
 ```
 
 Fora do Home Server, faça o equivalente:
@@ -67,8 +67,8 @@ estado numa branch/commit de segurança e só então reconcilie conscientemente.
 4. No Home Server, execute:
 
 ```bash
-/DATA/Projects/Geo_Quality/scripts/projetos finalizar
-/DATA/Projects/Geo_Quality/scripts/projetos sync
+/DATA/Projects/painel-mdu/scripts/projetos finalizar
+/DATA/Projects/painel-mdu/scripts/projetos sync
 ```
 
 `projetos finalizar` deve confirmar árvore limpa, zero commits a enviar e zero
