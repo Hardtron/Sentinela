@@ -18,7 +18,7 @@ Uso:
     python3 bridge.py --porta /dev/ttyUSB0 --broker localhost
     python3 bridge.py --simular exemplo.csv --veloz     # sem hardware nenhum
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

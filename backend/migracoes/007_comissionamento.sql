@@ -7,7 +7,7 @@
 -- As pré-condições de transição ficam **no banco**, não só na aplicação: regra
 -- que vive só no formulário web é regra que se contorna com um POST manual.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 -- ------------------------------------------------ ciclo de vida --
 

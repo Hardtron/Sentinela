@@ -14,7 +14,7 @@ Uso:
 
 Base empírica e referências em docs/PROPAGACAO.md.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

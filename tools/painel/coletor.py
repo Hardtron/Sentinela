@@ -5,7 +5,7 @@ Cada função devolve um bloco de dados já pronto para virar JSON. Nenhuma dela
 imprime nem serve HTTP: a separação mantém o servidor trivial e cada coletor
 testável isoladamente.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import json

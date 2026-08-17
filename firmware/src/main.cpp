@@ -18,7 +18,7 @@
 // O display é a interface de campo (ver ui_dev.h) e o botão PRG alterna entre
 // as páginas. A saída serial é CSV, para registro do ensaio.
 //
-// Autoria: Matheus Marassi
+// Autoria: Luiz Matheus Marassi de Paula
 
 #include <Arduino.h>
 #include <RadioLib.h>

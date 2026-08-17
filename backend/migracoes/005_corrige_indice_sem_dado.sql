@@ -15,7 +15,7 @@
 -- 25. Zero diria "medimos e está péssimo"; NULL diz "não sabemos", que é a
 -- verdade. A fila de manutenção passa a exibir esses como `SEM_DADO`.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 CREATE OR REPLACE FUNCTION indice_saude(p_node_id SMALLINT)
 RETURNS SMALLINT AS $$

@@ -7,7 +7,7 @@
 # isso, um reboot às 02:55 pularia o dia inteiro sem ninguém notar — e insumo
 # defasado em silêncio é o modo de falha que este gestor existe para evitar.
 #
-# Autoria: Matheus Marassi
+# Autoria: Luiz Matheus Marassi de Paula
 
 [Unit]
 Description=Sentinela — dispara o gestor autônomo diariamente

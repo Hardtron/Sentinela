@@ -10,7 +10,7 @@ lugar — C++ e Python não compartilham cabeçalho — e há um teste que compa
 tamanhos contra os do C++ (`tools/testa_proto.py` cobre o lado C++;
 `tools/testa_decodifica.py` cobre este lado com vetores gerados pelo C++).
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import struct

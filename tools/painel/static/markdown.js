@@ -2,7 +2,7 @@
    Existe para o painel funcionar sem CDN nem dependência externa: cobre o
    subconjunto que a documentação do projeto usa (títulos, listas, tabelas,
    código, citação, ênfase, links).
-   Autoria: Matheus Marassi */
+   Autoria: Luiz Matheus Marassi de Paula */
 
 const MD = (() => {
 

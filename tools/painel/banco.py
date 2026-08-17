@@ -9,7 +9,7 @@ não têm nada a ver com ele.
 Toda função devolve estrutura vazia — e o motivo em `erro` — quando o banco não
 responde. Nunca inventa dado (RC-07): aba sem dado diz que está sem dado.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import os

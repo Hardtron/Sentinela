@@ -19,7 +19,7 @@ Uso:
     python3 tools/varredura_sf.py --sf 7 9 12            # só alguns
     python3 tools/varredura_sf.py --amostras 20 --espera-max 240
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

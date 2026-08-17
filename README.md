@@ -254,7 +254,7 @@ para o QGIS. Detalhes em [ROTEIRO_CAMPO.md](docs/ROTEIRO_CAMPO.md) §4.3 e §4.4
 
 ## Licença
 
-Ainda não definida. Ver LOG.md, pendência P-003.
+Este projeto é **OPEN SOURCE**.
 
 ---
-Autoria: Matheus Marassi
+Autoria: Luiz Luiz Matheus Marassi de Paula de Paula

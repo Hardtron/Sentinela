@@ -9,7 +9,7 @@ PlatformIO.
 Uso:
     ./tools/venv/bin/python tools/testa_proto.py
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import shutil

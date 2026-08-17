@@ -15,7 +15,7 @@ Uso:
     python3 backend/cemaden.py --chuva leituras.csv
     python3 backend/cemaden.py --chuva leituras.csv --seco
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

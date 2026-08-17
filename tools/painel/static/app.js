@@ -2,7 +2,7 @@
    Roteamento por hash, uma função de render por rota. Cada render recebe dados
    já prontos do servidor e só monta HTML — mantém a complexidade baixa e o
    estado fora da view.
-   Autoria: Matheus Marassi */
+   Autoria: Luiz Matheus Marassi de Paula */
 
 const api = async (rota) => {
   const r = await fetch(rota);

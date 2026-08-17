@@ -17,7 +17,7 @@ Uso:
 Encerrar com Ctrl+C. O resumo é gravado a cada ponto, então uma queda de energia
 no meio do ensaio não leva junto o que já foi medido.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

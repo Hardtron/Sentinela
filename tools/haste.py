@@ -11,7 +11,7 @@ Responde três perguntas de projeto que se conflitam:
 
 Base empírica em docs/PROPAGACAO.md; projeto da ancoragem em docs/ANCORAGEM.md.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

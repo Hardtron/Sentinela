@@ -1,5 +1,5 @@
 // Sentinela — interface de diagnóstico no OLED
-// Ver ui_dev.h para o racional. Autoria: Matheus Marassi
+// Ver ui_dev.h para o racional. Autoria: Luiz Matheus Marassi de Paula
 
 #include "ui_dev.h"
 

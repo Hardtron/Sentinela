@@ -12,7 +12,7 @@ Uso:
     python3 carrega_ensaio.py                      # dados/ensaio02.geojson
     python3 carrega_ensaio.py --arquivo outro.geojson --ensaio ensaio03
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

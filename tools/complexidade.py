@@ -18,7 +18,7 @@ Uso:
     python3 complexidade.py --limite 10        # falha se exceder
     python3 complexidade.py --json             # saída para o painel
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

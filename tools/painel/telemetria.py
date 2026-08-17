@@ -14,7 +14,7 @@ Este é o único módulo do painel que depende de biblioteca externa
 broker no ar, o painel inteiro continua funcionando e a aba de monitoramento
 explica o que falta em vez de quebrar.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import json

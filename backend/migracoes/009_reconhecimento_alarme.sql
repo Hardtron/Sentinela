@@ -6,7 +6,7 @@
 -- 3. Despacho de equipe de campo / ação preventiva
 -- 4. Encerramento automático ou manual com nota técnica
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 ALTER TABLE alarme
     ADD COLUMN IF NOT EXISTS reconhecido_em    TIMESTAMPTZ,

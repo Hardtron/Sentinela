@@ -4,7 +4,7 @@
 -- com suscetibilidade e exposição, "o talude moveu" não vira "talude X moveu
 -- com N domicílios na área de alcance".
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 -- --------------------------------------------------- suscetibilidade --
 -- Cartas de suscetibilidade a movimento de massa. **Camada 2 da tripla

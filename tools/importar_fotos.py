@@ -20,7 +20,7 @@ Uso:
 Em macOS o GPS é lido via `mdls`, que entende HEIC nativamente. Em outros
 sistemas, cai para exifread (JPEG/TIFF).
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

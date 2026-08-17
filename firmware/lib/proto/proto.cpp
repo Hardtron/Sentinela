@@ -1,5 +1,5 @@
 // Sentinela — implementação do protocolo binário. Ver proto.h para o racional.
-// Autoria: Matheus Marassi
+// Autoria: Luiz Matheus Marassi de Paula
 
 #include "proto.h"
 

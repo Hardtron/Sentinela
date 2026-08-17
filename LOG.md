@@ -1914,7 +1914,7 @@ Gravar `HTC-01` e `HTC-02` e fechar o enlace de bancada.
 
 ### Decidido
 
-- Privado por ora. Abrir depois exige definir licença (P-003).
+- Aberto como OPEN SOURCE. Licença definida e autoria atualizada (P-003 resolvida).
 - Allowlist em `settings.json` **versionado** em vez de `settings.local.json`,
   para a configuração viajar com o repositório.
 - Chave SSH do Mac **não** foi autorizada no GitHub e não precisa ser — HTTPS

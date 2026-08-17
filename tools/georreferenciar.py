@@ -16,7 +16,7 @@ Uso:
 Requisito: relógios do computador e do celular sincronizados. Ambos usam NTP por
 padrão, então na prática já estão — mas se houver desvio, use --offset.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

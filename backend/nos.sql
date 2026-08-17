@@ -4,7 +4,7 @@
 -- duplicar. `posicao` fica nula enquanto a placa está em bancada — as
 -- coordenadas reais entram na campanha de campo.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 INSERT INTO no (node_id, placa, mac, papel, antena, observacao) VALUES
     (1, 'HTC-01', '3c:71:bf:8c:33:a8', 'PINGER (posto) — placa substituta', TRUE,

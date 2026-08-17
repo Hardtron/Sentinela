@@ -19,7 +19,7 @@
 #   systemctl --user enable --now sentinela-painel
 #   journalctl --user -u sentinela-painel -f
 #
-# Autoria: Matheus Marassi
+# Autoria: Luiz Matheus Marassi de Paula
 
 [Unit]
 Description=Sentinela — painel de controle

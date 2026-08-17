@@ -18,7 +18,7 @@ Uso:
     python3 tools/gestor_autonomo.py --so fotos # uma tarefa só
     python3 tools/gestor_autonomo.py --seco     # mostra o que faria
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

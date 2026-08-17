@@ -16,7 +16,7 @@ rodando no próprio Raspberry Pi, ou no MacBook com um túnel SSH aberto
 (`ssh -N -L 1883:127.0.0.1:1883 sentinelapi@<ip-do-rpi>`). O túnel evita expor
 o broker sem autenticação na rede — ver gateway/README.md.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

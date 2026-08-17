@@ -8,7 +8,7 @@
 // Esta UI é ferramenta de desenvolvimento e não vai para o nó de campo
 // definitivo (que não tem display). Por isso vive em src/ e não em lib/app/.
 //
-// Autoria: Matheus Marassi
+// Autoria: Luiz Matheus Marassi de Paula
 
 #pragma once
 

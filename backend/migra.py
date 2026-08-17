@@ -16,7 +16,7 @@ Uso:
     python3 backend/migra.py            # aplica o que falta
     python3 backend/migra.py --listar   # só mostra o estado
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

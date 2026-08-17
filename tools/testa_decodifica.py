@@ -13,7 +13,7 @@ manda o Python interpretá-los. Uma fonte de bytes só.
 Uso:
     ./tools/venv/bin/python tools/testa_decodifica.py
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import subprocess

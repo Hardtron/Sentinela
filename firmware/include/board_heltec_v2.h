@@ -3,7 +3,7 @@
 // Fonte: docs/HARDWARE.md. Ver as armadilhas A-001, A-002 e A-004 em ERROS.md
 // antes de alocar qualquer GPIO novo.
 //
-// Autoria: Matheus Marassi
+// Autoria: Luiz Matheus Marassi de Paula
 
 #pragma once
 

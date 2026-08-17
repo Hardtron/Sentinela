@@ -24,7 +24,7 @@
 # (é o único passo que pede sudo):
 #   sudo loginctl enable-linger $USER
 #
-# Autoria: Matheus Marassi
+# Autoria: Luiz Matheus Marassi de Paula
 
 [Unit]
 Description=Sentinela — túnel SSH para o broker MQTT do Raspberry Pi

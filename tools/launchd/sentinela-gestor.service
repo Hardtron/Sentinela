@@ -12,7 +12,7 @@
 #   systemctl --user enable --now sentinela-gestor.timer
 #   journalctl --user -u sentinela-gestor -f
 #
-# Autoria: Matheus Marassi
+# Autoria: Luiz Matheus Marassi de Paula
 
 [Unit]
 Description=Sentinela — gestor autônomo de insumos

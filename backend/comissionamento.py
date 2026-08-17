@@ -15,7 +15,7 @@ celular seria código frágil no caminho mais crítico do sistema. A alternativa
 compartilhamento ou cópia), e o gestor autônomo (Frente 6) já vigia esse
 diretório. O formulário envia só o checklist, em JSON.
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import json

@@ -14,7 +14,7 @@
 --
 -- Correção: arredondar antes e passar como `%s`.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 CREATE OR REPLACE FUNCTION teste_enlace(p_node_id SMALLINT,
                                         p_janela_s INTEGER DEFAULT 60)

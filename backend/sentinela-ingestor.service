@@ -11,7 +11,7 @@
 #   systemctl --user enable --now sentinela-ingestor
 #   journalctl --user -u sentinela-ingestor -f
 #
-# Autoria: Matheus Marassi
+# Autoria: Luiz Matheus Marassi de Paula
 
 [Unit]
 Description=Sentinela — ingestor MQTT para PostgreSQL/TimescaleDB

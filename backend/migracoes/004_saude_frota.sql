@@ -9,7 +9,7 @@
 -- permanecer privado até PT-01 e PT-03 estarem resolvidas — divulgação antes
 -- do depósito compromete a novidade.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 -- ------------------------------------------- referência distribuída --
 -- A rede é o próprio sensor de referência: cada Atalaia é comparada com a

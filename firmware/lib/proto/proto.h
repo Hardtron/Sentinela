@@ -17,7 +17,7 @@
 // Separá-los é deliberado: telemetria de manutenção não pode roubar tempo de
 // ar do dado de risco. Ver docs/MANUTENCAO.md §8.
 //
-// Autoria: Matheus Marassi
+// Autoria: Luiz Matheus Marassi de Paula
 
 #pragma once
 

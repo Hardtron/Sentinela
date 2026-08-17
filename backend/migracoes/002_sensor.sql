@@ -6,7 +6,7 @@
 --
 -- Idempotente: pode rodar de novo sem erro. Ver backend/migra.py.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 -- ------------------------------------------------------------- leitura --
 -- Espelha o quadro `proto::Sensor` (firmware/lib/proto/proto.h). Os valores

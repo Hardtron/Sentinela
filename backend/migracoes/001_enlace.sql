@@ -9,7 +9,7 @@
 -- com `lib/proto/`, em tabela própria. Nomear a tabela atual de `leitura`
 -- seria mentir sobre o que ela contém.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 CREATE EXTENSION IF NOT EXISTS postgis;

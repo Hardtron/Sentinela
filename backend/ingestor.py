@@ -18,7 +18,7 @@ Uso:
     python3 ingestor.py                      # lê backend/.env
     python3 ingestor.py --broker localhost --banco-host localhost
 
-Autoria: Matheus Marassi
+Autoria: Luiz Matheus Marassi de Paula
 """
 
 import argparse

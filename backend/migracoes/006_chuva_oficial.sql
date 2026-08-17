@@ -3,7 +3,7 @@
 -- A chuva deixa de ser medida pelo nó e passa a vir de rede oficial [G]. O nó
 -- mede o que a rede não tem por talude: inclinação e umidade de solo.
 --
--- Autoria: Matheus Marassi
+-- Autoria: Luiz Matheus Marassi de Paula
 
 -- ------------------------------------------------- estações oficiais --
 -- Pluviômetros do CEMADEN/INMET. Posição em PostGIS porque a associação

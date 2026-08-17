@@ -7,7 +7,7 @@
 // provaria portabilidade — e portabilidade é o requisito (ADR-004: o alvo de
 // campo é STM32WLE5, não ESP32).
 //
-// Autoria: Matheus Marassi
+// Autoria: Luiz Matheus Marassi de Paula
 
 #include <cstdio>
 #include <cstring>
