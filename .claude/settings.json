@@ -21,7 +21,7 @@
       "Bash(python3 -m venv venv)",
       "Bash(./venv/bin/pip install *)",
       "Bash(./venv/bin/python *)",
-      "Read(//Users/matheus/Documents/Claude Projects/Sentinela/**)"
+      "Read(//Users/matheus/Documents/Projetos/Sentinela/**)"
     ]
   }
 }

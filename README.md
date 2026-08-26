@@ -76,7 +76,7 @@ O projeto vive em **dois clones**, com papéis distintos:
 
 | Onde | Caminho | Papel | Remoto |
 |---|---|---|---|
-| MacBook | `~/Documents/Claude Projects/Sentinela` | **Firmware** — precisa da porta USB | HTTPS (via `gh`) |
+| MacBook | `~/Documents/Projetos/Sentinela` | **Firmware** — precisa da porta USB | HTTPS (via `gh`) |
 | Homeserver | `/DATA/Projects/Sentinela` | **Backend, gateway, documentação** e acesso remoto pelo iPhone | SSH (`id_github`) |
 
 O firmware só pode ser gravado e monitorado do MacBook: a placa está na USB

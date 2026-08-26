@@ -204,7 +204,7 @@ O MacBook vai na mochila com a `HTC-01` conectada pela USB. O laptop alimenta a
 placa, e o script grava cada amostra com carimbo de hora.
 
 ```bash
-cd "~/Documents/Claude Projects/Sentinela"
+cd "~/Documents/Projetos/Sentinela"
 ./tools/venv/bin/python tools/coleta.py --ensaio 02
 ```
 

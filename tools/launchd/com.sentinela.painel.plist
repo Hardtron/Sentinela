@@ -26,14 +26,14 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/matheus/Documents/Claude Projects/Sentinela/tools/venv/bin/python</string>
-    <string>/Users/matheus/Documents/Claude Projects/Sentinela/tools/painel/servidor.py</string>
+    <string>/Users/matheus/Documents/Projetos/Sentinela/tools/venv/bin/python</string>
+    <string>/Users/matheus/Documents/Projetos/Sentinela/tools/painel/servidor.py</string>
     <string>--porta</string>
     <string>8765</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/matheus/Documents/Claude Projects/Sentinela</string>
+  <string>/Users/matheus/Documents/Projetos/Sentinela</string>
 
   <key>RunAtLoad</key>
   <true/>
