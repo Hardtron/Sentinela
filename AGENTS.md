@@ -1,87 +1,72 @@
-# Regra global de trabalho e sincronização
+# Sentinela — regras globais de trabalho e continuidade
 
-<!-- REGRA_GLOBAL_SINCRONIZACAO_V1 -->
+Estas regras se aplicam a qualquer pessoa ou agente automatizado que trabalhe neste repositório.
 
-Estas regras se aplicam a qualquer equipe, pessoa ou agente automatizado que
-trabalhe neste repositório. Regras específicas do projeto continuam valendo e
-devem ser lidas depois deste arquivo.
+## 1. Baseline operacional de desenvolvimento
 
-## Topologia dos ambientes
+- `origin` (`Hardtron/Sentinela`) é a autoridade compartilhada sobre commits publicados.
+- A workstation de desenvolvimento é Windows 11 Pro.
+- WSL, Ubuntu e Docker local **não são requisitos** de desenvolvimento.
+- GitHub Actions em Linux é a validação reproduzível para código Python, firmware compilável e contratos do backend que não exijam hardware/estado real.
+- GitHub Codespaces é Linux interativo sob demanda.
+- O Raspberry Pi/Farol e as placas de campo continuam sendo ambientes de hardware/runtime; não são fontes canônicas de código.
+- O Home Server deixa de ser clone canônico e está em retirada. Nenhuma nova dependência nele pode ser introduzida.
+- Código circula somente por Git. Nunca sincronize árvores Git por SMB, Syncthing, cópia integral ou `rsync`.
 
-- O remoto `origin` é a autoridade compartilhada sobre quais commits estão
-  publicados.
-- O Home Server mantém os clones canônicos de desenvolvimento e validação.
-- Clones no Mac, Windows ou em outras máquinas são espaços auxiliares. Eles não
-  se tornam canônicos apenas por terem arquivos mais novos no diretório.
-- Arquivos ignorados pelo Git — dados reais, credenciais, logs e artefatos
-  gerados — têm ciclo de vida próprio e não devem ser confundidos com código.
+Leia antes de trabalhar:
 
-## Antes de qualquer leitura técnica ou alteração
+1. `docs/WORKSTATION_GITHUB_BASELINE.md`;
+2. `README.md`;
+3. `LOG.md` e `ERROS.md`;
+4. documentação específica da frente em `docs/`.
 
-No Home Server, execute a partir do repositório:
+## 2. Freeze da transição
 
-```bash
-/DATA/Projects/painel-mdu/scripts/projetos iniciar
-```
+Desenvolvimento funcional fica pausado até o encerramento formal da migração operacional. Durante o freeze, só altere portabilidade, CI, documentação, segurança ou superfícies necessárias para retirar a dependência do Home Server.
 
-Fora do Home Server, faça o equivalente:
+## 3. Preflight Git
 
-```bash
+Antes de editar:
+
+```text
 git status --short --branch
 git fetch --prune origin
 git rev-list --left-right --count HEAD...@{upstream}
 ```
 
-Só comece a trabalhar quando souber explicitamente:
+Se estiver limpo e apenas atrás, use `git pull --ff-only`. Preserve divergências e trabalho desconhecido; nunca use `reset --hard` ou force-push para escondê-los.
 
-1. qual é o repositório e a branch atuais;
-2. se a árvore está limpa;
-3. se há commits locais ainda não publicados;
-4. se o clone está atrás ou divergiu do remoto.
+## 4. Separação de execução
 
-Se estiver limpo e apenas atrás, atualize exclusivamente por fast-forward:
+### Windows local
 
-```bash
-git pull --ff-only
-```
+Use para edição, Python, ferramentas de análise, PlatformIO e interação com USB/hardware quando o dispositivo estiver fisicamente conectado ao notebook. Scripts de feedback local novos devem ser compatíveis com Windows sempre que não dependerem intrinsecamente de Linux.
 
-Se houver alterações desconhecidas, commits não enviados ou divergência, não
-sobrescreva, não faça `reset --hard` e não copie outra árvore por cima. Preserve o
-estado numa branch/commit de segurança e só então reconcilie conscientemente.
+### GitHub Actions
 
-## Durante o trabalho
+Use como gate canônico para verificações sem hardware: `tools/verifica.py`, compilação de firmware, validação de Compose/configuração e demais testes determinísticos. Resultado local não substitui CI.
 
-- Nunca sincronize código por SMB, Syncthing, cópia integral de pasta ou `rsync`
-  sobre uma árvore Git.
-- Não misture mudanças independentes de equipes diferentes no mesmo commit.
-- Antes de editar, leia os documentos de handoff, logs e regras específicas que
-  existirem no repositório.
-- Dados reais e segredos nunca entram no Git. Transporte de snapshots deve usar
-  apenas os meios autorizados para o projeto.
+### Codespaces
 
-## Antes de considerar a tarefa concluída
+Use apenas se for necessário depurar comportamento Linux/container interativamente. Não mantenha estado único no Codespace.
 
-1. Execute as validações proporcionais ao projeto.
-2. Registre decisões e limitações no log ou handoff aplicável.
-3. Faça commit e push da branch correta.
-4. No Home Server, execute:
+### Hardware/runtime
 
-```bash
-/DATA/Projects/painel-mdu/scripts/projetos finalizar
-/DATA/Projects/painel-mdu/scripts/projetos sync
-```
+Gravação de firmware, rádio, GPIO, LoRa, sensores e ensaios físicos exigem o hardware correspondente. O GitHub não substitui evidência de bancada/campo.
 
-`projetos finalizar` deve confirmar árvore limpa, zero commits a enviar e zero
-commits a receber. Um clone offline não pode ser atualizado automaticamente: ele
-deve ser registrado no handoff como ambiente ainda pendente, com o commit que
-precisa receber.
+## 5. Backend persistente — atenção de transição
 
-## Handoff mínimo obrigatório
+O backend descrito historicamente como TimescaleDB/PostGIS + ingestor + painel no Home Server é uma **dependência de runtime**, não uma carga de CI. GitHub Actions é efêmero e não pode substituir esse serviço persistente.
 
-Toda entrega deve informar:
+Enquanto o destino permanente desse backend não estiver migrado para edge/cloud apropriado, considere essa superfície `BLOCKED_FOR_RUNTIME_MIGRATION`. Não transfira banco, MQTT persistente ou serviços para o notebook Windows como solução permanente.
 
-- repositório, branch e commit final;
-- validações executadas e resultado;
-- ambientes efetivamente atualizados;
-- ambientes inacessíveis ou ainda pendentes;
-- localização de qualquer branch/commit de segurança criado.
+## 6. Segurança e produto
+
+- O Sentinela é apoio à decisão; não automatiza evacuação.
+- Dados reais, chaves LoRaWAN, credenciais, bancos, logs e artefatos operacionais não entram no Git.
+- Critérios experimentais não podem ser apresentados como critérios geotécnicos oficiais.
+- Evidência de CI, runtime e campo são categorias distintas.
+
+## 7. Handoff mínimo
+
+Toda entrega informa repositório, branch, SHA, validações, CI, hardware/runtime efetivamente exercido, ambientes não exercidos, riscos, bloqueios e próximo passo. Nenhum estado necessário à continuidade pode existir apenas no notebook, Home Server ou memória do agente.
