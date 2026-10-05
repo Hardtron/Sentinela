@@ -1328,9 +1328,8 @@ configurar acesso ao Raspberry Pi 4 (P-010) para instalar a bridge de verdade.
   anterioridade (PT-01) e implementação do candidato mais forte. A distância até
   o nível 3 é menor do que parece.
 - **Valuation: piso defensável de R$ 130–260 mil** (custo de reposição do que
-  existe). Cenários acima são condicionais. O valor está **dentro da Geopixel**,
-  não fora — o canal já resolvido elimina o maior risco de um projeto de
-  hardware.
+  existe). Cenários acima são condicionais. Não há canal comercial contratado;
+  aquisição de clientes e validação de demanda permanecem em aberto.
 
 ### Próximo
 
@@ -1843,8 +1842,8 @@ Ensaio 02 — linha de visada, 10 m → 25 m → 50 m → 100 m.
   (Res. 680/2017, Ato 14448/2017, Res. 715/2019), Lei 12.608/2012 (PNPDEC),
   ABNT NBR 11682, NBR 5419/5410, NR-35/NR-10, LGPD, INDE, OGC, Lei 14.133/2021.
   Sete itens de ação numerados C-01 a C-07, com responsável e prazo.
-- **`docs/GEOPIXEL.md`** — análise das duas páginas públicas do Geopixel Monitor
-  e proposta de valor do Sentinela sobre a plataforma existente.
+- **`docs/CONTEXTO_PRODUTO.md`** — contexto independente de produto e
+  hipóteses de integração futura, revisados em 05/10/2026.
 - **Display de diagnóstico** com quatro páginas navegáveis pelo botão PRG:
   enlace (RSSI grande + barra de margem), histórico gráfico de 128 amostras,
   parâmetros de rádio e saúde do nó. Compila limpo nos dois papéis; RAM 7,5%,
@@ -1866,17 +1865,16 @@ Ensaio 02 — linha de visada, 10 m → 25 m → 50 m → 100 m.
 
 ### Aprendido
 
-- A lacuna da plataforma Geopixel é **estrutural, não de software**: satélite e
-  modelo regional não medem poropressão nem deslocamento milimétrico, e a
-  revisão de satélite é lenta demais para um evento de horas. O Sentinela
-  fornece a camada in situ.
+- O projeto explora a complementaridade entre observações regionais e
+  medições in situ. Essa hipótese exige validação experimental e não implica
+  diagnóstico de uma plataforma comercial específica.
 - O custo real do alerta regional impreciso não é o falso positivo em si — é o
   alerta verdadeiro que será ignorado depois que a população perder a confiança.
 - O módulo de Vistoria já existente fecha um ciclo nos dois sentidos: o sensor
   prioriza a vistoria, e o laudo da vistoria rotula o dado que calibra os
   limiares locais.
-- Caraguatatuba é o piloto natural: encosta da Serra do Mar, alta
-  suscetibilidade, prefeitura já cliente e instância da plataforma no ar.
+- Caraguatatuba é um território de estudo: encosta da Serra do Mar e alta
+  suscetibilidade. Não há piloto institucional ou vínculo comercial presumido.
 
 ### Próximo
 
@@ -1993,3 +1991,15 @@ Retomar a Fase 0: gravar `HTC-01` e `HTC-02` e fechar o enlace de bancada.
 3. Medir consumo em transmissão e em repouso.
 4. Planejar o percurso do teste de alcance em campo e levantar a curva
    alcance × spreading factor.
+
+
+## 05/10/2026 — Enquadramento acadêmico e pessoal independente
+
+O titular confirmou que não há empresa terceira envolvida no Sentinela.
+Foram retiradas associações empresariais, premissas de canal comercial pronto,
+apresentação interna e titularidade com empregador. O contexto foi reescrito
+em `docs/CONTEXTO_PRODUTO.md`, com links atualizados. As passagens históricas
+correspondentes foram corrigidas para não perpetuar vínculo inexistente.
+A finalidade acadêmica foi explicitada no README. Nenhum código, parâmetro de
+hardware ou runtime foi alterado. A revisão não constitui análise jurídica,
+validação de mercado ou execução de ensaio físico.
