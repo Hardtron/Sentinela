@@ -152,7 +152,7 @@ e alimentação.
 | ~~P-004~~ | ~~Verificar disponibilidade de dados do CEMADEN~~ | **Resolvida em 01/08/2026** — contrato PED/SGAA documentado, renovação de token implementada e aquisição recortada pelo código IBGE `3510500` validada no Home Server; ver `docs/FONTES_EXTERNAS.md` |
 | P-005 | Calibrar o divisor de tensão de bateria da Heltec V2 | Medição de autonomia |
 | P-006 | Consultar OCD sobre homologação Anatel — item C-01 de CONFORMIDADE.md | **Fase 4 / proposta comercial** |
-| P-007 | Validar internamente as perguntas de docs/GEOPIXEL.md §6 | Apresentação |
+| P-007 | Validar as hipóteses de produto de docs/CONTEXTO_PRODUTO.md §6 | Apresentação |
 | ~~P-008~~ | ~~Coordenada do `HTC-02`~~ | **Resolvida em 30/07/2026** — −23,57543, −45,330545 |
 | ~~P-009~~ | ~~Testar polarização do nó fixo~~ | **Encerrada** — antena estava vertical; causa é o confinamento por muros (CAMPO.md) |
 | ~~P-010~~ | ~~Configurar acesso SSH ao Raspberry Pi 4~~ | **Resolvida em 31/07/2026** — chave SSH, `sentinelapi@192.168.15.73`, conforme ADR-007 |
