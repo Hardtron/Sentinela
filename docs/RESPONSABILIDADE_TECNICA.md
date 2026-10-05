@@ -127,7 +127,7 @@ Competências que incidem diretamente no núcleo de valor do produto:
 Traduzindo para o produto: **a camada que dá valor ao Sentinela — cruzar
 telemetria georreferenciada com suscetibilidade, uso do solo e população
 exposta — cai dentro da atribuição do geógrafo.** É exatamente o diferencial
-descrito em GEOPIXEL.md §4.
+descrito em CONTEXTO_PRODUTO.md §4.
 
 **Distinção fina, e importante:**
 
@@ -152,9 +152,10 @@ engenharia genérica.
 
 Nenhum deles depende de mudar de formação.
 
-**A. Responsável técnico na empresa.** A Geopixel — ou a empresa que
-comercializar — mantém RT habilitado registrado. O desenvolvimento é conduzido
-por você; a RT do produto é da empresa. É o arranjo mais comum na indústria.
+**A. Responsável técnico em futura operação comercial.** O Sentinela é hoje
+um projeto acadêmico e pessoal, sem empresa terceira envolvida. Se houver
+comercialização, o modelo de operação e as responsabilidades técnicas devem
+ser definidos e formalizados; não há RT empresarial presumida nesta etapa.
 
 **B. Parceria com geotécnico.** Engenheiro geotécnico ou geólogo, contratado ou
 sócio, assina a camada de aplicação: onde instrumentar, limiares por talude,
@@ -163,7 +164,7 @@ interpretação. Pode ser por projeto, não precisa ser em tempo integral.
 **C. Parceria acadêmica.** Universidade com laboratório de geotecnia agrega ART
 de professores, validação científica e credibilidade institucional — que pesa em
 contratação pública. Também abre publicação conjunta a partir da série histórica
-(GEOPIXEL.md §4.3).
+(CONTEXTO_PRODUTO.md §4.3).
 
 **D. Convênio com a Defesa Civil municipal.** Ela frequentemente já tem
 engenheiro ou geólogo no quadro, e é a autoridade do alerta. Formaliza a camada 3.
