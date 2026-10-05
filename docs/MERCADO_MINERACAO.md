@@ -85,8 +85,8 @@ compete com o inclinômetro de furo; ela adensa a cobertura onde hoje não há
 nada.**
 
 **A jusante.** A área potencialmente afetada — a mancha de inundação — precisa
-ser monitorada e alertada, e é território geoespacial. Aqui a competência da
-Geopixel pesa mais que o hardware.
+ser monitorada e alertada, e é território geoespacial. Aqui a análise
+geoespacial do projeto complementa a instrumentação de campo.
 
 **Mineradoras médias e pequenas**, sem equipe geotécnica robusta, que precisam
 cumprir a lei com orçamento limitado.
