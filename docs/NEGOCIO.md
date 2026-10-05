@@ -10,7 +10,7 @@ pendências.
 
 | # | Frente | Documento | Veredito |
 |---|---|---|---|
-| 1 | Mercado municipal | [MERCADO_MUNICIPIOS.md](MERCADO_MUNICIPIOS.md) | **Prioritário** — mercado contado por fonte oficial e canal já aberto |
+| 1 | Mercado municipal | [MERCADO_MUNICIPIOS.md](MERCADO_MUNICIPIOS.md) | **Prioritário** — mercado estudado com fontes públicas; canal comercial a validar |
 | 2 | Barragens de mineração | [MERCADO_MINERACAO.md](MERCADO_MINERACAO.md) | Atraente, **mais difícil** — entrar depois, pelo flanco |
 | 3 | Concorrência e originalidade | [CONCORRENCIA.md](CONCORRENCIA.md) | **O hardware não é o diferencial** — reposicionar |
 | 4 | Maturidade para patente | [PATENTES.md](PATENTES.md) | **Nível 1–2 de 3** — não atinge o mínimo ainda |
@@ -42,10 +42,10 @@ traduz dado em decisão, e no **custo por ponto** que permite adensar malha onde
 hoje não há nada. O concorrente premium está na barragem crítica; o Sentinela
 concorre com o *nada* que existe no talude municipal.
 
-**5. O valor está dentro da Geopixel, não fora.** O maior risco de um projeto de
-hardware é a aquisição de cliente — e é exatamente o que a empresa já resolveu.
-Isolado, o projeto vale o custo de reposição. Dentro do canal existente, muda o
-patamar do negócio.
+**5. O potencial comercial ainda precisa ser validado.** O projeto é acadêmico
+e pessoal, sem empresa terceira ou canal de distribuição contratado. Uma futura
+linha de negócio exige validação de demanda, custos, aquisição de clientes e
+responsabilidades de operação.
 
 ---
 
@@ -54,8 +54,8 @@ patamar do negócio.
 O Sentinela **não é** "mais um sensor de inclinação para talude".
 
 É **uma malha densa e barata de instrumentação, integrada a uma base geoespacial
-de risco, com manutenção autodiagnosticada** — vendida por quem já é fornecedor
-do município.
+de risco, com manutenção autodiagnosticada** — conceito em desenvolvimento
+acadêmico e pessoal, com futura aplicação comercial a validar.
 
 Consequência de arquitetura: o sistema deve **ingerir dados de instrumentos de
 terceiros**. Cliente que já tem Worldsensing instalado não deve ser obrigado a
@@ -70,8 +70,8 @@ concorrente em complemento.
    único do cronograma, e inteiramente sob controle do projeto.
 2. **Busca de anterioridade** (PT-01) — barata, rápida e decide se há patente a
    perseguir.
-3. **Piloto municipal com dado real** — preferencialmente Caraguatatuba, onde há
-   cliente, instância no ar e o cenário calibrado.
+3. **Piloto municipal com dado real** — preferencialmente Caraguatatuba, onde o projeto já reúne
+   estudos territoriais; contato, autorização e responsabilidades ainda precisam ser formalizados.
 4. **Parceria geotécnica formalizada** — condição para vender a interpretação
    que dá valor ao dado.
 5. **Mineração por último**, por adensamento de malha e com histórico
@@ -82,7 +82,7 @@ concorrente em complemento.
 ## Alerta transversal
 
 **Divulgação pública antes do depósito de patente compromete a novidade.** Isso
-inclui a apresentação à Geopixel, o painel de resultados e qualquer publicação
+inclui a apresentação a terceiros, o painel de resultados e qualquer publicação
 do repositório. Resolver PT-01 e PT-03 **antes** de expor o conteúdo — ver
 [PATENTES.md](PATENTES.md) §5.
 
@@ -94,11 +94,11 @@ do repositório. Resolver PT-01 e PT-03 **antes** de expor o conteúdo — ver
 |---|---|---|---|
 | **C-01** | Concorrência | Cotação real de Worldsensing e Senceive | **Crítica** — sem ela o preço é especulação |
 | **PT-01** | Patentes | Busca de anterioridade | **Crítica** — decide se há o que patentear |
-| **PT-03** | Patentes | Definir titularidade com a empresa | **Crítica** — antes de depositar |
+| **PT-03** | Patentes | Documentar autoria e eventuais contribuições ao projeto independente | **Crítica** — antes de depositar |
 | V-02 | Valuation | Orçar homologação Anatel | Alta |
 | M-01 | Municipal | Base de setores de risco do CPRM por município | Alta |
 | M-03 | Municipal | Validar preço por ponto com município real | Alta |
-| V-03 | Valuation | Dados internos da Geopixel — ticket, retenção | Alta |
+| V-03 | Valuation | Validar custos, canais e premissas comerciais próprias | Alta |
 | N-01 | Mineração | Base pública da ANM com as 911 barragens | Média |
 | C-05 | Concorrência | Identificar a startup brasileira de IoT para encostas | Média |
 | C-06 | Concorrência | Viabilidade de ingerir dados de terceiros | Média |
