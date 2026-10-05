@@ -249,7 +249,7 @@ O objetivo final é predizer cobertura **sem medir cada ponto** (ROTEIRO_CAMPO.m
 
 Esse é o passo que transforma trabalho de campo, que não escala, em modelo, que
 escala — e é onde a competência em geoprocessamento do projeto entra
-(GEOPIXEL.md §4).
+(CONTEXTO_PRODUTO.md §4).
 
 ---
 
