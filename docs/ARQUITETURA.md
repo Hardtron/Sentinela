@@ -195,7 +195,7 @@ CasaOS do projeto. Nenhuma imagem customizada.
 - **Atualização de segurança sem custo.** Ficaria por nossa conta numa imagem
   própria; na oficial, é mantida pela Raspberry Pi Foundation.
 - **Onboarding.** Qualquer pessoa que precisar mexer no RPi depois — inclusive
-  um parceiro geotécnico ou de TI da Geopixel — já conhece Raspberry Pi OS.
+  um futuro colaborador geotécnico ou de TI — já conhece Raspberry Pi OS.
   Sistema próprio é fricção que não se paga neste estágio.
 
 **O que reverteria esta decisão.** Se o Raspberry Pi 4 de bancada virar
@@ -280,8 +280,8 @@ o que afetaria diretamente a viabilidade do FUOTA em SF alto.
 sensor (P-013), por ser a chuva acumulada o preditor de maior peso
 (Tatizana et al., 1987 **[L]**). Mas o próprio SENSORES.md registra que o
 **CEMADEN já opera com limiares de chuva acumulada de 24 h e 72 h por
-município** e monitora umidade de solo **[G]** — e a plataforma Geopixel
-Monitor já consome essas fontes.
+município** e monitora umidade de solo **[G]**. O projeto considera essas
+fontes públicas, sem pressupor integração com plataforma de empresa terceira.
 
 **Decisão.** **Não adquirir pluviômetro para o piloto.** A chuva entra como
 dado de fonte oficial (CEMADEN/INMET, **[G]**), e o nó instrumenta o que essa
