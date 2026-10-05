@@ -114,15 +114,11 @@ Receita recorrente no cenário SOM, em regime: **R$ 400 mil a R$ 2 mi/ano** **[E
 
 ## 5. Leitura estratégica
 
-**O ativo mais valioso aqui não é o hardware — é o canal.** A Geopixel já vende
-para prefeituras, já tem instância em produção em Caraguatatuba e já é
-fornecedora homologada. O custo de aquisição de cliente para uma empresa
-entrante neste mercado é alto; para quem já está dentro, é marginal.
-
-Isso inverte a leitura de viabilidade: **o Sentinela não precisa abrir mercado,
-precisa aprofundar um mercado já aberto** — vendendo mais para quem já compra,
-com um produto que a concorrência de software não tem
-([GEOPIXEL.md](GEOPIXEL.md) §4.7).
+**O canal comercial ainda precisa ser construído.** O Sentinela é um projeto
+acadêmico e pessoal independente. A futura entrada no mercado municipal depende
+de validação com possíveis usuários, pilotos autorizados e planejamento de
+aquisição de clientes; não há fornecedor terceiro ou carteira de clientes
+vinculados ao projeto. Ver [CONTEXTO_PRODUTO.md](CONTEXTO_PRODUTO.md).
 
 **Concentre no Sudeste.** Mais da metade da população exposta, o cenário
 calibrado, e a proximidade de Caraguatatuba como piloto.
