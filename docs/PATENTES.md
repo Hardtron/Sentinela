@@ -130,7 +130,7 @@ artigo ou o painel publicado pode comprometer a novidade.
 | **Busca de anterioridade** | **Bloqueante** | Sem saber o estado da técnica, não há como afirmar novidade. É o primeiro passo, não o último |
 | **Implementação e evidência** | **Alto** | O candidato mais forte não foi implementado nem testado. Não há frota, não há dado |
 | Reivindicações redigidas | Alto | Exige agente de PI |
-| Definição de titularidade | **Alto** | Projeto vinculado à empresa? Invenção de empregado? **Resolver antes** |
+| Definição de titularidade | **Alto** | Projeto acadêmico e pessoal independente; documentar autoria e contribuições **antes do depósito** |
 | Orçamento e estratégia | Médio | Depósito nacional, PCT, prazos |
 
 ### Ordem correta das ações
@@ -142,7 +142,7 @@ artigo ou o painel publicado pode comprometer a novidade.
    anterioridade, o assunto se encerra e economiza-se muito.**
 2. **Consulta a agente de PI** — com este documento em mãos, é uma conversa
    curta.
-3. **Resolver titularidade** com a empresa, **antes** de qualquer depósito.
+3. **Documentar autoria e eventuais contribuições** ao projeto independente, **antes** de qualquer depósito.
 4. **Implementar e medir** o candidato A com frota real.
 5. **Depositar antes de divulgar.**
 
@@ -167,7 +167,7 @@ de referência distribuída quando houver frota — o que já está previsto par
 fase 3.
 
 > **Alerta de prazo.** Divulgação pública antes do depósito compromete a
-> novidade. Isso inclui o painel para a Geopixel, apresentações e publicação do
+> novidade. Isso inclui o painel apresentado a terceiros, apresentações e publicação do
 > repositório. A LPI prevê **período de graça de 12 meses** para divulgação pelo
 > próprio inventor **[N]** — **[?]** confirmar aplicabilidade com agente antes
 > de contar com ele.
@@ -180,7 +180,7 @@ fase 3.
 |---|---|---|
 | **PT-01** | **Busca de anterioridade** — INPI, Espacenet, Google Patents | **[?] primeiro passo** |
 | PT-02 | Consulta a agente de PI com este documento | **[?]** |
-| PT-03 | Definir titularidade com a empresa | **[?] antes do depósito** |
+| PT-03 | Documentar autoria e eventuais contribuições ao projeto independente | **[?] antes do depósito** |
 | PT-04 | Confirmar período de graça de 12 meses e seu alcance | **[?]** |
 | PT-05 | Implementar referência distribuída e gerar evidência | Fase 3 |
 | PT-06 | Avaliar Modelo de Utilidade para o arranjo físico | Após protótipo |
