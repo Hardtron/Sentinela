@@ -60,8 +60,8 @@ Sendo franco, para não perdermos tempo:
 - **LoRa/LoRaWAN para monitoramento ambiental** — amplamente usado.
 - **Alerta por chuva acumulada** — a curva de Tatizana é de 1987 e o CEMADEN
   opera assim há mais de uma década **[L][G]**.
-- **Plataforma de visualização de risco** — a própria Geopixel já tem, e há
-  concorrentes.
+- **Plataforma de visualização de risco** — existem soluções no mercado;
+  a comparação técnica exige evidência específica de cada solução.
 - **Nó de baixo custo com ESP32 e sensores** — dezenas de projetos acadêmicos,
   incluindo o SitkaNet.
 
@@ -92,7 +92,7 @@ de nós como referência mútua para acionar manutenção.**
 
 Não a telemetria, e sim o **cruzamento** com carta de suscetibilidade, cadastro
 de edificações e população exposta, produzindo alerta com exposição quantificada
-(GEOPIXEL.md §4). Os fornecedores de instrumentação entregam dado de sensor; a
+(CONTEXTO_PRODUTO.md §4). Os fornecedores de instrumentação entregam dado de sensor; a
 tradução para decisão de defesa civil fica com o cliente.
 
 Originalidade **de integração**, não de componente — dificilmente patenteável,
@@ -116,7 +116,7 @@ O que o projeto tem que eles não têm:
 
 | Vantagem | Natureza |
 |---|---|
-| **Canal já aberto** com prefeituras | Comercial |
+| **Canal comercial a desenvolver e validar** com prefeituras | Comercial |
 | **Competência geoespacial** para traduzir dado em decisão | Técnica |
 | **Custo por ponto** viável para adensar malha | Econômica |
 | **Referência distribuída** de manutenção | Possivelmente inventiva |
