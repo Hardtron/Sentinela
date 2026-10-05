@@ -134,7 +134,7 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
   - Tabela de **População/Moradias Expostas** (`geom`: Polígono/Ponto) — **nova**.
 - **Função de Risco Automatizado:**
   - Consulta PostGIS que, ao atingir limiar de precipitação ou inclinação em um nó, correlaciona dinamicamente a área afetada com a estimativa de edificações e população exposta na mancha geográfica correspondente.
-  - **Conexão com GEOPIXEL.md §4.2:** Esta função se integra ao Módulo de Vistoria existente na plataforma Geopixel — sensor prioriza qual talude inspecionar; vistoria rotula o que o sensor mediu.
+  - **Ciclo sensor e vistoria:** Hipótese do projeto independente: dados de sensores podem apoiar a priorização de inspeções, e vistorias podem contribuir para validar as medições. Não há integração com plataforma terceira presumida.
 
 #### C. Ingestão de Dados de Terceiros ([NEGOCIO.md §4](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/NEGOCIO.md#L60))
 
@@ -173,7 +173,7 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
     - `fotos/`: Fotos de instalação e vistorias com metadados EXIF.
     - `dados/`: Histórico exportado e logs do dispositivo.
     - `documentos/`: Ficha técnica de instalação, registro de ancoragem e notas de campo.
-    - `manutencao/`: Registro de visitas, intervenções realizadas e fotos de manutenção — alimenta o ciclo vistoria↔sensor descrito em [GEOPIXEL.md §4.2](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/GEOPIXEL.md#L98).
+    - `manutencao/`: Registro de visitas, intervenções realizadas e fotos de manutenção — alimenta o ciclo vistoria↔sensor descrito em [CONTEXTO_PRODUTO.md §4.2](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/CONTEXTO_PRODUTO.md#L98).
 
 - **Fluxo de Geolocalização por EXIF:**
   1. A foto tirada no momento da fixação é salva na pasta da Atalaia.
@@ -255,7 +255,9 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 - Todas as funções auxiliares mantêm **$CC \le 10$** via refatorações modulares.
 
 > [!NOTE]
-> **Insight de Integração Geopixel:** O painel web do Sentinela deve publicar dados em formatos compatíveis com a plataforma Geopixel Monitor existente (CSV, KML, OGC SensorThings API). A integração com o TerraMA² (INPE), já parceiro da Geopixel, é ponto natural de entrada — evitando integração proprietária ([GEOPIXEL.md §4.5](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/GEOPIXEL.md#L126)).
+> **Integração independente:** O projeto estuda exportação em formatos abertos
+> como CSV, KML e OGC SensorThings API. Qualquer integração com sistemas externos
+> permanece hipótese futura, sem parceria, compatibilidade ou autorização presumida.
 
 ---
 
@@ -303,7 +305,7 @@ Todas as propostas, especificações e implementações futuras **devem obedecer
 - **Propriedade Intelectual:** Candidato a reivindicação de patente. **Não divulgar antes de consultar o INPI** ([PATENTES.md §5](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/PATENTES.md)).
 
 > [!CAUTION]
-> **Risco de PI:** A divulgação pública (incluindo repositório público no GitHub, apresentação à Geopixel ou publicação) **antes do depósito de patente compromete a novidade** ([NEGOCIO.md §Alerta Transversal](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/NEGOCIO.md#L82)). O repositório deve permanecer **privado** até que PT-01 (busca de anterioridade) e PT-03 (titularidade) sejam resolvidos.
+> **Risco de PI:** A divulgação pública (incluindo repositório público no GitHub, apresentação a terceiros ou publicação) **antes do depósito de patente compromete a novidade** ([NEGOCIO.md §Alerta Transversal](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/NEGOCIO.md#L82)). O repositório deve permanecer **privado** até que PT-01 (busca de anterioridade) e PT-03 (titularidade) sejam resolvidos.
 
 #### B. Assinaturas de Falha — Diagnóstico pela Curva Solar ([MANUTENCAO.md §3](file:///Users/matheus/Documents/Claude%20Projects/Sentinela/docs/MANUTENCAO.md#L55))
 - **Grandezas registradas por dia:** `E_dia`, `t_ini`/`t_fim`, `I_pico`, `V_min`, `DoD`, `V_fim`.
@@ -696,7 +698,7 @@ Organização padronizada do sistema de arquivos sob `/DATA/Media/Sentinela/Atal
 - **Interface no Painel Web:** Módulo `http://localhost:8765/#/laudo?id=ATL-CGB-014`.
 - **Formatação de Apresentação Oficial (Para Defesa Civil e Auditoria):**
   - Otimizado com folha de estilo CSS `@media print` para exportação direta em PDF A4 limpo.
-  - **Cabeçalho:** Logotipo Sentinela + Brasão do Município / Logotipo Geopixel.
+  - **Cabeçalho:** Logotipo Sentinela; identidade de eventual instituição parceira somente após autorização formal.
   - **Bloco 1 — Dados Cadastrais:** Código `ATL`, Farol, Coordenadas SIRGAS 2000 / WGS84, Data/Hora de Ativação, Estado atual, Responsáveis Técnicos (CRT + CREA).
   - **Bloco 2 — Contexto Geoespacial:**
     - Foto oficial georreferenciada com metadados EXIF visíveis (Data, Hora, Lat, Long, Alt).
@@ -1073,7 +1075,7 @@ graph LR
 | ID | Ação | Responsável | Status | Frente |
 |---|---|---|---|---|
 | **PT-01** | Busca de anterioridade para referência distribuída | Legal/PI | **CRÍTICA** — decide se há patente | 7 |
-| **PT-03** | Definir titularidade da PI com a Geopixel | Legal/PI | **CRÍTICA** — antes do depósito | 7 |
+| **PT-03** | Documentar autoria e contribuições ao projeto independente | Legal/PI | **CRÍTICA** — antes do depósito | 7 |
 | **C-01** | Cotação real de Worldsensing e Senceive | Negócios | **CRÍTICA** — sem ela, o preço é especulação | — |
 | **P-006** | Consultar OCD sobre homologação Anatel do nó final | Telecom | Aberta (Fase 4) | 1 |
 
@@ -1100,7 +1102,7 @@ graph LR
 | **T-05** | Migração SQL para suscetibilidade e população | Backend | ✅ **Implementada** — `003_gis_e_chuva.sql` | 2, 5 |
 | **T-06** | Autenticação em `lib/proto/` (P2P) | Firmware | ⚠️ Espaço reservado (`AUTH_AUSENTE`); implementação pendente | 1 |
 | **T-07** | Campo `fonte` na tabela de leitura | Backend | ✅ **Implementada** — coluna `fonte` em `leitura` (002) | 2 |
-| **T-08** | Exportação OGC SensorThings para Geopixel | Backend | Nova | 2, 5 |
+| **T-08** | Exportação em padrão aberto OGC SensorThings | Backend | Nova | 2, 5 |
 | **T-09** | Detecção de nó silencioso (RC-02) no ingestor | Backend | ✅ **Implementada** — view `no_silencioso` (004/005) | 2, 3 |
 | **T-10** | Manual de operação com limitações | Documentação | Nova | — |
 | **T-11** | Padronização de pastas `ATL-<município>-<seq>` | Operação | ✅ **Implementada** — `gestor_autonomo.py` cria a estrutura | 4, 6 |
