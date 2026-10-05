@@ -18,8 +18,8 @@ O que torna esta avaliação **menos** especulativa que o normal:
 
 - o mercado está **contado por fonte oficial** (MERCADO_MUNICIPIOS.md);
 - existe **obrigação legal** sustentando demanda no segmento de mineração;
-- há **canal de distribuição pronto** (Geopixel), o que remove o maior risco de
-  um projeto de hardware — a aquisição de cliente.
+- o canal de distribuição e a aquisição de clientes ainda precisam ser
+  desenvolvidos e validados pelo projeto independente.
 
 O que a mantém especulativa:
 
@@ -69,31 +69,12 @@ conservadoramente **20% a 35%** **[E]**:
 
 **Valor presente do projeto: R$ 400 mil – 4,5 mi.**
 
-### Método C — Valor incremental para a Geopixel
+### Método C — Viabilidade de uma futura operação independente
 
-O mais relevante, porque é o cenário real: o Sentinela não é uma empresa nova,
-é um **produto dentro de uma empresa que já vende para este cliente**.
-
-O valor aqui não é a receita do hardware — é o que ele faz com o negócio
-existente (GEOPIXEL.md §4.7):
-
-| Efeito | Natureza |
-|---|---|
-| Aumento de ticket por cliente | Vender equipamento e recorrência a quem já compra software |
-| **Retenção** | Cliente com rede física instalada não troca de fornecedor facilmente |
-| **Dado proprietário** | Sai da dependência de dado público que qualquer concorrente acessa |
-| Diferenciação em licitação | Solução completa contra software puro |
-| Novo segmento | Mineração, inacessível só com software |
-
-**O efeito de retenção é o mais valioso e o menos visível.** Uma plataforma que
-integra dados públicos é, em princípio, substituível por concorrente com bons
-desenvolvedores. Uma rede física instalada em encostas, com série histórica
-local, não é.
-
-Se o Sentinela elevar em **15–25%** o valor de contrato dos clientes municipais
-existentes e reduzir perda de clientes, o valor incremental pode superar a
-receita direta do produto — mas **quantificar isso exige dados internos da
-empresa que não tenho** **[?]**.
+O Sentinela é um projeto acadêmico e pessoal. Não integra produto ou carteira
+de clientes de empresa terceira. Uma futura operação comercial precisa validar
+custos, demanda, manutenção, aquisição de clientes e responsabilidades.
+Não se presume incremento de contratos, retenção ou acesso a dados de terceiros.
 
 ---
 
@@ -138,23 +119,12 @@ pode ser comprado — o mais difícil de replicar, e o mais lento de construir.
 
 ---
 
-## 5. Recomendação franca
+## 5. Direção do projeto
 
-**Não trate este projeto como um ativo a ser avaliado e vendido. Trate como uma
-capacidade a ser construída dentro da Geopixel.**
-
-O valor isolado de um projeto de hardware em fase 0, sem homologação e com
-concorrentes maduros, é baixo — e a tentativa de vendê-lo ou captar sobre ele
-provavelmente decepcionaria. O valor **dentro** da empresa que já tem o canal é
-substancialmente maior, porque elimina o custo que mata projetos assim: a
-aquisição de cliente.
-
-Para a apresentação interna, o argumento mais forte **não é** "isto vale X". É:
-
-> *"Isto transforma um software substituível numa infraestrutura instalada, com
-> dado proprietário e receita recorrente — e o mercado está contado por fonte
-> oficial: 958 municípios com risco mapeado e 911 barragens sob obrigação legal
-> de instrumentação."*
+Priorizar o desenvolvimento acadêmico, evidências experimentais e validação
+técnica. A evolução comercial é futura e depende de validação própria de mercado.
+Os cenários numéricos deste estudo são estimativas históricas, não avaliação
+comercial validada, receita realizada ou vínculo com empresa terceira.
 
 ---
 
@@ -164,6 +134,6 @@ Para a apresentação interna, o argumento mais forte **não é** "isto vale X".
 |---|---|---|
 | V-01 | Validar preço por ponto com município real | **[?]** — premissa central |
 | V-02 | Orçar homologação Anatel (custo e prazo) | **[?]** — ver C-01 |
-| V-03 | Obter dados internos da Geopixel: ticket médio, retenção | **[?]** |
+| V-03 | Validar custos e premissas comerciais próprias, sem dados internos de terceiros | **[?]** |
 | V-04 | Cotação de concorrentes para ancorar preço | **[?]** — CONCORRENCIA.md C-01 |
 | V-05 | Refazer esta análise após o piloto | Fase 5 |
