@@ -1,5 +1,9 @@
 # Sentinela
 
+Projeto acadêmico e pessoal independente, iniciado em 2026 como parte do
+desenvolvimento acadêmico de Luiz Matheus Marassi de Paula, com perspectiva
+de futura evolução para produto comercial. Não há empresa terceira envolvida.
+
 Rede de sensores LoRa para monitoramento de áreas de risco geológico-hidrológico
 em múltiplos municípios.
 
@@ -41,7 +45,7 @@ para a fronteira entre valores experimentais e decisórios.
 | [docs/REFERENCIAS.md](docs/REFERENCIAS.md) | **Política de proveniência** e bibliografia central |
 | [docs/QUALIDADE_CODIGO.md](docs/QUALIDADE_CODIGO.md) | **Complexidade ciclomática** e padrões de código |
 | [docs/PARAMETROS.md](docs/PARAMETROS.md) | Proveniência, status, histórico e uso decisório de parâmetros |
-| [docs/GEOPIXEL.md](docs/GEOPIXEL.md) | Contexto de mercado e proposta de valor |
+| [docs/CONTEXTO_PRODUTO.md](docs/CONTEXTO_PRODUTO.md) | Contexto de mercado e proposta de valor |
 | **[docs/NEGOCIO.md](docs/NEGOCIO.md)** | **Índice das cinco frentes de negócio** |
 | [docs/MERCADO_MUNICIPIOS.md](docs/MERCADO_MUNICIPIOS.md) | Frente 1 — mercado municipal |
 | [docs/MERCADO_MINERACAO.md](docs/MERCADO_MINERACAO.md) | Frente 2 — barragens de mineração |
@@ -257,4 +261,4 @@ para o QGIS. Detalhes em [ROTEIRO_CAMPO.md](docs/ROTEIRO_CAMPO.md) §4.3 e §4.4
 Este projeto é **OPEN SOURCE**.
 
 ---
-Autoria: Luiz Luiz Matheus Marassi de Paula de Paula
+Autoria: Luiz Matheus Marassi de Paula
